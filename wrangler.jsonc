@@ -1,0 +1,30 @@
+{
+  // Cloudflare Worker config — Biscuit Market Intelligence dashboard.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "biscuitdashboard",
+  "main": "worker.js",
+  "compatibility_date": "2025-06-01",
+
+  // Serve the single-file dashboard (index.html) + static assets.
+  // SPA fallback routes unknown non-API paths back to index.html.
+  "assets": {
+    "directory": "./",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  }
+
+  // ---------------------------------------------------------------------------
+  // KV — persists price-snapshot history behind /api/history.
+  //
+  // The Worker degrades gracefully when this binding is ABSENT (GET returns an
+  // empty history, POST returns 503), so you can deploy right now — before the
+  // namespace exists. To turn on persistence:
+  //
+  //   1) npx wrangler kv namespace create BISCUIT_HISTORY_KV
+  //   2) uncomment the block below and paste the printed id over the placeholder
+  //
+  // ,"kv_namespaces": [
+  //   { "binding": "BISCUIT_HISTORY_KV", "id": "REPLACE_WITH_KV_NAMESPACE_ID" }
+  // ]
+  // ---------------------------------------------------------------------------
+}

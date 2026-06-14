@@ -1,0 +1,14 @@
+{
+  "name": "biscuitdashboard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Single-file market-intelligence dashboard for the Indian biscuit industry, deployed on Cloudflare Workers.",
+  "scripts": {
+    "dev": "npx wrangler dev",
+    "preview": "npx wrangler dev --remote",
+    "deploy": "npx wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

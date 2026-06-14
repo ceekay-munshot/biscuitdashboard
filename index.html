@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Biscuit Market Intelligence — India Pricing Dashboard</title>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Charting engine (async) — wired into the data views from a later build step. -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" async></script>
+<!-- Excel export (defer) — used by the export feature in a later build step. -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+
+<style>
+/* ============================================================
+   DESIGN SYSTEM — base (shared with the reference dashboard)
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,sans-serif;background:#f0ede8;color:#1a1a18;-webkit-font-smoothing:antialiased;min-height:100vh}
+#app{max-width:1020px;margin:0 auto;padding:28px 20px}
+button{font-family:'Inter',sans-serif;background:#fff;color:#1a1a18;border:0.5px solid rgba(26,26,24,0.22);border-radius:8px;cursor:pointer;transition:background .12s,transform .1s;font-size:13px;padding:7px 14px}
+button:hover:not(:disabled){background:#f7f6f3}
+button:active:not(:disabled){transform:scale(0.98)}
+button:disabled{opacity:.6;cursor:not-allowed}
+.card{background:#fff;border:0.5px solid rgba(26,26,24,0.12);border-radius:14px;overflow:hidden}
+.card-pad{padding:16px 18px}
+table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+th{padding:7px 10px;font-weight:600;color:#9b9a96;font-size:11px;letter-spacing:.04em;border-bottom:0.5px solid rgba(26,26,24,0.1);text-transform:uppercase}
+td{padding:8px 10px;border-bottom:0.5px solid rgba(26,26,24,0.07)}
+.badge{font-size:10px;padding:2px 8px;border-radius:5px;font-weight:600;display:inline-block}
+.stat-box{background:#f7f6f3;border-radius:10px;padding:12px 14px}
+.stat-box .sl{font-size:11px;color:#9b9a96;margin-bottom:4px;font-weight:500}
+.stat-box .sv{font-size:22px;font-weight:700}
+.bar-wrap{flex:1;height:7px;background:#f0ede8;border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.delta-badge{font-size:11px;font-weight:600;padding:2px 7px;border-radius:5px;display:inline-block}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.75)}}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.fadein{animation:fadein .3s ease both}
+.pulse-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.1s ease-in-out infinite;vertical-align:middle;margin-right:5px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:16px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-bottom:16px}
+.back-bar{display:flex;align-items:center;gap:12px;margin-bottom:22px;padding-bottom:16px}
+.step-row{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:12px}
+.step-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+input[type=text]{font-family:'Inter',sans-serif;font-size:13px;padding:8px 12px;border:0.5px solid rgba(26,26,24,0.22);border-radius:8px;width:100%;outline:none;background:#fafaf8}
+input:focus{border-color:#B6772E;box-shadow:0 0 0 3px rgba(182,119,46,.12)}
+@media(max-width:640px){.grid3{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}}
+
+/* ============================================================
+   DESIGN SYSTEM — dashboard-specific extensions
+   ============================================================ */
+/* Divider under back / page headers */
+.back-bar{border-bottom:0.5px solid rgba(26,26,24,.1)}
+.muted{color:#9b9a96}
+
+/* Hero / empty state */
+.hero{max-width:640px;margin:64px auto 0;text-align:center}
+.hero-eyebrow{font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#B6772E;margin-bottom:14px}
+.hero-title{font-size:34px;font-weight:700;line-height:1.15;letter-spacing:-.02em;margin-bottom:16px}
+.hero-sub{font-size:15px;line-height:1.62;color:#5c5b57;margin:0 auto 28px;max-width:560px}
+.hero-fineprint{font-size:12px;color:#9b9a96;margin-top:16px}
+.btn-accent{background:#B6772E;color:#fff;border:0;border-radius:10px;padding:13px 26px;font-size:15px;font-weight:600;cursor:pointer;transition:background .12s,transform .1s}
+.btn-accent:hover{background:#a3691f}
+.btn-accent:active{transform:scale(.98)}
+.scaffold-notice{margin-top:26px;display:inline-block;font-size:13px;font-weight:500;color:#0A4A3A;background:#DFF1EB;border-radius:8px;padding:10px 16px}
+.hero-hint{margin-top:34px;font-size:11px;color:#b6b4af}
+.hero-hint kbd{font-family:inherit;font-size:10px;background:#fff;border:0.5px solid rgba(26,26,24,.18);border-radius:4px;padding:1px 5px}
+
+/* Fetching-progress screen */
+.progress-wrap{max-width:560px;margin:54px auto 0}
+.progress-head{display:flex;align-items:center;gap:8px;font-size:14px}
+.progress-count{margin-left:auto;font-size:12px;color:#9b9a96;font-weight:600}
+.steps{display:flex;flex-direction:column}
+.step-brand{font-weight:600}
+.step-company{font-size:11px;color:#9b9a96}
+.step-status{margin-left:auto;font-size:11px;font-weight:600;white-space:nowrap}
+.step-status.done{color:#0A4A3A}
+.step-status.err{color:#C8102E}
+.step-status.pending{color:#9b9a96}
+.step-status.loading{color:#B6772E}
+
+/* Admin / system info */
+.admin-h{font-size:18px;font-weight:700;margin-bottom:12px}
+.admin-h.sub{font-size:13px;margin:18px 0 8px}
+.admin-p{font-size:13px;line-height:1.65;color:#3f3e3b;margin-bottom:12px}
+.admin-list{font-size:13px;line-height:1.7;color:#3f3e3b;margin:0 0 12px 18px}
+.grp-chip{font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;white-space:nowrap;display:inline-block}
+.roster-row{display:flex;gap:12px;align-items:baseline;padding:8px 0;border-bottom:0.5px solid rgba(26,26,24,.07)}
+.roster-row:last-child{border-bottom:0}
+.roster-brands{font-size:12px;color:#5c5b57;line-height:1.5}
+.kv-tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:5px;background:#f0ede8;color:#5c5b57}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ============================================================
+   BISCUIT MARKET INTELLIGENCE DASHBOARD
+   Build Step 1 / 12 — Scaffold, entities & deploy
+   Single-file, zero-build. Vanilla ES6. Sections are ordered so
+   later build steps (scraping, charts, intelligence tabs) slot in
+   without restructuring.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   1. ENTITY MODEL  (configurable starting roster)
+   ------------------------------------------------------------ */
+/* Company group → primary / background / text accent colours */
+const COL = {"Britannia":"#C8102E","Parle":"#C77800","ITC Sunfeast":"#7B2D8E","Mondelez":"#1D4E9C","Unibic":"#138A6E","Emerging / D2C":"#E05A2B"};
+const BG  = {"Britannia":"#FBE7EA","Parle":"#FAF0DC","ITC Sunfeast":"#F2E7F5","Mondelez":"#E6EDF8","Unibic":"#DFF1EB","Emerging / D2C":"#FCEAE1"};
+const TXT = {"Britannia":"#7A0A1C","Parle":"#6E4300","ITC Sunfeast":"#45184F","Mondelez":"#102C58","Unibic":"#0A4A3A","Emerging / D2C":"#7A2D10"};
+
+/* Tracked brands → company group (14 brands, 6 groups) */
+const BRANDS = [
+  {brand:"Good Day",             company:"Britannia"},
+  {brand:"Bourbon",              company:"Britannia"},
+  {brand:"Marie Gold",           company:"Britannia"},
+  {brand:"NutriChoice",          company:"Britannia"},
+  {brand:"Parle-G",              company:"Parle"},
+  {brand:"Monaco",               company:"Parle"},
+  {brand:"Hide & Seek",          company:"Parle"},
+  {brand:"KrackJack",            company:"Parle"},
+  {brand:"Dark Fantasy",         company:"ITC Sunfeast"},
+  {brand:"Mom's Magic",          company:"ITC Sunfeast"},
+  {brand:"Sunfeast Marie Light", company:"ITC Sunfeast"},
+  {brand:"Oreo",                 company:"Mondelez"},
+  {brand:"Unibic",               company:"Unibic"},
+  {brand:"The Whole Truth",      company:"Emerging / D2C"},
+];
+
+/* Client's 6 canonical category buckets + an Other fallback
+   (Parle-G glucose / Marie land in Other for now). */
+const CATEGORIES = ["Cookies","Digestive","Cream","Crackers","Rusk","Wafer","Other"];
+
+/* ------------------------------------------------------------
+   2. GLOBAL STATE
+   ------------------------------------------------------------ */
+const TODAY = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+
+let STATE = {
+  curr:null,            // current assembled dataset (populated from Step 2)
+  history:[],           // snapshot history loaded from KV via /api/history
+  running:false,        // true while a fetch run is in progress
+  steps:[],             // per-brand progress: {brand,company,status,count,error}
+  lastRefresh:null,     // human date of the last completed run
+  view:null,            // active route (null/'dashboard' default; objects carry .type)
+  insight:'',           // AI insight text (later step)
+  insightLoading:false  // AI insight loading flag (later step)
+};
+
+/* ------------------------------------------------------------
+   3. CHART HELPERS  (defined now, used from a later step)
+   Chart.js loads async, so charts must wait for the global and
+   follow a strict destroy-before-recreate pattern to avoid the
+   "Canvas is already in use" error on re-render.
+   ------------------------------------------------------------ */
+let charts = {};
+
+function waitForChart(cb){
+  if (window.Chart){ cb(); return; }
+  const t = setInterval(()=>{ if (window.Chart){ clearInterval(t); cb(); } }, 60);
+}
+
+function destroyCharts(){
+  Object.values(charts).forEach(c=>{ try{ c.destroy(); }catch(e){} });
+  charts = {};
+}
+
+function mkChart(id, cfg){
+  const cv = document.getElementById(id);
+  if (!cv || !window.Chart) return null;
+  if (charts[id]){ try{ charts[id].destroy(); }catch(e){} }
+  charts[id] = new Chart(cv.getContext('2d'), cfg);
+  return charts[id];
+}
+
+/* ------------------------------------------------------------
+   4. SERVER HISTORY  (KV-backed, fails soft)
+   ------------------------------------------------------------ */
+async function fetchServerHistory(){
+  try {
+    const r = await fetch('/api/history');
+    if (!r.ok) return [];
+    const data = await r.json();
+    return data.history || [];
+  } catch(e){
+    return [];   // no server / no KV → behave as empty history
+  }
+}
+
+/* ------------------------------------------------------------
+   5. DATA REFRESH PIPELINE
+   Step 1 is a timed stub that drives the progress UI. The loop
+   shape (pending → loading → done/error + count) is the exact
+   contract Step 2's live scraper drops into.
+   ------------------------------------------------------------ */
+const sleep = ms => new Promise(r=>setTimeout(r, ms));
+
+async function doRefresh(){
+  STATE.running = true;
+  // Build the task list — every brand starts pending.
+  STATE.steps = BRANDS.map(b=>({
+    brand:b.brand, company:b.company, status:'pending', count:0, error:null
+  }));
+  render();
+
+  // Scan brands sequentially so the progress UI animates.
+  for (let i = 0; i < STATE.steps.length; i++){
+    const step = STATE.steps[i];
+    step.status = 'loading';
+    render();
+    try {
+      /* ---- STUB ----------------------------------------------------
+         Step 2 replaces this delay with the real fetch for one brand,
+         setting step.count to the number of SKUs found. Keep the
+         loading→done/error transitions intact.                       */
+      await sleep(250);
+      step.count = 0;
+      step.status = 'done';
+      /* ------------------------------------------------------------- */
+    } catch(err){
+      step.status = 'error';
+      step.error = (err && err.message) || 'failed';
+    }
+    render();
+  }
+
+  STATE.running = false;
+  STATE.lastRefresh = TODAY;
+  // Scaffold: no dataset is assembled yet — STATE.curr stays null, so the
+  // dashboard returns to the empty state (now showing the "Step 2" notice).
+  // Step 2 will build STATE.curr here and persist a snapshot to /api/history.
+  render();
+}
+
+/* ------------------------------------------------------------
+   6. ROUTER
+   ------------------------------------------------------------ */
+function navigate(view){
+  STATE.view = view;
+  window.scrollTo(0,0);
+  render();
+}
+
+function render(){
+  destroyCharts();
+
+  // Resolve the active view: null/'dashboard' → dashboard; route objects carry .type.
+  const v = STATE.view;
+  const type = (v == null) ? 'dashboard' : (typeof v === 'string' ? v : v.type);
+
+  switch (type){
+    case 'admin':
+      renderAdmin();
+      break;
+
+    /* ---- Views arriving in later build steps -----------------------------
+       case 'brand':    renderBrand(v);    break;   // brand detail
+       case 'category': renderCategory(v); break;   // category breakdown
+       case 'packsize': renderPackSize(v); break;   // pack-size analysis
+       case 'trends':   renderTrends();    break;   // Google Trends (seeded)
+       case 'radar':    renderRadar();     break;   // emerging-brands radar
+       case 'share':    renderShare();     break;   // market-share (seeded)
+       case 'history':  renderHistory();   break;   // snapshot history
+       --------------------------------------------------------------------- */
+
+    case 'dashboard':
+    default:
+      renderDashboard();
+      break;
+  }
+}
+
+/* ------------------------------------------------------------
+   7. RENDERERS
+   ------------------------------------------------------------ */
+const $app = () => document.getElementById('app');
+
+function renderDashboard(){
+  // Fetch in progress → progress screen.
+  if (STATE.running){ $app().innerHTML = progressHTML(); return; }
+
+  // No dataset assembled yet → branded empty state.
+  // (From Step 2, when STATE.curr is populated, the live dashboard renders here.)
+  $app().innerHTML = emptyStateHTML();
+}
+
+function emptyStateHTML(){
+  const groups = Object.keys(COL).join(' · ');
+  // After a completed scaffold run, surface the Step-2 notice.
+  const justScanned = STATE.lastRefresh && !STATE.curr;
+  const notice = justScanned
+    ? `<div class="scaffold-notice fadein">✓ Scaffold ready — live scraping engine is wired in Build Step 2.</div>`
+    : '';
+
+  return `
+  <div class="hero fadein">
+    <div class="hero-eyebrow">Biscuit Market Intelligence</div>
+    <h1 class="hero-title">India Quick-Comm &amp; E-Comm Pricing Dashboard</h1>
+    <p class="hero-sub">
+      Tracking <strong>${BRANDS.length} brands</strong> across ${groups} —
+      blending e-commerce, quick-commerce &amp; Google Trends, with
+      <strong>price-per-gram</strong> as the hero metric alongside discount vs MRP,
+      categories, pack sizes, reviews &amp; an emerging-brands radar.
+    </p>
+    <button class="btn-accent" onclick="doRefresh()">▶ Fetch Live Data</button>
+    <div class="hero-fineprint">~2–3 min to scan all brands · data as of ${TODAY}</div>
+    ${notice}
+    <div class="hero-hint"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd> for admin / system info</div>
+  </div>`;
+}
+
+function progressHTML(){
+  const total = STATE.steps.length;
+  const done  = STATE.steps.filter(s=>s.status==='done' || s.status==='error').length;
+  const pct   = total ? Math.round(done/total*100) : 0;
+
+  const rows = STATE.steps.map(s=>{
+    const c = COL[s.company] || '#9b9a96';
+    let dot, status, opacity = 1;
+    if (s.status==='done'){
+      dot = c;  status = `<span class="step-status done">✓ ${s.count} SKUs</span>`;
+    } else if (s.status==='loading'){
+      dot = c;  status = `<span class="step-status loading" style="color:${c}"><span class="pulse-dot"></span>scanning…</span>`;
+    } else if (s.status==='error'){
+      dot = '#C8102E';  status = `<span class="step-status err">✕ ${s.error||'error'}</span>`;
+    } else {
+      dot = '#d8d5d0';  status = `<span class="step-status pending">queued</span>`;  opacity = .5;
+    }
+    return `
+    <div class="step-row" style="opacity:${opacity}">
+      <span class="step-dot" style="background:${dot}"></span>
+      <span class="step-brand">${s.brand}</span>
+      <span class="step-company">${s.company}</span>
+      ${status}
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="progress-wrap fadein">
+    <div class="card">
+      <div class="card-pad">
+        <div class="progress-head">
+          <span class="pulse-dot" style="color:#B6772E"></span>
+          <strong>Scanning biscuit brands…</strong>
+          <span class="progress-count">${done} / ${total}</span>
+        </div>
+        <div class="bar-wrap" style="margin:14px 0 18px">
+          <div class="bar-fill" style="width:${pct}%;background:#B6772E"></div>
+        </div>
+        <div class="steps">${rows}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderAdmin(){
+  // Roster grouped by company, showcasing the colour entity model.
+  const roster = Object.keys(COL).map(g=>{
+    const brands = BRANDS.filter(b=>b.company===g).map(b=>b.brand).join(', ');
+    return `
+    <div class="roster-row">
+      <span class="grp-chip" style="background:${BG[g]};color:${TXT[g]}">${g}</span>
+      <span class="roster-brands">${brands}</span>
+    </div>`;
+  }).join('');
+
+  $app().innerHTML = `
+  <div class="back-bar">
+    <button onclick="navigate('dashboard')">← Back</button>
+    <strong>Admin · System Info</strong>
+  </div>
+
+  <div class="card fadein">
+    <div class="card-pad">
+      <h2 class="admin-h">How it works</h2>
+      <p class="admin-p">
+        This dashboard tracks <strong>${BRANDS.length} biscuit brands</strong> across
+        <strong>${Object.keys(COL).length} company groups</strong> and
+        <strong>${CATEGORIES.length} categories</strong>
+        (${CATEGORIES.join(', ')}). <strong>Price-per-gram (₹/g)</strong> is the hero metric,
+        reported alongside discount vs MRP, pack sizes, reviews and shelf life.
+      </p>
+
+      <h3 class="admin-h sub">Data pipeline (hybrid)</h3>
+      <ul class="admin-list">
+        <li><strong>E-commerce</strong> — live-scraped per brand (engine arrives in Build Step 2).</li>
+        <li><strong>Quick-commerce, Google Trends &amp; market share</strong> — seeded &amp; editable.</li>
+        <li><strong>Fetch run</strong> — brands are scanned sequentially with live per-brand progress.</li>
+      </ul>
+
+      <h3 class="admin-h sub">Persistence</h3>
+      <p class="admin-p">
+        Snapshots are saved to Cloudflare KV via the <code>/api/history</code> route.
+        The Worker degrades gracefully when KV is unbound, so the app deploys before the
+        namespace exists. <span class="kv-tag">KV: BISCUIT_HISTORY_KV</span>
+      </p>
+
+      <h3 class="admin-h sub">Status</h3>
+      <p class="admin-p">
+        Data as of <strong>${TODAY}</strong>. Build progress:
+        <strong>Step 1 of 12</strong> — Scaffold, entities &amp; deploy.
+      </p>
+
+      <h3 class="admin-h sub">Tracked roster</h3>
+      ${roster}
+    </div>
+  </div>`;
+}
+
+/* ------------------------------------------------------------
+   8. BOOT
+   ------------------------------------------------------------ */
+// Admin shortcut: Ctrl+Shift+A (Win/Linux) / Cmd+Shift+A (macOS).
+document.addEventListener('keydown', e=>{
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')){
+    e.preventDefault();
+    navigate({type:'admin'});
+  }
+});
+
+render();
+
+// Load history from the server (KV); re-render once it resolves. Fails soft to [].
+fetchServerHistory().then(h=>{ STATE.history = h; render(); });
+</script>
+</body>
+</html>
