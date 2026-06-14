@@ -3,7 +3,10 @@
 # install step that creates node_modules in that root. Without this ignore file
 # wrangler would try to upload node_modules — including the ~119 MiB workerd
 # binary, which exceeds the 25 MiB per-asset limit and fails the build.
-# Net result: only the served site (index.html) is uploaded as an asset.
+# Net result: only the served site (index.html + data/*.json) is uploaded.
+
+# CI-only scrape script (not served)
+scripts
 
 # Dependencies & lockfiles
 node_modules

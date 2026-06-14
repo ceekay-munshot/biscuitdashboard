@@ -61,28 +61,14 @@ input:focus{border-color:#B6772E;box-shadow:0 0 0 3px rgba(182,119,46,.12)}
 .hero{max-width:640px;margin:64px auto 0;text-align:center}
 .hero-eyebrow{font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#B6772E;margin-bottom:14px}
 .hero-title{font-size:34px;font-weight:700;line-height:1.15;letter-spacing:-.02em;margin-bottom:16px}
-.hero-sub{font-size:15px;line-height:1.62;color:#5c5b57;margin:0 auto 28px;max-width:560px}
-.hero-fineprint{font-size:12px;color:#9b9a96;margin-top:16px}
+.hero-sub{font-size:15px;line-height:1.62;color:#5c5b57;margin:0 auto 24px;max-width:560px}
 .btn-accent{background:#B6772E;color:#fff;border:0;border-radius:10px;padding:13px 26px;font-size:15px;font-weight:600;cursor:pointer;transition:background .12s,transform .1s}
 .btn-accent:hover{background:#a3691f}
 .btn-accent:active{transform:scale(.98)}
-.scaffold-notice{margin-top:26px;display:inline-block;font-size:13px;font-weight:500;color:#0A4A3A;background:#DFF1EB;border-radius:8px;padding:10px 16px;max-width:560px;line-height:1.5}
-.scaffold-notice.err{color:#7A0A1C;background:#FBE7EA}
+.notice{display:inline-block;font-size:13px;font-weight:500;border-radius:8px;padding:11px 16px;max-width:560px;line-height:1.55;margin-bottom:22px}
+.notice.info{color:#5c5b57;background:#fff;border:0.5px solid rgba(26,26,24,.12)}
 .hero-hint{margin-top:34px;font-size:11px;color:#b6b4af}
 .hero-hint kbd{font-family:inherit;font-size:10px;background:#fff;border:0.5px solid rgba(26,26,24,.18);border-radius:4px;padding:1px 5px}
-
-/* Fetching-progress screen */
-.progress-wrap{max-width:560px;margin:54px auto 0}
-.progress-head{display:flex;align-items:center;gap:8px;font-size:14px}
-.progress-count{margin-left:auto;font-size:12px;color:#9b9a96;font-weight:600}
-.steps{display:flex;flex-direction:column}
-.step-brand{font-weight:600}
-.step-company{font-size:11px;color:#9b9a96}
-.step-status{margin-left:auto;font-size:11px;font-weight:600;white-space:nowrap}
-.step-status.done{color:#0A4A3A}
-.step-status.err{color:#C8102E}
-.step-status.pending{color:#9b9a96}
-.step-status.loading{color:#B6772E}
 
 /* Raw results table (Step 2 verification — replaced in Step 3) */
 .results-head{display:flex;align-items:center;gap:12px;margin-bottom:22px;padding-bottom:16px;border-bottom:0.5px solid rgba(26,26,24,.1)}
@@ -111,10 +97,12 @@ td.num{font-variant-numeric:tabular-nums}
 <script>
 /* ============================================================
    BISCUIT MARKET INTELLIGENCE DASHBOARD
-   Build Step 2 / 12 — Live scrape + price-per-gram engine
+   Build Step 2 / 12 — CI scrape → static JSON
    Single-file, zero-build. Vanilla ES6.
-   NO Firecrawl key in this file — scraping goes through the
-   Worker proxy at /api/scrape, which holds the key server-side.
+
+   Scraping runs in GitHub Actions (scripts/scrape.mjs) and commits
+   data/latest.json + data/history.json. This client only READS that
+   JSON — no Firecrawl key, no parser, no runtime scraping here.
    ============================================================ */
 
 /* ------------------------------------------------------------
@@ -149,11 +137,9 @@ const CATEGORIES = ["Cookies","Digestive","Cream","Crackers","Rusk","Wafer","Oth
 const TODAY = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
 
 let STATE = {
-  curr:null,            // { skus:[...], scrapedAt:Date } once a run yields data
-  history:[],           // snapshot history loaded from KV via /api/history
-  running:false,        // true while a fetch run is in progress
-  steps:[],             // per-brand progress: {brand,company,status,count,error}
-  lastRefresh:null,     // Date of the last completed run
+  curr:null,            // { skus:[...], scrapedAt } from data/latest.json
+  history:[],           // data/history.json
+  loading:false,        // true while (re)loading the static JSON
   view:null,            // active route (null/'dashboard' default; objects carry .type)
   insight:'',           // AI insight text (later step)
   insightLoading:false  // AI insight loading flag (later step)
@@ -180,340 +166,39 @@ function mkChart(id, cfg){
 }
 
 /* ------------------------------------------------------------
-   4. SERVER HISTORY  (KV-backed, fails soft)
+   4. DATA LOADING  (reads the CI-committed static JSON)
    ------------------------------------------------------------ */
-async function fetchServerHistory(){
+async function loadData(){
+  const bust = '?_=' + Date.now();   // cache-bust so ↻ Reload sees fresh data
+
+  STATE.curr = null;
   try {
-    const r = await fetch('/api/history');
-    if (!r.ok) return [];
-    const data = await r.json();
-    return data.history || [];
-  } catch(e){
-    return [];
-  }
-}
-
-/* ------------------------------------------------------------
-   5. SCRAPE + PARSE ENGINE
-   ------------------------------------------------------------ */
-
-/* Search sources. Amazon is primary (must work); BigBasket is best-effort and
-   may fail softly. Flipkart Grocery can be added later the same way.
-   ~14–28 scrapes per refresh (2 pages × 14 brands). */
-const SEARCH = {
-  Amazon:    b => `https://www.amazon.in/s?k=${encodeURIComponent(b + ' biscuits')}`,
-  BigBasket: b => `https://www.bigbasket.com/ps/?q=${encodeURIComponent(b + ' biscuits')}`,
-};
-
-/* Call the Worker scrape proxy (which holds the Firecrawl key). */
-async function firecrawlScrape(url){
-  const res = await fetch('/api/scrape', {
-    method:'POST',
-    headers:{ 'Content-Type':'application/json' },
-    body: JSON.stringify({ url }),
-    signal: AbortSignal.timeout(65000),
-  });
-  if (!res.ok){
-    let msg = `scrape proxy ${res.status}`;
-    try { const e = await res.json(); if (e && e.error) msg = e.error; } catch(_){}
-    throw new Error(msg);
-  }
-  const data = await res.json();
-  if (!data.ok) throw new Error(data.error || 'scrape failed');
-  return { markdown: data.markdown || '', url };
-}
-
-function detectPlatform(url){
-  if (/amazon\./i.test(url))    return 'Amazon';
-  if (/bigbasket\./i.test(url)) return 'BigBasket';
-  if (/flipkart\./i.test(url))  return 'Flipkart';
-  return 'Web';
-}
-
-/* WEIGHT → grams. Returns { grams, label } or null.
-   Prefer the product NAME; the caller falls back to the block text.
-   Handles single sizes, "N x W", "W x N" and "pack/combo/set of N". */
-function parseWeightGrams(text){
-  if (!text) return null;
-  const t = String(text).toLowerCase().replace(/×/g,'x');
-  const U = '(kgs?|gms?|grams?|g)\\b';
-  const toG = (n,u)=>{ let v=parseFloat(n); if(/^k/.test(u)) v*=1000; return v; };
-  const unitLabel = u => /^k/.test(u) ? 'kg' : 'g';
-  const inRange = g => g>=10 && g<=5000;
-  const packM = t.match(/(?:pack|combo|set)\s+of\s+(\d+)/i);
-
-  // (a) "N x W unit"  → N × W
-  let m = t.match(new RegExp('(\\d+)\\s*x\\s*(\\d+(?:\\.\\d+)?)\\s*'+U,'i'));
-  if (m){
-    const n=parseInt(m[1],10), w=toG(m[2],m[3]), total=n*w;
-    if (n>=1 && inRange(total)){
-      const wl = `${m[2]} ${unitLabel(m[3])}`;
-      return { grams:+total.toFixed(2), label: packM ? `Pack of ${n} × ${wl}` : `${n} × ${wl}` };
-    }
-  }
-  // (a2) "W unit x N"  → W × N
-  m = t.match(new RegExp('(\\d+(?:\\.\\d+)?)\\s*'+U+'\\s*x\\s*(\\d+)','i'));
-  if (m){
-    const w=toG(m[1],m[2]), n=parseInt(m[3],10), total=w*n;
-    if (n>=1 && inRange(total)){
-      const wl = `${m[1]} ${unitLabel(m[2])}`;
-      return { grams:+total.toFixed(2), label: packM ? `Pack of ${n} × ${wl}` : `${n} × ${wl}` };
-    }
-  }
-
-  // All standalone weight tokens.
-  const re = new RegExp('(\\d+(?:\\.\\d+)?)\\s*'+U,'ig');
-  const toks=[]; let mm;
-  while((mm=re.exec(t))) toks.push({ g:toG(mm[1],mm[2]), label:`${mm[1]} ${unitLabel(mm[2])}` });
-
-  // (b) "pack/combo/set of N" × single unit weight (if the product lists a unit).
-  if (packM && toks.length){
-    const n=parseInt(packM[1],10);
-    const unit = /each/.test(t) ? toks[0] : toks.reduce((a,b)=> b.g<a.g?b:a);
-    const total = n*unit.g;
-    if (n>=2 && inRange(total)) return { grams:+total.toFixed(2), label:`Pack of ${n} × ${unit.label}` };
-    // else: the listed weight is probably already the pack total → fall through.
-  }
-
-  // (c) single weight — largest plausible token.
-  const plaus = toks.filter(x=>inRange(x.g));
-  if (plaus.length){
-    const best = plaus.reduce((a,b)=> b.g>a.g?b:a);
-    return { grams:+best.g.toFixed(2), label:best.label };
-  }
-  return null;
-}
-
-/* CATEGORY — first keyword match wins, else "Other". */
-function detectCategory(text){
-  const t = String(text||'').toLowerCase();
-  if (/cream|bourbon|cr[eè]me|sandwich|dark fantasy|jim ?jam/.test(t)) return 'Cream';
-  if (/cookie|choco ?chip|butter cookie|good ?day/.test(t))           return 'Cookies';
-  if (/digestive|oats?|ragi|multigrain|high ?fibre|fiber|nutri/.test(t)) return 'Digestive';
-  if (/cracker|monaco|krack ?jack|salt(ed)?|namkeen/.test(t))         return 'Crackers';
-  if (/rusk|toast/.test(t)) return 'Rusk';
-  if (/wafer/.test(t))      return 'Wafer';
-  return 'Other';
-}
-
-/* REVIEWS — null when absent. */
-function parseRating(text){
-  const t = String(text||'');
-  let m = t.match(/([0-5](?:\.\d)?)\s*out of\s*5/i);
-  if (m) return parseFloat(m[1]);
-  m = t.match(/★\s*([0-5](?:\.\d)?)/);
-  if (m) return parseFloat(m[1]);
-  return null;
-}
-function parseReviewCount(text){
-  const m = String(text||'').match(/([\d,]+)\s*(ratings?|reviews?)/i);
-  if (!m) return null;
-  const n = parseInt(m[1].replace(/,/g,''),10);
-  return Number.isFinite(n) ? n : null;
-}
-
-/* PRICES — { selling, mrp } in ₹, or null if no ₹ amount found.
-   selling = lowest sane ₹ amount (what you pay); mrp = explicit M.R.P or the
-   higher struck-through amount. Per-unit prices ("₹5/100 g") are ignored. */
-function extractPrices(text){
-  const t = String(text||'').replace(/,/g,'');
-  const re = /(?:₹|rs\.?|inr)\s*(\d+(?:\.\d{1,2})?)/ig;
-  const amts = [];
-  let m;
-  while ((m = re.exec(t))){
-    const after = t.slice(re.lastIndex, re.lastIndex+2);
-    if (/^\s*\//.test(after)) continue;       // skip "₹5/100 g" unit prices
-    amts.push(parseFloat(m[1]));
-  }
-  if (!amts.length) return null;
-  const sane = amts.filter(a=>a>=3 && a<=3000);
-  const pool = sane.length ? sane : amts;
-  const selling = Math.min(...pool);
-
-  let mrp = null;
-  const mm = t.match(/m\.?r\.?p\.?\s*[:.]?\s*(?:₹|rs\.?|inr)?\s*(\d+(?:\.\d{1,2})?)/i);
-  if (mm) mrp = parseFloat(mm[1]);
-  if (mrp == null){ const hi = Math.max(...pool); if (hi > selling) mrp = hi; }
-  if (mrp != null && mrp < selling) mrp = null;
-  return { selling, mrp };
-}
-
-function cleanName(s){
-  return String(s||'')
-    .replace(/!\[[^\]]*\]\([^)]*\)/g,'')      // images
-    .replace(/\[([^\]]*)\]\([^)]*\)/g,'$1')   // links → text
-    .replace(/[*_`#>]/g,'')                    // md emphasis
-    .replace(/\s+/g,' ')
-    .trim();
-}
-
-function absolutize(url, platform){
-  if (/^https?:\/\//i.test(url)) return url;
-  const base = platform==='Amazon' ? 'https://www.amazon.in'
-            : platform==='BigBasket' ? 'https://www.bigbasket.com'
-            : platform==='Flipkart' ? 'https://www.flipkart.com' : '';
-  return url.startsWith('/') ? base+url : url;
-}
-
-const STOP = new Set(['the','and','for','with','pack','biscuit','biscuits','cookies']);
-function brandTokensOf(brand){
-  return brand.toLowerCase().split(/[^a-z0-9]+/).filter(w=>w.length>=3 && !STOP.has(w));
-}
-
-/* Build one SKU from a candidate product link + its ~900-char block. */
-function extractSKU(link, block, brand, company, platform){
-  const name = cleanName(link.text);
-
-  // Weight: prefer the name, fall back to the block.
-  let w = parseWeightGrams(name);
-  if (!w) w = parseWeightGrams(block);
-  if (!w) return null;                          // no plausible weight → DROP
-  const weightGrams = w.grams, packLabel = w.label;
-
-  const prices = extractPrices(block);
-  if (!prices || !prices.selling) return null;  // selling REQUIRED
-  const selling = prices.selling;
-  const mrp = prices.mrp != null ? prices.mrp : selling;   // full-price items keep mrp = selling
-  const discount = mrp > selling ? +(((mrp-selling)/mrp)*100).toFixed(1) : 0;
-
-  if (selling < 3 || selling > 3000) return null;
-  const pricePerGram = +(selling/weightGrams).toFixed(3);
-  const mrpPerGram    = +(mrp/weightGrams).toFixed(3);
-  if (pricePerGram < 0.05 || pricePerGram > 6) return null;
-
-  const url = absolutize(link.url, platform);
-  return {
-    brand, company,
-    name: name.slice(0,130),
-    mrp, selling, discount,
-    weightGrams, packLabel, pricePerGram, mrpPerGram,
-    category: detectCategory(name),
-    platform,
-    rating: parseRating(block),
-    reviewCount: parseReviewCount(block),
-    url,
-    isProductPage: /\/dp\/|\/p\/|\/pd\/|pid=/i.test(url),
-    isLive: true,
-  };
-}
-
-/* Parse all SKUs from one scraped page (markdown). */
-function parseSKUsFromPage(markdown, pageUrl, brand, company){
-  const out = [];
-  if (!markdown) return out;
-  const platform = detectPlatform(pageUrl);
-  const brandLc  = brand.toLowerCase();
-  const tokens   = brandTokensOf(brand);
-
-  // 1) Collect ALL markdown links first — every link is a block boundary, so a
-  //    product's block never bleeds into the next item's price.
-  const linkRe = /\[([^\]]+)\]\(([^)]+)\)/g;
-  const all = [];
-  let m;
-  while ((m = linkRe.exec(markdown))){
-    all.push({ idx:m.index, text:m[1].trim(), url:m[2].trim(), img: m.index>0 && markdown[m.index-1]==='!' });
-  }
-
-  // 2) A candidate is a product-name link: text 15–250 chars, not an
-  //    image/price/"N% off"/MRP fragment, with the brand in the text OR the url.
-  //    Its block runs to the NEXT link (capped at ~900 chars).
-  for (let i=0;i<all.length;i++){
-    const L = all[i];
-    if (L.img) continue;                                          // image link
-    const text = L.text, url = L.url;
-    if (text.length<15 || text.length>250) continue;
-    if (/^https?:\/\//i.test(text)) continue;                     // url as text
-    if (/^\(?\d+%\s*off\)?$/i.test(text)) continue;               // "20% off"
-    if (/^(₹|rs\.?|inr|m\.?r\.?p)/i.test(text) && (text.replace(/[^a-z]/ig,'').length < 5)) continue; // price/MRP
-    const tl = text.toLowerCase();
-    const inText = tl.includes(brandLc) || (tokens.length && tokens.every(tk=>tl.includes(tk)));
-    const inUrl  = tokens.some(tk=>url.toLowerCase().includes(tk));
-    if (!inText && !inUrl) continue;
-
-    const nextIdx = (i+1<all.length) ? all[i+1].idx : markdown.length;
-    const block = markdown.slice(L.idx, Math.min(nextIdx, L.idx+900, markdown.length));
-    const sku = extractSKU(L, block, brand, company, platform);
-    if (sku) out.push(sku);
-  }
-  return out;
-}
-
-/* Dedupe key — name prefix + weight + price. */
-const dedupeKey = s => (s.name||'').slice(0,30)+'|'+s.weightGrams+'|'+s.selling;
-
-/* Fetch + parse one brand across its search sources. */
-async function fetchBrandPrices(brand, company){
-  const urls = Object.values(SEARCH).map(fn => fn(brand));
-  const settled = await Promise.allSettled(urls.map(u => firecrawlScrape(u)));
-
-  const skus = [], seen = new Set();
-  let lastError = null;
-  settled.forEach(r=>{
-    if (r.status==='fulfilled'){
-      const parsed = parseSKUsFromPage(r.value.markdown, r.value.url, brand, company);
-      for (const s of parsed){
-        const k = dedupeKey(s);
-        if (seen.has(k)) continue;
-        seen.add(k); skus.push(s);
+    const r = await fetch('/data/latest.json' + bust, { cache:'no-store' });
+    if (r.ok){
+      const d = await r.json();
+      if (d && Array.isArray(d.skus) && d.skus.length){
+        STATE.curr = { skus: d.skus, scrapedAt: d.scrapedAt || null };
       }
-    } else {
-      lastError = r.reason;
     }
-  });
+  } catch(e){ /* fail soft → empty state */ }
 
-  if (skus.length) return skus;
-  if (lastError) throw (lastError instanceof Error ? lastError : new Error(String(lastError)));
-  return [];   // succeeded but parsed nothing
+  try {
+    const r = await fetch('/data/history.json' + bust, { cache:'no-store' });
+    if (r.ok){
+      const h = await r.json();
+      STATE.history = Array.isArray(h) ? h : [];
+    }
+  } catch(e){ STATE.history = []; }
+}
+
+async function reload(){
+  STATE.loading = true; render();
+  await loadData();
+  STATE.loading = false; render();
 }
 
 /* ------------------------------------------------------------
-   6. DATA REFRESH PIPELINE  (live)
-   ------------------------------------------------------------ */
-const sleep = ms => new Promise(r=>setTimeout(r, ms));
-
-async function doRefresh(){
-  STATE.running = true;
-  STATE.steps = BRANDS.map(b=>({ brand:b.brand, company:b.company, status:'pending', count:0, error:null }));
-  render();
-
-  const allSkus = [], globalSeen = new Set();
-  let successes = 0;
-
-  for (let i=0;i<BRANDS.length;i++){
-    const b = BRANDS[i], step = STATE.steps[i];
-    step.status = 'loading'; render();
-
-    let got = null, err = null;
-    for (let attempt=1; attempt<=2; attempt++){
-      try { got = await fetchBrandPrices(b.brand, b.company); err = null; break; }
-      catch(e){ err = e; if (attempt<2) await sleep(3000); }
-    }
-
-    if (got){
-      const fresh = [];
-      for (const s of got){
-        const k = dedupeKey(s);
-        if (globalSeen.has(k)) continue;
-        globalSeen.add(k); fresh.push(s);
-      }
-      allSkus.push(...fresh);
-      step.status = 'done'; step.count = fresh.length; successes++;
-    } else {
-      step.status = 'error';
-      step.error = (err && err.message) ? err.message.slice(0,80) : 'failed';
-    }
-    render();
-  }
-
-  STATE.running = false;
-  STATE.lastRefresh = new Date();
-  // Zero successes → leave STATE.curr null so the empty state shows the retry notice.
-  STATE.curr = successes ? { skus: allSkus, scrapedAt: new Date() } : null;
-  render();
-}
-
-/* ------------------------------------------------------------
-   7. ROUTER
+   5. ROUTER
    ------------------------------------------------------------ */
 function navigate(view){
   STATE.view = view;
@@ -549,25 +234,21 @@ function render(){
 }
 
 /* ------------------------------------------------------------
-   8. RENDERERS
+   6. RENDERERS
    ------------------------------------------------------------ */
 const $app = () => document.getElementById('app');
 const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 function renderDashboard(){
-  if (STATE.running){ $app().innerHTML = progressHTML(); return; }
-  // curr is set only after >=1 successful scrape → show the raw verification table.
-  if (STATE.curr){ $app().innerHTML = rawResultsHTML(); return; }
+  if (STATE.curr && STATE.curr.skus && STATE.curr.skus.length){ $app().innerHTML = rawResultsHTML(); return; }
   $app().innerHTML = emptyStateHTML();
 }
 
 function emptyStateHTML(){
   const groups = Object.keys(COL).join(' · ');
-  // After a run that produced no dataset, surface a retry notice.
-  const ranButEmpty = STATE.lastRefresh && !STATE.curr;
-  const notice = ranButEmpty
-    ? `<div class="scaffold-notice err fadein">⚠ No SKUs parsed — every brand scrape failed or returned empty. If you just deployed, confirm the Action uploaded <strong>FIRECRAWL_API_KEY</strong> to the Worker, then retry.</div>`
-    : '';
+  const msg = STATE.loading
+    ? `<div class="notice info"><span class="pulse-dot" style="color:#B6772E"></span>Loading data…</div>`
+    : `<div class="notice info">No data yet — run the <strong>Scrape</strong> workflow (GitHub → <strong>Actions</strong> tab → <em>Run workflow</em>) to populate, then reload.</div>`;
 
   return `
   <div class="hero fadein">
@@ -575,68 +256,21 @@ function emptyStateHTML(){
     <h1 class="hero-title">India Quick-Comm &amp; E-Comm Pricing Dashboard</h1>
     <p class="hero-sub">
       Tracking <strong>${BRANDS.length} brands</strong> across ${groups} —
-      live-scraping e-commerce with <strong>price-per-gram</strong> as the hero metric,
-      alongside discount vs MRP, categories, pack sizes, reviews &amp; an emerging-brands radar.
+      with <strong>price-per-gram</strong> as the hero metric.
     </p>
-    <button class="btn-accent" onclick="doRefresh()">▶ Fetch Live Data</button>
-    <div class="hero-fineprint">~2–3 min to scan all brands · data as of ${TODAY}</div>
-    ${notice}
+    <div>${msg}</div>
+    <div><button class="btn-accent" onclick="reload()">↻ Reload</button></div>
     <div class="hero-hint"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd> for admin / system info</div>
-  </div>`;
-}
-
-function progressHTML(){
-  const total = STATE.steps.length;
-  const done  = STATE.steps.filter(s=>s.status==='done' || s.status==='error').length;
-  const pct   = total ? Math.round(done/total*100) : 0;
-
-  const rows = STATE.steps.map(s=>{
-    const c = COL[s.company] || '#9b9a96';
-    let dot, status, opacity = 1;
-    if (s.status==='done'){
-      dot = c;  status = `<span class="step-status done">✓ ${s.count} SKUs</span>`;
-    } else if (s.status==='loading'){
-      dot = c;  status = `<span class="step-status loading" style="color:${c}"><span class="pulse-dot"></span>scanning…</span>`;
-    } else if (s.status==='error'){
-      dot = '#C8102E';  status = `<span class="step-status err" title="${esc(s.error||'')}">✕ ${esc(s.error||'error')}</span>`;
-    } else {
-      dot = '#d8d5d0';  status = `<span class="step-status pending">queued</span>`;  opacity = .5;
-    }
-    return `
-    <div class="step-row" style="opacity:${opacity}">
-      <span class="step-dot" style="background:${dot}"></span>
-      <span class="step-brand">${esc(s.brand)}</span>
-      <span class="step-company">${esc(s.company)}</span>
-      ${status}
-    </div>`;
-  }).join('');
-
-  return `
-  <div class="progress-wrap fadein">
-    <div class="card">
-      <div class="card-pad">
-        <div class="progress-head">
-          <span class="pulse-dot" style="color:#B6772E"></span>
-          <strong>Scanning biscuit brands…</strong>
-          <span class="progress-count">${done} / ${total}</span>
-        </div>
-        <div class="bar-wrap" style="margin:14px 0 18px">
-          <div class="bar-fill" style="width:${pct}%;background:#B6772E"></div>
-        </div>
-        <div class="steps">${rows}</div>
-      </div>
-    </div>
   </div>`;
 }
 
 /* TEMPORARY raw results table — replaced by aggregated views in Step 3. */
 function rawResultsHTML(){
-  const skus = (STATE.curr.skus||[]).slice().sort((a,b)=>
+  const skus = STATE.curr.skus.slice().sort((a,b)=>
     a.brand.localeCompare(b.brand) || a.pricePerGram-b.pricePerGram);
   const brandsFound = new Set(skus.map(s=>s.brand)).size;
-  const okCount  = STATE.steps.filter(s=>s.status==='done').length;
-  const errSteps = STATE.steps.filter(s=>s.status==='error');
-  const scrapedAt = STATE.curr.scrapedAt ? new Date(STATE.curr.scrapedAt) : new Date();
+  const scrapedAt = STATE.curr.scrapedAt ? new Date(STATE.curr.scrapedAt) : null;
+  const asOf = scrapedAt ? scrapedAt.toLocaleString('en-IN') : '—';
 
   const rows = skus.map(s=>{
     const c = COL[s.company] || '#555';
@@ -648,27 +282,22 @@ function rawResultsHTML(){
       <td class="num">${s.mrp!=null?'₹'+s.mrp:'<span class="muted">—</span>'}</td>
       <td class="num"><strong>₹${s.selling}</strong></td>
       <td class="num">${s.discount?`<span class="badge" style="background:#DFF1EB;color:#0A4A3A">${s.discount}%</span>`:'<span class="muted">—</span>'}</td>
-      <td class="num"><strong>₹${s.pricePerGram.toFixed(2)}</strong></td>
+      <td class="num"><strong>₹${(s.pricePerGram).toFixed(2)}</strong></td>
       <td>${esc(s.platform)}</td>
       <td class="num">${s.rating!=null?'★ '+s.rating:'<span class="muted">—</span>'}</td>
-      <td class="num">${s.reviewCount!=null?s.reviewCount.toLocaleString('en-IN'):'<span class="muted">—</span>'}</td>
+      <td class="num">${s.reviewCount!=null?Number(s.reviewCount).toLocaleString('en-IN'):'<span class="muted">—</span>'}</td>
     </tr>`;
   }).join('');
-
-  const errNote = errSteps.length
-    ? `<div class="muted" style="margin-top:6px;font-size:11px">${errSteps.length} brand(s) failed: ${errSteps.map(e=>esc(e.brand)).join(', ')}</div>`
-    : '';
 
   return `
   <div class="results-head">
     <strong>Scrape Results <span class="muted">(raw — Step 2 verification)</span></strong>
-    <button style="margin-left:auto" onclick="doRefresh()">↻ Refresh</button>
+    <button style="margin-left:auto" onclick="reload()"${STATE.loading?' disabled':''}>↻ Reload</button>
   </div>
   <div class="card fadein"><div class="card-pad">
     <div class="results-meta">
       <strong>${skus.length}</strong> SKUs across <strong>${brandsFound}</strong> brands ·
-      scraped ${scrapedAt.toLocaleTimeString('en-IN')} · ${okCount}/${BRANDS.length} brands OK
-      ${errNote}
+      data as of ${asOf}
     </div>
     <div class="tbl-scroll">
     <table>
@@ -682,7 +311,7 @@ function rawResultsHTML(){
         <th>MRP</th><th>Selling</th><th>Disc%</th><th>₹/g</th>
         <th>Platform</th><th>★</th><th>#</th>
       </tr></thead>
-      <tbody>${rows || `<tr><td colspan="11" class="muted" style="text-align:center;padding:22px">No SKUs parsed.</td></tr>`}</tbody>
+      <tbody>${rows}</tbody>
     </table>
     </div>
   </div></div>`;
@@ -698,6 +327,11 @@ function renderAdmin(){
     </div>`;
   }).join('');
 
+  const hist = (STATE.history||[]).slice(-1)[0];
+  const histLine = hist
+    ? `Last run: ${new Date(hist.ts).toLocaleString('en-IN')} — ${hist.skuCount} SKUs, ${hist.brandsOk}/${BRANDS.length} brands OK.`
+    : 'No runs recorded yet.';
+
   $app().innerHTML = `
   <div class="back-bar">
     <button onclick="navigate('dashboard')">← Back</button>
@@ -712,29 +346,24 @@ function renderAdmin(){
         <strong>${Object.keys(COL).length} company groups</strong> and
         <strong>${CATEGORIES.length} categories</strong>
         (${CATEGORIES.join(', ')}). <strong>Price-per-gram (₹/g)</strong> is the hero metric,
-        reported alongside discount vs MRP, pack sizes, reviews and shelf life.
+        reported alongside discount vs MRP, pack sizes and reviews.
       </p>
 
-      <h3 class="admin-h sub">Data pipeline (hybrid)</h3>
+      <h3 class="admin-h sub">Data pipeline (CI-scraped → static)</h3>
       <ul class="admin-list">
-        <li><strong>E-commerce</strong> — live-scraped per brand via Firecrawl through the
-          Worker proxy <code>/api/scrape</code>. The API key is a Worker secret (set by the
-          GitHub Action) and never reaches the browser.</li>
+        <li><strong>Scrape</strong> — a GitHub Action (<code>scripts/scrape.mjs</code>) runs Firecrawl
+          using a key held only as a GitHub Actions secret, parses weight, ₹/g, discount, category
+          and reviews, and commits <code>data/latest.json</code> + <code>data/history.json</code>.</li>
+        <li><strong>Serve</strong> — Cloudflare's git build deploys the committed JSON as static assets.</li>
+        <li><strong>Read</strong> — this page fetches <code>/data/latest.json</code>. No key in the
+          browser, no runtime scraping, no Cloudflare secret.</li>
         <li><strong>Quick-commerce, Google Trends &amp; market share</strong> — seeded &amp; editable (later steps).</li>
-        <li><strong>Fetch run</strong> — brands scanned sequentially (2 attempts each), parsing
-          weight, price-per-gram, discount, category and reviews from the markdown.</li>
       </ul>
-
-      <h3 class="admin-h sub">Persistence</h3>
-      <p class="admin-p">
-        Snapshots are saved to Cloudflare KV via <code>/api/history</code>. The Worker degrades
-        gracefully when KV is unbound. <span class="kv-tag">KV: BISCUIT_HISTORY_KV</span>
-      </p>
 
       <h3 class="admin-h sub">Status</h3>
       <p class="admin-p">
-        Data as of <strong>${TODAY}</strong>. Build progress:
-        <strong>Step 2 of 12</strong> — live scrape + price-per-gram engine.
+        Loaded ${TODAY}. ${histLine} Build progress:
+        <strong>Step 2 of 12</strong> — CI scrape → static JSON.
       </p>
 
       <h3 class="admin-h sub">Tracked roster</h3>
@@ -744,7 +373,7 @@ function renderAdmin(){
 }
 
 /* ------------------------------------------------------------
-   9. BOOT
+   7. BOOT
    ------------------------------------------------------------ */
 document.addEventListener('keydown', e=>{
   if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')){
@@ -754,8 +383,7 @@ document.addEventListener('keydown', e=>{
 });
 
 render();
-
-fetchServerHistory().then(h=>{ STATE.history = h; render(); });
+loadData().then(render);
 </script>
 </body>
 </html>
