@@ -21,6 +21,7 @@ wrangler.toml
 
 # Repo / tooling / docs
 .git
+.github
 .gitignore
 .assetsignore
 .wrangler
