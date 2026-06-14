@@ -1,5 +1,10 @@
-# Dependencies
+# Dependencies & lockfiles (wrangler is the only dev dep; deploy installs fresh)
 node_modules/
+package-lock.json
+bun.lock
+bun.lockb
+yarn.lock
+pnpm-lock.yaml
 
 # Wrangler / Cloudflare local dev state & cache
 .wrangler/

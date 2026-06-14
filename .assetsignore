@@ -1,0 +1,30 @@
+# Files EXCLUDED from the Cloudflare static-asset upload.
+# assets.directory is "./" (the repo root), and the deploy environment runs an
+# install step that creates node_modules in that root. Without this ignore file
+# wrangler would try to upload node_modules — including the ~119 MiB workerd
+# binary, which exceeds the 25 MiB per-asset limit and fails the build.
+# Net result: only the served site (index.html) is uploaded as an asset.
+
+# Dependencies & lockfiles
+node_modules
+package.json
+package-lock.json
+bun.lock
+bun.lockb
+yarn.lock
+pnpm-lock.yaml
+
+# Worker code & config (handled by wrangler, not served as static assets)
+worker.js
+wrangler.jsonc
+wrangler.toml
+
+# Repo / tooling / docs
+.git
+.gitignore
+.assetsignore
+.wrangler
+.dev.vars
+.dev.vars.*
+README.md
+.DS_Store
