@@ -92,6 +92,37 @@ td.num{font-variant-numeric:tabular-nums}
 .tier-value{background:#DFF1EB;color:#0A4A3A}
 .tier-mainstream{background:#FAF0DC;color:#6E4300}
 .tier-premium{background:#F2E7F5;color:#45184F}
+.ov-actions{display:flex;gap:8px;flex-shrink:0}
+
+/* Category filter chips */
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px}
+.chip{font-size:12px;padding:5px 11px;border-radius:20px;border:0.5px solid rgba(26,26,24,.18);background:#fff;display:inline-flex;align-items:center;gap:6px}
+.chip:hover:not(:disabled){background:#f7f6f3}
+.chip.active{background:#1a1a18;color:#fff;border-color:#1a1a18}
+.chip-n{font-size:10px;font-weight:600;opacity:.55}
+.chip.active .chip-n{opacity:.8}
+.filter-note{margin-left:8px;font-size:12px;color:#B6772E;font-weight:500}
+
+/* Company × category heatmap */
+.hm{border-collapse:separate;border-spacing:3px}
+.hm th{padding:4px 6px;text-transform:none;font-size:10.5px;color:#9b9a96;border:0;letter-spacing:0}
+.hm-col{text-align:center}
+.hm-corner{width:118px}
+.hm td{border:0;padding:0}
+.hm-row{font-size:12px;font-weight:500;white-space:nowrap;width:118px}
+.hm-cell{text-align:center;font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums;border-radius:6px;padding:9px 4px!important;min-width:60px}
+.hm-empty{color:#c9c7c2;background:#f7f6f3;font-weight:400}
+.hm-cap{font-size:11px;color:#9b9a96;margin-top:10px}
+.hm-go{float:right;color:#B6772E;font-weight:600;text-transform:none;letter-spacing:0}
+.hm-card{cursor:pointer;transition:border-color .12s}
+.hm-card:hover{border-color:rgba(182,119,46,.45)}
+
+/* Category view */
+.cat-name{font-size:14px;font-weight:700;margin-bottom:8px}
+.cat-top{font-size:10.5px;font-weight:600;color:#9b9a96;text-transform:uppercase;letter-spacing:.04em;margin:14px 0 9px}
+.catbar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:11.5px}
+.catbar-label{width:118px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+.catbar-val{width:46px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;flex-shrink:0}
 
 /* Admin / system info */
 .admin-h{font-size:18px;font-weight:700;margin-bottom:12px}
@@ -111,7 +142,7 @@ td.num{font-variant-numeric:tabular-nums}
 <script>
 /* ============================================================
    BISCUIT MARKET INTELLIGENCE DASHBOARD
-   Build Step 3 / 12 — stats engine + aggregated dashboard
+   Build Step 4 / 12 — category dimension (chips · heatmap · view)
    Single-file, zero-build. Vanilla ES6.
 
    Scraping runs in GitHub Actions (scripts/scrape.mjs) and commits
@@ -144,6 +175,9 @@ const BRANDS = [
 ];
 
 const CATEGORIES = ["Cookies","Digestive","Cream","Crackers","Rusk","Wafer","Other"];
+const CHIP_ORDER = ["Cookies","Cream","Digestive","Crackers","Rusk","Wafer","Other"]; // chip display order
+const HEATMAP_CATS = ["Cookies","Cream","Digestive","Crackers","Rusk","Wafer"];       // 6 client categories (heatmap columns)
+const CAT_COL = {Cookies:"#C77800",Cream:"#7B2D8E",Digestive:"#138A6E",Crackers:"#1D4E9C",Rusk:"#9B6B2E",Wafer:"#C8102E",Other:"#9b9a96"};
 
 /* ------------------------------------------------------------
    2. GLOBAL STATE
@@ -153,7 +187,8 @@ const TODAY = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',
 let STATE = {
   skus:[],              // raw SKUs from data/latest.json
   scrapedAt:null,       // ISO timestamp of the scrape
-  curr:null,            // buildStats() result (companyStats / brandStats / categoryStats)
+  curr:null,            // buildStats() result over the FULL dataset (chips, heatmap)
+  categoryFilter:'All', // active category chip
   history:[],           // data/history.json
   loading:false,        // true while (re)loading the static JSON
   view:null,            // active route (null/'dashboard' default; objects carry .type)
@@ -293,9 +328,12 @@ function render(){
       renderAdmin();
       break;
 
+    case 'category':
+      renderCategory();
+      break;
+
     /* ---- Views arriving in later build steps -----------------------------
        case 'brand':    renderBrand(v);    break;
-       case 'category': renderCategory(v); break;
        case 'packsize': renderPackSize(v); break;
        case 'trends':   renderTrends();    break;
        case 'radar':    renderRadar();     break;
@@ -317,9 +355,31 @@ const $app = () => document.getElementById('app');
 const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const rs2 = v => '₹' + (+v).toFixed(2);                 // ₹/g formatter
 
+/* Category filter + small helpers */
+function setCategoryFilter(cat){ STATE.categoryFilter = cat; render(); }
+function currentFilterSkus(){
+  const f = STATE.categoryFilter || 'All';
+  return f === 'All' ? STATE.skus : STATE.skus.filter(s=>s.category===f);
+}
+function brandCompany(brand){ const b = BRANDS.find(x=>x.brand===brand); return b ? b.company : null; }
+function hexToRgba(hex, a){
+  const h = String(hex).replace('#','');
+  const n = parseInt(h.length===3 ? h.split('').map(x=>x+x).join('') : h, 16);
+  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${(+a).toFixed(3)})`;
+}
+// Top-N brands in a SKU set by SKU count (tiebreak: higher ₹/g), with each brand's median ₹/g.
+function topBrands(skus, n){
+  const m = new Map();
+  for (const s of skus){ if (!m.has(s.brand)) m.set(s.brand, []); m.get(s.brand).push(s); }
+  return [...m].map(([brand,gs])=>({ brand, n:gs.length, ppgMedian: calcStats(gs.map(s=>s.pricePerGram),3).median }))
+    .sort((a,b)=> b.n - a.n || b.ppgMedian - a.ppgMedian).slice(0,n);
+}
+
 function renderDashboard(){
-  if (STATE.curr && STATE.skus.length){ $app().innerHTML = overviewHTML(); drawOverviewCharts(); return; }
-  $app().innerHTML = emptyStateHTML();
+  if (!(STATE.curr && STATE.skus.length)){ $app().innerHTML = emptyStateHTML(); return; }
+  const view = buildStats(currentFilterSkus());   // filtered stats for cards/tables/charts
+  $app().innerHTML = overviewHTML(view);
+  drawOverviewCharts(view);
 }
 
 function emptyStateHTML(){
@@ -343,12 +403,20 @@ function emptyStateHTML(){
 }
 
 /* Overview dashboard — hero: price-per-gram (₹/g); secondary: discount vs MRP. */
-function overviewHTML(){
-  const st = STATE.curr;
+function overviewHTML(view){
+  const st = view;                         // filtered stats (KPI cards, tables, charts)
+  const filter = STATE.categoryFilter || 'All';
   const asOf = STATE.scrapedAt ? new Date(STATE.scrapedAt).toLocaleString('en-IN') : '—';
 
+  // Category chips — counts from the FULL dataset; only categories that exist.
+  const counts = {}; STATE.skus.forEach(s=>counts[s.category]=(counts[s.category]||0)+1);
+  const chip = (key,label,nn)=>`<button class="chip${filter===key?' active':''}" onclick="setCategoryFilter('${key}')">${esc(label)}<span class="chip-n">${nn}</span></button>`;
+  const chips = [ chip('All','All',STATE.skus.length),
+    ...CHIP_ORDER.filter(c=>counts[c]>0).map(c=>chip(c,c,counts[c])) ].join('');
+  const filterNote = filter!=='All' ? `<span class="filter-note">showing ${st.skuCount} SKUs in ${esc(filter)}</span>` : '';
+
   // One KPI card per company group: present companies (by median ₹/g), then any
-  // group with no SKUs in the latest scrape as a muted placeholder.
+  // group with no SKUs (under the current filter) as a muted placeholder.
   const present = new Set(st.companyStats.map(c=>c.company));
   const ordered = [
     ...st.companyStats,
@@ -408,13 +476,20 @@ function overviewHTML(){
   <div class="ov-head">
     <div>
       <h1 class="ov-title">Biscuit Market Intelligence</h1>
-      <div class="ov-sub"><span class="live-dot"></span>Data as of ${asOf} · <strong>${st.skuCount}</strong> SKUs</div>
+      <div class="ov-sub"><span class="live-dot"></span>Data as of ${asOf} · <strong>${STATE.skus.length}</strong> SKUs ${filterNote}</div>
     </div>
-    <button onclick="reload()"${STATE.loading?' disabled':''}>↻ Reload</button>
+    <div class="ov-actions">
+      <button onclick="navigate({type:'category'})">Categories</button>
+      <button onclick="reload()"${STATE.loading?' disabled':''}>↻ Reload</button>
+    </div>
   </div>
   <div class="ov-metricline">Hero metric: <strong>price per gram (₹/g)</strong> · secondary: discount vs MRP</div>
 
+  <div class="chips">${chips}</div>
+
   <div class="grid3">${cards}</div>
+
+  ${heatmapHTML()}
 
   <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
     <div class="sec-title">By company · price-per-gram</div>
@@ -444,8 +519,8 @@ function overviewHTML(){
 }
 
 /* Hero + secondary horizontal bar charts (Chart.js loads async → waitForChart). */
-function drawOverviewCharts(){
-  const bs = STATE.curr ? STATE.curr.brandStats : [];
+function drawOverviewCharts(view){
+  const bs = view ? view.brandStats : [];
   if (!bs.length) return;
   const labels = bs.map(b=>b.brand);
   const colors = bs.map(b=>COL[b.company] || '#999');
@@ -466,6 +541,102 @@ function drawOverviewCharts(){
     mkChart('chartDisc', { type:'bar',
       data:{ labels, datasets:[{ data:bs.map(b=>b.disc.avg), backgroundColor:colors, borderRadius:4, barPercentage:.82 }] },
       options: opts('disc') });
+  });
+}
+
+/* Company × category heatmap — always the FULL matrix; clicking opens Categories. */
+function heatmapHTML(){
+  const companies = Object.keys(COL);
+  const cells = {}; let gmax = 0;
+  for (const co of companies){
+    cells[co] = {};
+    for (const cat of HEATMAP_CATS){
+      const vals = STATE.skus.filter(s=>s.company===co && s.category===cat).map(s=>s.pricePerGram);
+      const m = vals.length ? calcStats(vals,3).median : null;
+      cells[co][cat] = m;
+      if (m!=null && m>gmax) gmax = m;
+    }
+  }
+  const head = `<tr><th class="hm-corner"></th>${HEATMAP_CATS.map(c=>`<th class="hm-col">${c}</th>`).join('')}</tr>`;
+  const rows = companies.map(co=>{
+    const tds = HEATMAP_CATS.map(cat=>{
+      const m = cells[co][cat];
+      if (m==null) return `<td class="hm-cell hm-empty">—</td>`;
+      const norm = gmax>0 ? m/gmax : 0;
+      const bg = hexToRgba(COL[co], 0.12 + 0.8*norm);
+      const fg = norm>0.55 ? '#fff' : '#1a1a18';
+      return `<td class="hm-cell" style="background:${bg};color:${fg}" title="${esc(co)} · ${esc(cat)}: ₹${m.toFixed(2)}/g">₹${m.toFixed(2)}</td>`;
+    }).join('');
+    return `<tr><td class="hm-row"><span class="dot" style="background:${COL[co]}"></span>${esc(co)}</td>${tds}</tr>`;
+  }).join('');
+
+  return `
+  <div class="card fadein hm-card" style="margin-bottom:16px" onclick="navigate({type:'category'})" title="Open category breakdown">
+    <div class="card-pad">
+      <div class="sec-title">Company × category · median ₹/g<span class="hm-go">view categories →</span></div>
+      <div class="tbl-scroll"><table class="hm" style="min-width:660px">${head}${rows}</table></div>
+      <div class="hm-cap">Median ₹/g by company × category · deeper = more premium per gram</div>
+    </div>
+  </div>`;
+}
+
+/* Categories view — one card per category (DESC by median ₹/g) + a category ₹/g bar. */
+function renderCategory(){
+  if (!STATE.skus.length){
+    $app().innerHTML = `<div class="back-bar"><button onclick="navigate('dashboard')">← Back</button><strong>Category Breakdown</strong></div><div class="notice info">No data yet — run the Scrape workflow.</div>`;
+    return;
+  }
+  const stats = buildStats(STATE.skus).categoryStats.slice().sort((a,b)=>b.ppg.median - a.ppg.median);
+
+  const cards = stats.map(c=>{
+    const top = topBrands(c.skus, 3);
+    const maxPpg = Math.max(...top.map(t=>t.ppgMedian), 0.0001);
+    const bars = top.map(t=>{
+      const col = COL[brandCompany(t.brand)] || '#999';
+      return `
+      <div class="catbar-row">
+        <span class="catbar-label"><span class="dot" style="background:${col}"></span>${esc(t.brand)}</span>
+        <span class="bar-wrap"><span class="bar-fill" style="width:${Math.round(t.ppgMedian/maxPpg*100)}%;background:${col}"></span></span>
+        <span class="catbar-val">${rs2(t.ppgMedian)}</span>
+      </div>`;
+    }).join('');
+    return `
+    <div class="card fadein" style="border-top:3px solid ${CAT_COL[c.category]||'#B6772E'}"><div class="card-pad">
+      <div class="cat-name">${esc(c.category)}</div>
+      <div class="kpi-big">${rs2(c.ppg.median)}<span class="kpi-unit">/g</span></div>
+      <div class="kpi-sec">${Math.round(c.disc.avg)}% off · ${c.skus.length} SKUs · ${c.ratingAvg!=null?'★ '+c.ratingAvg.toFixed(1):'—'}</div>
+      <div class="cat-top">Top brands (by SKUs) · median ₹/g</div>
+      ${bars || '<div class="muted" style="font-size:12px">—</div>'}
+    </div></div>`;
+  }).join('');
+
+  $app().innerHTML = `
+  <div class="back-bar">
+    <button onclick="navigate('dashboard')">← Back</button>
+    <strong>Category Breakdown</strong>
+  </div>
+  <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
+    <div class="sec-title">Median price-per-gram by category</div>
+    <div class="chart-box" style="height:300px"><canvas id="chartCat"></canvas></div>
+  </div></div>
+  <div class="grid2">${cards}</div>`;
+
+  drawCategoryChart(stats);
+}
+
+function drawCategoryChart(stats){
+  const labels = stats.map(c=>c.category);
+  const data = stats.map(c=>c.ppg.median);
+  const colors = labels.map(c=>CAT_COL[c] || '#B6772E');
+  waitForChart(()=>{
+    mkChart('chartCat', { type:'bar',
+      data:{ labels, datasets:[{ data, backgroundColor:colors, borderRadius:4, barPercentage:.7 }] },
+      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>'₹'+(+c.raw).toFixed(2)+'/g' } } },
+        scales:{ x:{ beginAtZero:true, grid:{color:'rgba(26,26,24,.06)'}, ticks:{ callback:v=>'₹'+v, font:{size:10} } },
+                 y:{ grid:{display:false}, ticks:{font:{size:11}} } }
+      }
+    });
   });
 }
 
@@ -515,7 +686,7 @@ function renderAdmin(){
       <h3 class="admin-h sub">Status</h3>
       <p class="admin-p">
         Loaded ${TODAY}. ${histLine} Build progress:
-        <strong>Step 3 of 12</strong> — stats engine + aggregated dashboard.
+        <strong>Step 4 of 12</strong> — category dimension (filter chips, heatmap, category view).
       </p>
 
       <h3 class="admin-h sub">Tracked roster</h3>
