@@ -138,6 +138,13 @@ td a:hover{color:#B6772E;text-decoration:underline}
 .row-click{cursor:pointer}
 .row-click:hover{background:#faf9f6}
 
+/* History view */
+.hist-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:16px}
+.spark-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+.spark-cell{border:0.5px solid rgba(26,26,24,.1);border-radius:10px;padding:10px 12px}
+.spark-lbl{font-size:11.5px;font-weight:600;margin-bottom:6px}
+.spark{position:relative;height:46px}
+
 /* Admin / system info */
 .admin-h{font-size:18px;font-weight:700;margin-bottom:12px}
 .admin-h.sub{font-size:13px;margin:18px 0 8px}
@@ -156,7 +163,7 @@ td a:hover{color:#B6772E;text-decoration:underline}
 <script>
 /* ============================================================
    BISCUIT MARKET INTELLIGENCE DASHBOARD
-   Build Step 6 / 12 — detail views, reviews, shelf life, mojibake fix
+   Build Step 7 / 12 — trend history (across scrape runs, static-file based)
    Single-file, zero-build. Vanilla ES6.
 
    Scraping runs in GitHub Actions (scripts/scrape.mjs) and commits
@@ -376,6 +383,10 @@ function render(){
       renderBrand(v && v.brand);
       break;
 
+    case 'history':
+      renderHistory();
+      break;
+
     /* ---- Views arriving in later build steps -----------------------------
        case 'trends':   renderTrends();    break;
        case 'radar':    renderRadar();     break;
@@ -403,6 +414,17 @@ const linkName = s => s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noop
 const navAttr = (type, key, val) => esc(`navigate({type:'${type}',${key}:'${String(val).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}'})`);
 // KPI strip of labelled stat boxes.
 const kpiStrip = items => `<div class="kstrip">${items.map(it=>`<div class="stat-box"><div class="sl">${it.label}</div><div class="sv">${it.value}</div></div>`).join('')}</div>`;
+// History helpers
+const slug = s => String(s).replace(/[^a-z0-9]/gi,'_');
+const fmtRun = ts => { const d=new Date(ts); return d.toLocaleDateString('en-IN',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}); };
+// Delta badge: coloured ▲/▼ vs a prior value (gray ±0 below epsilon; n/a when missing).
+function deltaBadge(cur, prv, fmtMag){
+  if (cur==null || prv==null) return '<span class="muted" style="font-size:11px">vs n/a</span>';
+  const d = +cur - +prv;
+  if (Math.abs(d) < 1e-9) return '<span class="delta-badge" style="background:#f0ede8;color:#9b9a96">±0</span>';
+  const up = d>0;
+  return `<span class="delta-badge" style="background:${up?'#FBE7EA':'#DFF1EB'};color:${up?'#7A0A1C':'#0A4A3A'}">${up?'▲':'▼'} ${fmtMag(Math.abs(d))}</span>`;
+}
 
 /* Category filter + small helpers */
 function setCategoryFilter(cat){ STATE.categoryFilter = cat; render(); }
@@ -530,6 +552,7 @@ function overviewHTML(view){
     <div class="ov-actions">
       <button onclick="navigate({type:'category'})">Categories</button>
       <button onclick="navigate({type:'packsize'})">Pack Sizes</button>
+      <button onclick="navigate({type:'history'})">History</button>
       <button onclick="reload()"${STATE.loading?' disabled':''}>↻ Reload</button>
     </div>
   </div>
@@ -965,6 +988,144 @@ function renderBrand(brand){
   </div></div>`;
 }
 
+/* ---- Trend History (across scrape runs, from data/history.json) ---- */
+function renderHistory(){
+  const runs = (STATE.history || []).slice();            // chronological (oldest first)
+  const backBar = `<div class="back-bar"><button onclick="navigate('dashboard')">← Back</button><strong>Trend History</strong></div>`;
+  if (!runs.length){
+    $app().innerHTML = backBar + `<div class="notice info">No history yet — run the Scrape workflow.</div>`;
+    return;
+  }
+  const rich = runs.filter(r => r && r.overall);          // runs with enriched metrics
+  const latest = rich[rich.length-1] || null;
+  const prev   = rich[rich.length-2] || null;
+  const companies = Object.keys(COL).filter(co => rich.some(r => r.byCompany && r.byCompany[co]!=null));
+
+  const o = latest ? latest.overall : {};
+  const po = prev ? prev.overall : {};
+  const sumCard = (label, value, delta) => `
+    <div class="card"><div class="card-pad">
+      <div class="sl" style="font-size:11px;color:#9b9a96;font-weight:500;margin-bottom:6px">${label}</div>
+      <div style="font-size:21px;font-weight:700;line-height:1">${value}</div>
+      <div style="margin-top:8px">${delta}</div>
+    </div></div>`;
+  const summary = latest ? `<div class="hist-sum">
+    ${sumCard('Overall median ₹/g', rs2(o.medianPpg), deltaBadge(o.medianPpg, po.medianPpg, v=>'₹'+v.toFixed(3)))}
+    ${sumCard('Avg discount', (o.avgDiscount??0).toFixed(1)+'%', deltaBadge(o.avgDiscount, po.avgDiscount, v=>v.toFixed(1)+'%'))}
+    ${sumCard('Total reviews', kCompact(o.totalReviews||0), deltaBadge(o.totalReviews, po.totalReviews, v=>kCompact(Math.round(v))))}
+    ${sumCard('SKUs', latest.skuCount??'—', deltaBadge(latest.skuCount, prev?prev.skuCount:null, v=>Math.round(v)))}
+  </div>` : '';
+
+  const note = rich.length < 2
+    ? `<div class="notice info" style="margin-bottom:18px">${rich.length===1?'Only one enriched run so far — run the scrape again to see movement.':'No enriched snapshots yet — run the scrape to record trend metrics.'}</div>`
+    : '';
+
+  // run-log (newest first); ₹/g delta vs the previous enriched run
+  const ppgDelta = {};
+  for (let i=1;i<rich.length;i++){ const a=rich[i-1].overall.medianPpg, b=rich[i].overall.medianPpg; if(a!=null&&b!=null) ppgDelta[rich[i].ts]=b-a; }
+  const logRows = runs.slice().reverse().map(r=>{
+    const ov = r.overall || {};
+    const d = ppgDelta[r.ts];
+    const dB = d!=null ? ' '+deltaBadge(ov.medianPpg, ov.medianPpg-d, v=>'₹'+v.toFixed(3)) : '';
+    return `<tr>
+      <td>${fmtRun(r.ts)}</td>
+      <td class="num">${ov.medianPpg!=null?'₹'+ov.medianPpg.toFixed(3):'—'}${dB}</td>
+      <td class="num">${ov.avgDiscount!=null?ov.avgDiscount.toFixed(1)+'%':'—'}</td>
+      <td class="num">${ov.totalReviews!=null?kCompact(ov.totalReviews):'—'}</td>
+      <td class="num">${r.skuCount!=null?r.skuCount:'—'}</td>
+    </tr>`;
+  }).join('');
+
+  const sparks = companies.map(co=>`
+    <div class="spark-cell">
+      <div class="spark-lbl"><span class="dot" style="background:${COL[co]}"></span>${esc(co)}</div>
+      <div class="spark"><canvas id="sl_${slug(co)}"></canvas></div>
+    </div>`).join('');
+
+  $app().innerHTML = `
+  ${backBar}
+  <div class="ov-sub" style="margin:-10px 0 16px"><strong>${runs.length}</strong> scrape run${runs.length===1?'':'s'} recorded · each point = one live scrape</div>
+  ${note}
+  ${summary}
+
+  <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
+    <div class="sec-title">Company median ₹/g across runs</div>
+    <div class="chart-box" style="height:320px"><canvas id="histCompany"></canvas></div>
+  </div></div>
+
+  <div class="grid2">
+    <div class="card fadein"><div class="card-pad">
+      <div class="sec-title">Overall median ₹/g</div>
+      <div class="chart-box" style="height:230px"><canvas id="histPpg"></canvas></div>
+    </div></div>
+    <div class="card fadein"><div class="card-pad">
+      <div class="sec-title">Overall avg discount</div>
+      <div class="chart-box" style="height:230px"><canvas id="histDisc"></canvas></div>
+    </div></div>
+  </div>
+
+  <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
+    <div class="sec-title">Per-company ₹/g trend</div>
+    <div class="spark-grid">${sparks || '<span class="muted">no per-company history yet</span>'}</div>
+  </div></div>
+
+  <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
+    <div class="sec-title">SKUs per run</div>
+    <div class="chart-box" style="height:220px"><canvas id="histSku"></canvas></div>
+  </div></div>
+
+  <div class="card fadein"><div class="card-pad">
+    <div class="sec-title">Run log <span class="muted" style="text-transform:none;letter-spacing:0">· newest first</span></div>
+    <div class="tbl-scroll"><table style="min-width:520px">
+      <thead><tr><th>Time</th><th>Overall ₹/g</th><th>Avg Disc%</th><th>Reviews</th><th>SKUs</th></tr></thead>
+      <tbody>${logRows}</tbody>
+    </table></div>
+  </div></div>`;
+
+  drawHistoryCharts(rich, runs, companies);
+}
+
+function drawHistoryCharts(rich, runs, companies){
+  const labels = rich.map(r=>fmtRun(r.ts));
+  const lineCfg = (data, color, tipFmt, tickFmt) => ({ type:'line',
+    data:{ labels, datasets:[{ data, borderColor:color, backgroundColor:hexToRgba(color,.12), spanGaps:true, tension:.25, borderWidth:2, pointRadius:2, fill:true }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>tipFmt(c.raw) } } },
+      scales:{ y:{ grid:{color:'rgba(26,26,24,.06)'}, ticks:{ callback:tickFmt, font:{size:10} } },
+               x:{ grid:{display:false}, ticks:{ font:{size:9}, maxRotation:0, autoSkip:true } } } }
+  });
+  waitForChart(()=>{
+    mkChart('histCompany', { type:'line',
+      data:{ labels, datasets: companies.map(co=>({
+        label: co, data: rich.map(r=> (r.byCompany && r.byCompany[co]!=null) ? r.byCompany[co] : null),
+        borderColor: COL[co], backgroundColor: COL[co], spanGaps:true, tension:.25, borderWidth:2, pointRadius:2
+      })) },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, font:{size:10}, padding:10 } },
+          tooltip:{ callbacks:{ label:c=>c.dataset.label+': ₹'+(+c.raw).toFixed(2)+'/g' } } },
+        scales:{ y:{ grid:{color:'rgba(26,26,24,.06)'}, ticks:{ callback:v=>'₹'+v, font:{size:10} } },
+                 x:{ grid:{display:false}, ticks:{ font:{size:9}, maxRotation:0, autoSkip:true } } } }
+    });
+    mkChart('histPpg',  lineCfg(rich.map(r=>r.overall?r.overall.medianPpg:null),  '#B6772E', v=>'₹'+(+v).toFixed(3)+'/g', v=>'₹'+v));
+    mkChart('histDisc', lineCfg(rich.map(r=>r.overall?r.overall.avgDiscount:null),'#1D4E9C', v=>(+v).toFixed(1)+'% off', v=>v+'%'));
+    companies.forEach(co=>{
+      mkChart('sl_'+slug(co), { type:'line',
+        data:{ labels, datasets:[{ data: rich.map(r=> (r.byCompany && r.byCompany[co]!=null) ? r.byCompany[co] : null),
+          borderColor:COL[co], backgroundColor:hexToRgba(COL[co],.14), spanGaps:true, tension:.3, borderWidth:1.5, pointRadius:0, fill:true }] },
+        options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:{enabled:false}},
+          scales:{ x:{display:false}, y:{display:false} } }
+      });
+    });
+    mkChart('histSku', { type:'bar',
+      data:{ labels: runs.map(r=>fmtRun(r.ts)), datasets:[{ data: runs.map(r=>r.skuCount!=null?r.skuCount:null), backgroundColor:'#7B2D8E', borderRadius:3, barPercentage:.8 }] },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>(+c.raw)+' SKUs' } } },
+        scales:{ y:{ beginAtZero:true, grid:{color:'rgba(26,26,24,.06)'}, ticks:{font:{size:10}} },
+                 x:{ grid:{display:false}, ticks:{ font:{size:9}, maxRotation:0, autoSkip:true } } } }
+    });
+  });
+}
+
 function renderAdmin(){
   const roster = Object.keys(COL).map(g=>{
     const brands = BRANDS.filter(b=>b.company===g).map(b=>b.brand).join(', ');
@@ -1011,7 +1172,7 @@ function renderAdmin(){
       <h3 class="admin-h sub">Status</h3>
       <p class="admin-p">
         Loaded ${TODAY}. ${histLine} Build progress:
-        <strong>Step 6 of 12</strong> — company/brand detail, reviews, seeded shelf life, mojibake fix.
+        <strong>Step 7 of 12</strong> — trend history across scrape runs (data/history.json).
       </p>
 
       <h3 class="admin-h sub">Tracked roster</h3>

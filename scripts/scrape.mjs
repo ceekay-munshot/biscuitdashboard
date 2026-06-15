@@ -424,10 +424,32 @@ async function main(){
   mkdirSync('data', { recursive:true });
   writeFileSync('data/latest.json', JSON.stringify({ scrapedAt, skus: allSkus }, null, 2));
 
+  // Compact per-run snapshot for the History view (summary metrics only — never
+  // the full SKU list). Older/sparse entries are left as-is; the view tolerates them.
+  const med = nums => { const a=nums.filter(v=>typeof v==='number').sort((x,y)=>x-y); if(!a.length) return 0; const n=a.length; return n%2 ? a[(n-1)/2] : (a[n/2-1]+a[n/2])/2; };
+  const mean = nums => { const a=nums.filter(v=>v!=null); return a.length ? a.reduce((s,x)=>s+x,0)/a.length : 0; };
+  const medPpg = sub => +med(sub.map(s=>s.pricePerGram)).toFixed(3);
+  const byCompany = {}; for (const co of new Set(allSkus.map(s=>s.company)))  byCompany[co]  = medPpg(allSkus.filter(s=>s.company===co));
+  const byCategory = {}; for (const cat of new Set(allSkus.map(s=>s.category))) byCategory[cat] = medPpg(allSkus.filter(s=>s.category===cat));
+  const ratings = allSkus.map(s=>s.rating).filter(v=>v!=null);
+  const snapshot = {
+    ts: scrapedAt,
+    skuCount: allSkus.length,
+    brandsOk,
+    overall: {
+      medianPpg: +med(allSkus.map(s=>s.pricePerGram)).toFixed(3),
+      avgDiscount: +mean(allSkus.map(s=>s.discount)).toFixed(1),
+      totalReviews: allSkus.reduce((a,s)=>a+(s.reviewCount||0),0),
+      avgRating: ratings.length ? +mean(ratings).toFixed(1) : null,
+    },
+    byCompany,
+    byCategory,
+  };
+
   let history = [];
   try { if (existsSync('data/history.json')) history = JSON.parse(readFileSync('data/history.json','utf8')); } catch(_){}
   if (!Array.isArray(history)) history = [];
-  history.push({ ts: scrapedAt, skuCount: allSkus.length, brandsOk });
+  history.push(snapshot);
   history = history.slice(-50);
   writeFileSync('data/history.json', JSON.stringify(history, null, 2));
 
