@@ -124,6 +124,20 @@ td.num{font-variant-numeric:tabular-nums}
 .catbar-label{width:118px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
 .catbar-val{width:46px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;flex-shrink:0}
 
+/* Detail views (company / brand) */
+.detail-title{font-size:18px;font-weight:700}
+.co-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;display:inline-block}
+.kstrip{display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:12px;margin-bottom:16px}
+.kstrip .sv{font-size:18px}
+.cell-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:0}
+.top-sku{background:#fcfbf6}
+td a{color:#1a1a18;text-decoration:none}
+td a:hover{color:#B6772E;text-decoration:underline}
+.clickable{cursor:pointer}
+.kpi.clickable:hover{background:#faf9f6}
+.row-click{cursor:pointer}
+.row-click:hover{background:#faf9f6}
+
 /* Admin / system info */
 .admin-h{font-size:18px;font-weight:700;margin-bottom:12px}
 .admin-h.sub{font-size:13px;margin:18px 0 8px}
@@ -142,7 +156,7 @@ td.num{font-variant-numeric:tabular-nums}
 <script>
 /* ============================================================
    BISCUIT MARKET INTELLIGENCE DASHBOARD
-   Build Step 5 / 12 — pack-size view (bands · bulk curve · interest)
+   Build Step 6 / 12 — detail views, reviews, shelf life, mojibake fix
    Single-file, zero-build. Vanilla ES6.
 
    Scraping runs in GitHub Actions (scripts/scrape.mjs) and commits
@@ -191,6 +205,11 @@ function packBand(g){
   if (g < 800) return "Family";
   return "Jumbo";
 }
+
+// Seeded TYPICAL shelf life (months) by category — listing pages don't carry it,
+// so this is a category estimate (editable), never a per-SKU scrape.
+const SHELF_LIFE = {Cream:6,Cookies:9,Digestive:9,Crackers:9,Wafer:6,Rusk:6,Other:9};
+const shelfLifeFor = cat => SHELF_LIFE[cat] != null ? SHELF_LIFE[cat] : 9;
 
 /* ------------------------------------------------------------
    2. GLOBAL STATE
@@ -349,8 +368,15 @@ function render(){
       renderPackSize();
       break;
 
+    case 'company':
+      renderCompany(v && v.company);
+      break;
+
+    case 'brand':
+      renderBrand(v && v.brand);
+      break;
+
     /* ---- Views arriving in later build steps -----------------------------
-       case 'brand':    renderBrand(v);    break;
        case 'trends':   renderTrends();    break;
        case 'radar':    renderRadar();     break;
        case 'share':    renderShare();     break;
@@ -370,6 +396,13 @@ function render(){
 const $app = () => document.getElementById('app');
 const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const rs2 = v => '₹' + (+v).toFixed(2);                 // ₹/g formatter
+const revNum = n => n!=null ? Number(n).toLocaleString('en-IN') : '—';   // full review count
+const kCompact = n => n>=1e6 ? (n/1e6).toFixed(1).replace(/\.0$/,'')+'M' : n>=1e3 ? Math.round(n/1e3)+'k' : String(n);
+const linkName = s => s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a>` : esc(s.name);
+// Safe inline onclick="navigate({type,[key]:val})" — escapes ' for JS and & for HTML.
+const navAttr = (type, key, val) => esc(`navigate({type:'${type}',${key}:'${String(val).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}'})`);
+// KPI strip of labelled stat boxes.
+const kpiStrip = items => `<div class="kstrip">${items.map(it=>`<div class="stat-box"><div class="sl">${it.label}</div><div class="sv">${it.value}</div></div>`).join('')}</div>`;
 
 /* Category filter + small helpers */
 function setCategoryFilter(cat){ STATE.categoryFilter = cat; render(); }
@@ -451,7 +484,7 @@ function overviewHTML(view){
     }
     const tier = positioning(c.ppg.median);
     return `
-    <div class="card kpi fadein" style="border-top:3px solid ${col}"><div class="card-pad">
+    <div class="card kpi fadein clickable" style="border-top:3px solid ${col}" onclick="${navAttr('company','company',c.company)}"><div class="card-pad">
       <div class="kpi-co" style="color:${col}">${esc(c.company)}</div>
       <div class="kpi-big">${rs2(c.ppg.median)}<span class="kpi-unit">/g</span></div>
       <span class="badge tier-${tier.toLowerCase()}">${tier}</span>
@@ -464,7 +497,7 @@ function overviewHTML(view){
 
   const compRows = st.companyStats.map(c=>{
     const col = COL[c.company] || '#555';
-    return `<tr>
+    return `<tr class="row-click" onclick="${navAttr('company','company',c.company)}">
       <td><span class="dot" style="background:${col}"></span>${esc(c.company)}</td>
       <td class="num"><strong>${rs2(c.ppg.median)}</strong></td>
       <td class="num">${rs2(c.ppg.avg)}</td>
@@ -478,7 +511,7 @@ function overviewHTML(view){
 
   const brandRows = st.brandStats.map(b=>{
     const col = COL[b.company] || '#555';
-    return `<tr>
+    return `<tr class="row-click" onclick="${navAttr('brand','brand',b.brand)}">
       <td><span class="dot" style="background:${col}"></span>${esc(b.brand)}</td>
       <td class="muted">${esc(b.company)}</td>
       <td class="num"><strong>${rs2(b.ppg.median)}</strong></td>
@@ -543,6 +576,8 @@ function drawOverviewCharts(view){
   const colors = bs.map(b=>COL[b.company] || '#999');
   const opts = unit => ({
     indexAxis:'y', responsive:true, maintainAspectRatio:false,
+    onClick:(e,els)=>{ if (els && els.length) navigate({type:'brand', brand: bs[els[0].index].brand}); },
+    onHover:(e,els)=>{ e.native && (e.native.target.style.cursor = els.length ? 'pointer' : 'default'); },
     plugins:{ legend:{display:false},
       tooltip:{ callbacks:{ label:c => unit==='ppg' ? '₹'+(+c.raw).toFixed(2)+'/g' : (+c.raw).toFixed(1)+'% off' } } },
     scales:{
@@ -780,6 +815,156 @@ function drawPackCharts(bands){
   });
 }
 
+/* ---- Company detail ---- */
+function renderCompany(company){
+  const skus = company ? STATE.skus.filter(s=>s.company===company) : [];
+  if (!skus.length){
+    $app().innerHTML = `<div class="back-bar"><button onclick="navigate('dashboard')">← Back</button><strong>${esc(company||'Company')}</strong></div><div class="notice info">No data for this company.</div>`;
+    return;
+  }
+  const col = COL[company] || '#555';
+  const ppg = calcStats(skus.map(s=>s.pricePerGram), 3);
+  const disc = calcStats(skus.map(s=>s.discount), 1);
+  const ratings = skus.map(s=>s.rating).filter(v=>v!=null);
+  const ratingAvg = ratings.length ? +(ratings.reduce((a,b)=>a+b,0)/ratings.length).toFixed(1) : null;
+  const reviews = skus.reduce((a,s)=>a+(s.reviewCount||0), 0);
+
+  const brands = buildStats(skus).brandStats;            // sorted DESC by median ₹/g
+  const maxB = Math.max(...brands.map(b=>b.ppg.median), 0.0001);
+  const brandBars = brands.map(b=>`
+    <div class="catbar-row row-click" onclick="${navAttr('brand','brand',b.brand)}">
+      <span class="catbar-label"><span class="dot" style="background:${col}"></span>${esc(b.brand)}</span>
+      <span class="bar-wrap"><span class="bar-fill" style="width:${Math.round(b.ppg.median/maxB*100)}%;background:${col}"></span></span>
+      <span class="catbar-val">${rs2(b.ppg.median)}</span>
+      <span class="muted" style="width:36px;text-align:right;font-size:10.5px;flex-shrink:0">${b.skus.length}</span>
+    </div>`).join('');
+
+  const catCount = {}; skus.forEach(s=>catCount[s.category]=(catCount[s.category]||0)+1);
+  const catMix = Object.entries(catCount).sort((a,b)=>b[1]-a[1]).map(([cat,n])=>`
+    <div class="catbar-row">
+      <span class="catbar-label">${esc(cat)}</span>
+      <span class="bar-wrap"><span class="bar-fill" style="width:${Math.round(n/skus.length*100)}%;background:${CAT_COL[cat]||'#999'}"></span></span>
+      <span class="catbar-val">${n}</span>
+    </div>`).join('');
+
+  const top = skus.slice().sort((a,b)=>(b.reviewCount||0)-(a.reviewCount||0)).slice(0,6);
+  const topRows = top.map(s=>`<tr>
+    <td class="cell-name" title="${esc(s.name)}">${linkName(s)}</td>
+    <td class="muted">${esc(s.brand)}</td>
+    <td class="num"><strong>${rs2(s.pricePerGram)}</strong></td>
+    <td class="num">${s.rating!=null?'★ '+s.rating:'—'}</td>
+    <td class="num">${revNum(s.reviewCount)}</td>
+  </tr>`).join('');
+
+  $app().innerHTML = `
+  <div class="back-bar">
+    <button onclick="navigate('dashboard')">← Back</button>
+    <span class="co-badge" style="background:${BG[company]};color:${TXT[company]}">${esc(company)}</span>
+    <span class="muted" style="font-size:12px">company detail</span>
+  </div>
+  ${kpiStrip([
+    {label:'Median ₹/g', value:rs2(ppg.median)},
+    {label:'Avg discount', value:disc.avg.toFixed(1)+'%'},
+    {label:'Avg rating', value: ratingAvg!=null?'★ '+ratingAvg.toFixed(1):'—'},
+    {label:'Total reviews', value: kCompact(reviews)},
+    {label:'SKUs', value: skus.length}
+  ])}
+  <div class="grid2">
+    <div class="card fadein"><div class="card-pad">
+      <div class="sec-title">Brands · median ₹/g <span class="muted" style="text-transform:none;letter-spacing:0">· click to drill in</span></div>
+      ${brandBars}
+    </div></div>
+    <div class="card fadein"><div class="card-pad">
+      <div class="sec-title">Category mix · SKUs</div>
+      ${catMix}
+    </div></div>
+  </div>
+  <div class="card fadein"><div class="card-pad">
+    <div class="sec-title">Top SKUs by review volume (interest)</div>
+    <div class="tbl-scroll"><table style="min-width:560px">
+      <thead><tr><th>Name</th><th>Brand</th><th>₹/g</th><th>★</th><th>#reviews</th></tr></thead>
+      <tbody>${topRows}</tbody>
+    </table></div>
+  </div></div>`;
+}
+
+/* ---- Brand detail ---- */
+function skuTableRow(s, isTop){
+  const sl = shelfLifeFor(s.category);
+  return `<tr${isTop?' class="top-sku"':''}>
+    <td class="cell-name" title="${esc(s.name)}">${linkName(s)}${isTop?' <span class="badge" style="background:#FAF0DC;color:#6E4300">most reviewed</span>':''}</td>
+    <td>${esc(s.category)}</td>
+    <td class="muted">${esc(s.packLabel||'')}</td>
+    <td class="num"><strong>${rs2(s.pricePerGram)}</strong></td>
+    <td class="num">${s.mrp!=null?'₹'+s.mrp:'—'}</td>
+    <td class="num">₹${s.selling}</td>
+    <td class="num">${s.discount?s.discount+'%':'—'}</td>
+    <td class="num">${s.rating!=null?'★ '+s.rating:'—'}</td>
+    <td class="num">${revNum(s.reviewCount)}</td>
+    <td class="muted" title="seeded category estimate">${sl} mo</td>
+    <td>${esc(s.platform)}</td>
+    <td>${s.url?`<a href="${esc(s.url)}" target="_blank" rel="noopener" title="open product">↗</a>`:''}</td>
+  </tr>`;
+}
+
+function renderBrand(brand){
+  const skus = brand ? STATE.skus.filter(s=>s.brand===brand) : [];
+  if (!skus.length){
+    $app().innerHTML = `<div class="back-bar"><button onclick="navigate('dashboard')">← Back</button><strong>${esc(brand||'Brand')}</strong></div><div class="notice info">No data for this brand.</div>`;
+    return;
+  }
+  const company = skus[0].company, col = COL[company] || '#555';
+  const ppg = calcStats(skus.map(s=>s.pricePerGram), 3);
+  const disc = calcStats(skus.map(s=>s.discount), 1);
+  const ratings = skus.map(s=>s.rating).filter(v=>v!=null);
+  const ratingAvg = ratings.length ? +(ratings.reduce((a,b)=>a+b,0)/ratings.length).toFixed(1) : null;
+  const reviews = skus.reduce((a,s)=>a+(s.reviewCount||0), 0);
+  const catCount = {}; skus.forEach(s=>catCount[s.category]=(catCount[s.category]||0)+1);
+  const domCat = Object.keys(catCount).sort((a,b)=>catCount[b]-catCount[a])[0];
+  const shelf = shelfLifeFor(domCat);
+
+  const bands = packBandStats(skus).filter(b=>b.count>0);
+  const maxBand = Math.max(...bands.map(b=>b.count), 1);
+  const bandBars = bands.map(b=>`
+    <div class="catbar-row">
+      <span class="catbar-label">${b.band} <span class="muted">${b.range}</span></span>
+      <span class="bar-wrap"><span class="bar-fill" style="width:${Math.round(b.count/maxBand*100)}%;background:${col}"></span></span>
+      <span class="catbar-val">${b.count}</span>
+    </div>`).join('');
+
+  const sorted = skus.slice().sort((a,b)=>(b.reviewCount||0)-(a.reviewCount||0));   // interest first
+  const rows = sorted.map((s,i)=>skuTableRow(s, i===0 && (s.reviewCount||0)>0)).join('');
+
+  $app().innerHTML = `
+  <div class="back-bar">
+    <button onclick="navigate('dashboard')">← Back</button>
+    <strong class="detail-title">${esc(brand)}</strong>
+    <span class="co-badge row-click" style="background:${BG[company]};color:${TXT[company]}" onclick="${navAttr('company','company',company)}">${esc(company)}</span>
+  </div>
+  ${kpiStrip([
+    {label:'Median ₹/g', value:rs2(ppg.median)},
+    {label:'Avg discount', value:disc.avg.toFixed(1)+'%'},
+    {label:'Avg rating', value: ratingAvg!=null?'★ '+ratingAvg.toFixed(1):'—'},
+    {label:'Total reviews', value: kCompact(reviews)},
+    {label:'SKUs', value: skus.length},
+    {label:'Shelf life', value: shelf+' mo'}
+  ])}
+  <div class="hm-cap" style="margin:-6px 0 16px">Shelf life is a <strong>typical category estimate</strong> (${esc(domCat)}) — not scraped per SKU.</div>
+
+  <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
+    <div class="sec-title">Pack-size mix · SKUs</div>
+    ${bandBars}
+  </div></div>
+
+  <div class="card fadein"><div class="card-pad">
+    <div class="sec-title">All SKUs <span class="muted" style="text-transform:none;letter-spacing:0">· sorted by review volume (interest first)</span></div>
+    <div class="tbl-scroll"><table style="min-width:940px">
+      <thead><tr><th>Name</th><th>Category</th><th>Pack</th><th>₹/g</th><th>MRP</th><th>Selling</th><th>Disc%</th><th>★</th><th>#reviews</th><th>Shelf life</th><th>Platform</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div></div>`;
+}
+
 function renderAdmin(){
   const roster = Object.keys(COL).map(g=>{
     const brands = BRANDS.filter(b=>b.company===g).map(b=>b.brand).join(', ');
@@ -826,7 +1011,7 @@ function renderAdmin(){
       <h3 class="admin-h sub">Status</h3>
       <p class="admin-p">
         Loaded ${TODAY}. ${histLine} Build progress:
-        <strong>Step 5 of 12</strong> — pack-size intelligence (bands, bulk curve, interest proxy).
+        <strong>Step 6 of 12</strong> — company/brand detail, reviews, seeded shelf life, mojibake fix.
       </p>
 
       <h3 class="admin-h sub">Tracked roster</h3>

@@ -171,6 +171,35 @@ function cleanName(s){
     .trim();
 }
 
+/* Repair UTF-8-as-Latin1 / Windows-1252 mojibake in scraped text (e.g. "Crème"
+   shows up as "CrÃ¨me" — and because Amazon title-cases names, the "Ã" lead can
+   arrive lowercased as "ã", giving "Crã¨Me"). Both leads are handled via the
+   UTF-8 continuation-byte formula; smart punctuation is mapped explicitly. */
+function repairText(s){
+  if (s == null) return s;
+  let t = String(s);
+  // Smart punctuation: "\u00E2\u20AC" then a marker char -> quote/dash/ellipsis.
+  t = t.replace(/\u00E2\u20AC(.)/g, (_, c) => {
+    switch (c.charCodeAt(0)){
+      case 0x2122: case 0x02DC: return "'";    // right/left single quote
+      case 0x0153: return '"';                 // left double quote
+      case 0x009D: case 0x201D: return '"';    // right double quote
+      case 0x201C: return '\u2013';            // en dash
+      case 0x00A6: return '\u2026';            // ellipsis
+      default: return '';                       // drop stray artifact
+    }
+  });
+  // Accented letters: "\u00C3"/"\u00E3" (incl. Amazon's title-cased lead) + a
+  // UTF-8 continuation byte -> C3 YY decodes to U+00(0x40+YY); covers e-acute,
+  // e-grave, a-circumflex, o-circumflex, n-tilde, a-grave, etc.
+  t = t.replace(/[\u00C3\u00E3]([\u0080-\u00BF])/g, (_, y) => String.fromCharCode(0x40 + y.charCodeAt(0)));
+  // Stray 2-byte lead "\u00C2"/"\u00E2" + Latin-1 supplement char -> drop lead.
+  t = t.replace(/[\u00C2\u00E2]([\u00A0-\u00BF])/g, (_, y) => y);
+  // leftover non-breaking spaces -> normal space
+  t = t.replace(/\u00A0/g, ' ');
+  return t;
+}
+
 /* Remove markdown link targets and bare URLs from a block so their query
    tokens (Amazon's "dib=" base64, which can contain "rs6"-like substrings)
    can't be misread as prices/weights. Keeps the bracketed link TEXT, where the
@@ -231,7 +260,7 @@ function categoryFor(name, brand){
 }
 
 function extractSKU(link, block, brand, company, platform){
-  const name = cleanName(link.text);
+  const name = repairText(cleanName(link.text));   // fix UTF-8 mojibake at the source
   // Read prices/reviews/weight from a URL-FREE view of the block. Link targets
   // (Amazon's base64 "dib=" tokens) can contain substrings like "rs6" that the
   // ₹/Rs price regex would otherwise misread as a price.
@@ -413,5 +442,5 @@ if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
 export {
   BRANDS, SEARCH,
   parseWeightGrams, detectCategory, parseRating, parseReviewCount,
-  extractPrices, cleanName, detectPlatform, parseSKUsFromPage, dedupeKey,
+  extractPrices, cleanName, repairText, detectPlatform, parseSKUsFromPage, dedupeKey,
 };
