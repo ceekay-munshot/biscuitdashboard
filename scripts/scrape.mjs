@@ -29,9 +29,31 @@ const BRANDS = [
   {brand:"The Whole Truth",      company:"Emerging / D2C"},
 ];
 
+// Search URL builders take a RAW query string.
 const SEARCH = {
-  Amazon:    b => `https://www.amazon.in/s?k=${encodeURIComponent(b + ' biscuits')}`,
-  BigBasket: b => `https://www.bigbasket.com/ps/?q=${encodeURIComponent(b + ' biscuits')}`,
+  Amazon:    q => `https://www.amazon.in/s?k=${encodeURIComponent(q)}`,
+  BigBasket: q => `https://www.bigbasket.com/ps/?q=${encodeURIComponent(q)}`,
+};
+
+// Coverage queries (discover mode) so thin/empty categories + D2C brands populate.
+// Products are classified to a brand/company; unknown ones surface as Emerging / D2C.
+const COVERAGE = [
+  { label:'Rusk',  q:'Britannia rusk' },
+  { label:'Rusk',  q:'rusk toast biscuit' },
+  { label:'Wafer', q:'wafer biscuit' },
+  { label:'Wafer', q:'Dukes wafer' },
+  { label:'Wafer', q:'Unibic wafer' },
+  { label:'D2C',   q:'The Whole Truth cookies' },
+  { label:'D2C',   q:'Open Secret cookies' },
+];
+
+// Company aliases for classifying discovered products to a known company group.
+const COMPANY_ALIASES = {
+  "Britannia": ["britannia"],
+  "Parle": ["parle"],
+  "ITC Sunfeast": ["sunfeast","itc"],
+  "Mondelez": ["cadbury","oreo","mondelez"],
+  "Unibic": ["unibic"],
 };
 
 /* ============================================================
@@ -302,40 +324,67 @@ function extractSKU(link, block, brand, company, platform){
 
 const isProductUrl = u => /\/dp\/|\/gp\/|\/p\/|\/pd\/|\/prd\/|pid=/i.test(u);
 
-function parseSKUsFromPage(markdown, pageUrl, brand, company){
+// Classify a discovered product to a known brand → company → emerging brand.
+function classifyBrand(name, url){
+  const nt = norm(name);
+  // known tracked brand — prefer the one whose name appears EARLIEST (then longest),
+  // so "Parle Hide & Seek Bourbon" attributes to Hide & Seek, not Bourbon.
+  let best=null, bestPos=Infinity, bestLen=0;
+  for (const b of BRANDS){
+    if (!brandMatches(b.brand, name, url)) continue;
+    const nb = norm(b.brand); const pos = nt.indexOf(nb), p = pos<0 ? 9999 : pos;
+    if (p < bestPos || (p===bestPos && nb.length>bestLen)){ best=b; bestPos=p; bestLen=nb.length; }
+  }
+  if (best) return { brand:best.brand, company:best.company };
+  for (const [co, aliases] of Object.entries(COMPANY_ALIASES)){
+    if (aliases.some(a => nt.includes(a))) return { brand: co, company: co };   // umbrella line
+  }
+  // emerging / unknown — derive a short brand label from the leading words
+  const label = cleanName(name).split(/\s+/).filter(w=>/[a-z]/i.test(w)).slice(0,2)
+    .join(' ').replace(/[^A-Za-z0-9 &'.-]/g,'').trim();
+  return { brand: label || 'Unknown', company: 'Emerging / D2C' };
+}
+
+// True when a page looks bot-blocked / product-less (e.g. BigBasket's pincode/JS wall).
+function looksBlocked(markdown){
+  if (!markdown) return true;
+  if (/\/pd\//i.test(markdown)) return false;                       // has product links
+  return (markdown.match(/₹/g)||[]).length === 0;                   // no prices at all
+}
+
+/* Core page parser. `resolve(text,url)` returns {brand,company} or null.
+   - brand mode  : resolve = brandMatches filter (keeps only that brand)
+   - discover mode: resolve = classifyBrand (attributes every product) */
+function parsePage(markdown, pageUrl, resolve){
   const out = [];
   if (!markdown) return out;
   const platform = detectPlatform(pageUrl);
 
-  // All links, in document order.
   const linkRe = /\[([^\]]*)\]\(([^)]+)\)/g;
-  const all = [];
-  let m;
-  while ((m = linkRe.exec(markdown))){
-    all.push({ idx:m.index, text:(m[1]||'').trim(), url:(m[2]||'').trim() });
-  }
+  const all = []; let m;
+  while ((m = linkRe.exec(markdown))) all.push({ idx:m.index, text:(m[1]||'').trim(), url:(m[2]||'').trim() });
 
-  // Product titles = BOLD link text pointing at a product page. On Amazon the
-  // title is the only bold /dp/ link; price/rating/delivery links are not bold.
-  const titles = all.filter(l => /^\*\*/.test(l.text) && isProductUrl(l.url));
+  // Amazon: products are BOLD /dp/ titles. BigBasket: products are /pd/ links
+  // (not bold) — used only when there are no bold titles.
+  const bold = all.filter(l => /^\*\*/.test(l.text) && isProductUrl(l.url));
+  const candidates = bold.length
+    ? bold
+    : all.filter(l => /\/pd\//i.test(l.url) && l.text.length>=10 && l.text.length<=250 && !/^https?:/i.test(l.text));
 
-  if (titles.length){
-    for (let i=0;i<titles.length;i++){
-      const L = titles[i];
-      if (!brandMatches(brand, L.text, L.url)) continue;
-      // Block runs to the next title (any brand), capped — the price/rating for
-      // this product sit between its title and the next one.
-      const nextIdx = (i+1<titles.length) ? titles[i+1].idx : markdown.length;
+  if (candidates.length){
+    for (let i=0;i<candidates.length;i++){
+      const L = candidates[i];
+      const who = resolve(L.text, L.url);
+      if (!who) continue;
+      const nextIdx = (i+1<candidates.length) ? candidates[i+1].idx : markdown.length;
       const block = markdown.slice(L.idx, Math.min(nextIdx, L.idx+1600, markdown.length));
-      const sku = extractSKU(L, block, brand, company, platform);
+      const sku = extractSKU(L, block, who.brand, who.company, platform);
       if (sku) out.push(sku);
     }
     return out;
   }
 
-  // Fallback (no bold /dp/ titles — e.g. BigBasket): older brand/length/price
-  // heuristic with all links as block boundaries.
-  const tokens = brandTokensOf(brand);
+  // Fallback heuristic for other layouts.
   for (let i=0;i<all.length;i++){
     const L = all[i];
     if (L.idx>0 && markdown[L.idx-1]==='!') continue;     // image
@@ -344,13 +393,23 @@ function parseSKUsFromPage(markdown, pageUrl, brand, company){
     if (/^https?:\/\//i.test(text)) continue;
     if (/^\(?\d+%\s*off\)?$/i.test(text)) continue;
     if (/^(₹|rs\.?|inr|m\.?r\.?p)/i.test(text) && (text.replace(/[^a-z]/ig,'').length < 5)) continue;
-    if (!brandMatches(brand, text, url)) continue;
+    const who = resolve(text, url);
+    if (!who) continue;
     const nextIdx = (i+1<all.length) ? all[i+1].idx : markdown.length;
     const block = markdown.slice(L.idx, Math.min(nextIdx, L.idx+900, markdown.length));
-    const sku = extractSKU(L, block, brand, company, platform);
+    const sku = extractSKU(L, block, who.brand, who.company, platform);
     if (sku) out.push(sku);
   }
   return out;
+}
+
+// Brand mode — keep only SKUs matching `brand` (unchanged Amazon behaviour).
+function parseSKUsFromPage(markdown, pageUrl, brand, company){
+  return parsePage(markdown, pageUrl, (text,url)=> brandMatches(brand,text,url) ? {brand,company} : null);
+}
+// Discover mode — classify every product (coverage searches).
+function parseSKUsDiscover(markdown, pageUrl){
+  return parsePage(markdown, pageUrl, (text,url)=> classifyBrand(text,url));
 }
 
 const dedupeKey = s => (s.name||'').slice(0,30)+'|'+s.weightGrams+'|'+s.selling;
@@ -384,41 +443,47 @@ async function main(){
   // Reuses the normal scrape fetch, so it costs no extra Firecrawl calls.
   const DUMP_BRANDS = (process.env.DEBUG_DUMP_BRANDS||'').split(',').map(s=>s.trim()).filter(Boolean);
 
+  // Tasks: tracked-brand searches (brand mode) + coverage searches (discover mode),
+  // each run on BOTH channels — Amazon (e-comm) and BigBasket (quick-commerce).
+  const tasks = [
+    ...BRANDS.map(b => ({ label:b.brand, q:`${b.brand} biscuits`, mode:'brand', brand:b.brand, company:b.company })),
+    ...COVERAGE.map(c => ({ label:c.label, q:c.q, mode:'discover' })),
+  ];
+
   const allSkus = [], globalSeen = new Set();
-  let brandsOk = 0;
+  const channel = { Amazon:0, BigBasket:0 };
+  const brandTrackedOk = new Set();
 
-  for (const { brand, company } of BRANDS){
-    const urls = Object.values(SEARCH).map(fn => fn(brand));
-    const seen = new Set();
-    const brandSkus = [];
+  for (const task of tasks){
+    for (const [platform, build] of Object.entries(SEARCH)){
+      const url = build(task.q);
+      let md = '';
+      try { md = await firecrawl(url, key); }
+      catch(e){ console.log(`  ! ${task.label} / ${task.q} [${platform}]: ${e.message}`); continue; }
 
-    for (const url of urls){
-      try {
-        const md = await firecrawl(url, key);
-        if (DUMP_BRANDS.includes(brand)){
-          mkdirSync('data/_debug', { recursive:true });
-          writeFileSync(`data/_debug/${brand.replace(/[^a-z0-9]+/gi,'_')}.${detectPlatform(url)}.md`, md);
-          console.log(`  [debug] dumped ${brand} ${detectPlatform(url)} (${md.length} chars)`);
-        }
-        for (const s of parseSKUsFromPage(md, url, brand, company)){
-          const k = dedupeKey(s);
-          if (seen.has(k)) continue;
-          seen.add(k); brandSkus.push(s);
-        }
-      } catch(e){
-        console.log(`  ! ${brand} ${detectPlatform(url)}: ${e.message}`);
+      if (DUMP_BRANDS.includes(task.label) || DUMP_BRANDS.includes(task.q)){
+        mkdirSync('data/_debug', { recursive:true });
+        writeFileSync(`data/_debug/${task.label.replace(/[^a-z0-9]+/gi,'_')}_${task.q.replace(/[^a-z0-9]+/gi,'_')}.${platform}.md`, md);
       }
-    }
 
-    let added = 0;
-    for (const s of brandSkus){
-      const k = dedupeKey(s);
-      if (globalSeen.has(k)) continue;
-      globalSeen.add(k); allSkus.push(s); added++;
+      const parsed = task.mode==='brand'
+        ? parseSKUsFromPage(md, url, task.brand, task.company)
+        : parseSKUsDiscover(md, url);
+
+      let added = 0;
+      for (const s of parsed){
+        const k = dedupeKey(s);
+        if (globalSeen.has(k)) continue;
+        globalSeen.add(k); allSkus.push(s); added++;
+        channel[s.platform] = (channel[s.platform]||0) + 1;
+        if (task.mode==='brand') brandTrackedOk.add(task.brand);
+      }
+      // honest per-channel logging — never fabricate a 0
+      const note = (platform==='BigBasket' && added===0) ? (looksBlocked(md) ? ' (no products — pincode/bot wall)' : ' (no products parsed)') : '';
+      console.log(`  ${task.label.padEnd(16)} ${task.q.padEnd(26)} [${platform.padEnd(9)}] ${added} SKUs${note}`);
     }
-    if (added) brandsOk++;
-    console.log(`${brand.padEnd(22)} ${added} SKUs`);
   }
+  const brandsOk = brandTrackedOk.size;
 
   const scrapedAt = new Date().toISOString();
   mkdirSync('data', { recursive:true });
@@ -453,7 +518,7 @@ async function main(){
   history = history.slice(-50);
   writeFileSync('data/history.json', JSON.stringify(history, null, 2));
 
-  console.log(`\nTOTAL: ${allSkus.length} SKUs · ${brandsOk}/${BRANDS.length} brands OK · ${scrapedAt}`);
+  console.log(`\nTOTAL: ${allSkus.length} SKUs · ${brandsOk}/${BRANDS.length} tracked brands OK · channels: Amazon ${channel.Amazon||0}, BigBasket ${channel.BigBasket||0} · ${scrapedAt}`);
 }
 
 /* Run only when invoked directly (so tests can import the parser). */
@@ -462,7 +527,8 @@ if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
 }
 
 export {
-  BRANDS, SEARCH,
+  BRANDS, SEARCH, COVERAGE,
   parseWeightGrams, detectCategory, parseRating, parseReviewCount,
   extractPrices, cleanName, repairText, detectPlatform, parseSKUsFromPage, dedupeKey,
+  parseSKUsDiscover, classifyBrand, looksBlocked,
 };

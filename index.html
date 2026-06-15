@@ -179,7 +179,7 @@ td a:hover{color:#B6772E;text-decoration:underline}
 <script>
 /* ============================================================
    BISCUIT MARKET INTELLIGENCE DASHBOARD
-   Build Step 8 / 12 — Google Trends / demand intelligence (seeded layer)
+   Build Step 9 / 12 — real quick-commerce attempt (BigBasket) + category/D2C coverage
    Single-file, zero-build. Vanilla ES6.
 
    Scraping runs in GitHub Actions (scripts/scrape.mjs) and commits
@@ -1306,13 +1306,15 @@ function renderAdmin(){
         <li><strong>Serve</strong> — Cloudflare's git build deploys the committed JSON as static assets.</li>
         <li><strong>Read</strong> — this page fetches <code>/data/latest.json</code>. No key in the
           browser, no runtime scraping, no Cloudflare secret.</li>
-        <li><strong>Quick-commerce, Google Trends &amp; market share</strong> — seeded &amp; editable (later steps).</li>
+        <li><strong>Coverage searches</strong> — extra Amazon queries (rusk, wafer, D2C cookies) classify discovered products to a brand/company so thin categories &amp; emerging brands populate.</li>
+        <li><strong>Quick-commerce (BigBasket)</strong> — attempted live on every run, but its search needs a pincode/session and blocks datacenter scrapers, so it yields <strong>0</strong> (logged honestly, never faked). Amazon is the live source.</li>
+        <li><strong>Google Trends</strong> — seeded snapshot (Step 8). <strong>Market share</strong> — seeded (later step).</li>
       </ul>
 
       <h3 class="admin-h sub">Status</h3>
       <p class="admin-p">
         Loaded ${TODAY}. ${histLine} Build progress:
-        <strong>Step 8 of 12</strong> — Google Trends demand intelligence (seeded data/trends.json).
+        <strong>Step 9 of 12</strong> — BigBasket attempted (blocked, logged) + Amazon coverage for Rusk/Wafer/D2C.
       </p>
 
       <h3 class="admin-h sub">Tracked roster</h3>
