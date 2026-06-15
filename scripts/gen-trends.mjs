@@ -16,8 +16,23 @@ import { fileURLToPath } from 'node:url';
 const BRANDS = ['Parle-G','Good Day','Bourbon','Marie Gold','NutriChoice','Monaco','Hide & Seek',
   'KrackJack','Dark Fantasy',"Mom's Magic",'Sunfeast Marie Light','Oreo','Unibic','The Whole Truth'];
 const CATEGORIES = ['Cookies','Digestive','Cream','Crackers','Rusk','Wafer'];
-const BRAND_ANCHOR = 'Parle-G';   // most-searched biscuit term — present in every brand batch
-const CAT_ANCHOR   = 'biscuit';   // normalization anchor for categories (not itself a category)
+
+// Google Trends queries are DISAMBIGUATED to the biscuit context — raw brand
+// names measure the wrong thing ("Monaco"=F1, "Bourbon"=whiskey, "Good Day"=
+// greeting, "Cream"=generic). Output is still keyed by the brand/category NAME.
+const QUERY = {
+  'Parle-G':'Parle G biscuit', 'Good Day':'Good Day biscuit', 'Bourbon':'Bourbon biscuit',
+  'Marie Gold':'Marie Gold biscuit', 'NutriChoice':'NutriChoice biscuit', 'Monaco':'Monaco biscuit',
+  'Hide & Seek':'Hide and Seek biscuit', 'KrackJack':'Krackjack biscuit', 'Dark Fantasy':'Dark Fantasy biscuit',
+  "Mom's Magic":"Mom's Magic biscuit", 'Sunfeast Marie Light':'Sunfeast Marie Light', 'Oreo':'Oreo biscuit',
+  'Unibic':'Unibic cookies', 'The Whole Truth':'The Whole Truth biscuit',
+  Cookies:'cookies', Digestive:'digestive biscuit', Cream:'cream biscuit',
+  Crackers:'cracker biscuit', Rusk:'rusk', Wafer:'wafer biscuit',
+  biscuit:'biscuit',
+};
+const queryOf = name => QUERY[name] || name;
+const BRAND_ANCHOR = 'biscuit';   // stable, high-volume, biscuit-relevant anchor in every batch
+const CAT_ANCHOR   = 'biscuit';   // same anchor for categories (excluded from output)
 
 const GEO='IN', TIME='today 12-m';
 const sleep = ms => new Promise(r=>setTimeout(r, ms));
@@ -82,7 +97,7 @@ async function fetchBatch(keywords, key){
   if (CALLS >= MAX_CALLS){ HALT = true; throw new Error(`call budget reached (${MAX_CALLS})`); }
   CALLS++;
   const url = 'https://serpapi.com/search.json?engine=google_trends'
-    + `&q=${encodeURIComponent(keywords.join(','))}`
+    + `&q=${encodeURIComponent(keywords.map(queryOf).join(','))}`
     + `&data_type=TIMESERIES&geo=${GEO}&date=${encodeURIComponent(TIME)}&api_key=${key}`;
   const r = await fetch(url, { signal: AbortSignal.timeout(45000) });
   const data = await r.json().catch(()=>({}));
