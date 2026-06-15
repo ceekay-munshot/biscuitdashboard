@@ -1,10 +1,32 @@
 {
-  "source": "Google Trends (seeded snapshot — update from trends.google.com)",
+  "source": "google-trends-live (all last-good)",
   "geo": "IN",
   "updated": "2026-06-15",
   "timeframe": "last 12 months",
-  "note": "Relative search interest (0–100), NOT sales. Seeded placeholder values — replace with a real Google Trends CSV export (same shape) when available.",
+  "fetchedAt": "2026-06-15T10:38:00.465Z",
+  "note": "Relative search interest (0–100), NOT sales. Fetched live from Google Trends in CI; any value that could not refresh keeps its last-good and is flagged stale.",
   "brands": {
+    "Parle-G": {
+      "interest": [
+        95,
+        92,
+        91,
+        92,
+        93,
+        93,
+        89,
+        88,
+        92,
+        96,
+        93,
+        95
+      ],
+      "latest": 95,
+      "direction": "flat",
+      "source": "seed",
+      "fetchedAt": null,
+      "stale": true
+    },
     "Good Day": {
       "interest": [
         71,
@@ -21,7 +43,10 @@
         74
       ],
       "latest": 74,
-      "direction": "flat"
+      "direction": "flat",
+      "source": "seed",
+      "fetchedAt": null,
+      "stale": true
     },
     "Bourbon": {
       "interest": [
@@ -39,7 +64,10 @@
         54
       ],
       "latest": 54,
-      "direction": "flat"
+      "direction": "flat",
+      "source": "seed",
+      "fetchedAt": null,
+      "stale": true
     },
     "Marie Gold": {
       "interest": [
@@ -57,7 +85,10 @@
         52
       ],
       "latest": 52,
-      "direction": "falling"
+      "direction": "falling",
+      "source": "seed",
+      "fetchedAt": null,
+      "stale": true
     },
     "NutriChoice": {
       "interest": [
@@ -75,25 +106,10 @@
         36
       ],
       "latest": 36,
-      "direction": "rising"
-    },
-    "Parle-G": {
-      "interest": [
-        95,
-        92,
-        91,
-        92,
-        93,
-        93,
-        89,
-        88,
-        92,
-        96,
-        93,
-        95
-      ],
-      "latest": 95,
-      "direction": "flat"
+      "direction": "rising",
+      "source": "seed",
+      "fetchedAt": null,
+      "stale": true
     },
     "Monaco": {
       "interest": [
@@ -111,7 +127,10 @@
         50
       ],
       "latest": 50,
-      "direction": "flat"
+      "direction": "flat",
+      "source": "seed",
+      "fetchedAt": null,
+      "stale": true
     },
     "Hide & Seek": {
       "interest": [
@@ -129,7 +148,10 @@
         52
       ],
       "latest": 52,
-      "direction": "rising"
+      "direction": "rising",
+      "source": "seed",
+      "fetchedAt": null,
+      "stale": true
     },
     "KrackJack": {
       "interest": [
@@ -147,7 +169,10 @@
         32
       ],
       "latest": 32,
-      "direction": "flat"
+      "direction": "flat",
+      "source": "seed",
+      "fetchedAt": null,
+      "stale": true
     },
     "Dark Fantasy": {
       "interest": [
@@ -165,7 +190,10 @@
         63
       ],
       "latest": 63,
-      "direction": "rising"
+      "direction": "rising",
+      "source": "seed",
+      "fetchedAt": null,
+      "stale": true
     },
     "Mom's Magic": {
       "interest": [
@@ -183,7 +211,10 @@
         41
       ],
       "latest": 41,
-      "direction": "flat"
+      "direction": "flat",
+      "source": "seed",
+      "fetchedAt": null,
+      "stale": true
     },
     "Sunfeast Marie Light": {
       "interest": [
@@ -201,7 +232,10 @@
         29
       ],
       "latest": 29,
-      "direction": "flat"
+      "direction": "flat",
+      "source": "seed",
+      "fetchedAt": null,
+      "stale": true
     },
     "Oreo": {
       "interest": [
@@ -219,7 +253,10 @@
         81
       ],
       "latest": 81,
-      "direction": "rising"
+      "direction": "rising",
+      "source": "seed",
+      "fetchedAt": null,
+      "stale": true
     },
     "Unibic": {
       "interest": [
@@ -237,7 +274,10 @@
         26
       ],
       "latest": 26,
-      "direction": "rising"
+      "direction": "rising",
+      "source": "seed",
+      "fetchedAt": null,
+      "stale": true
     },
     "The Whole Truth": {
       "interest": [
@@ -255,7 +295,10 @@
         17
       ],
       "latest": 17,
-      "direction": "rising"
+      "direction": "rising",
+      "source": "seed",
+      "fetchedAt": null,
+      "stale": true
     }
   },
   "categories": {
@@ -275,7 +318,10 @@
         77
       ],
       "latest": 77,
-      "direction": "rising"
+      "direction": "rising",
+      "source": "seed",
+      "fetchedAt": null,
+      "stale": true
     },
     "Digestive": {
       "interest": [
@@ -293,7 +339,10 @@
         51
       ],
       "latest": 51,
-      "direction": "rising"
+      "direction": "rising",
+      "source": "seed",
+      "fetchedAt": null,
+      "stale": true
     },
     "Cream": {
       "interest": [
@@ -311,7 +360,10 @@
         64
       ],
       "latest": 64,
-      "direction": "flat"
+      "direction": "flat",
+      "source": "seed",
+      "fetchedAt": null,
+      "stale": true
     },
     "Crackers": {
       "interest": [
@@ -329,7 +381,10 @@
         43
       ],
       "latest": 43,
-      "direction": "flat"
+      "direction": "flat",
+      "source": "seed",
+      "fetchedAt": null,
+      "stale": true
     },
     "Rusk": {
       "interest": [
@@ -347,7 +402,10 @@
         38
       ],
       "latest": 38,
-      "direction": "flat"
+      "direction": "flat",
+      "source": "seed",
+      "fetchedAt": null,
+      "stale": true
     },
     "Wafer": {
       "interest": [
@@ -365,7 +423,10 @@
         45
       ],
       "latest": 45,
-      "direction": "rising"
+      "direction": "rising",
+      "source": "seed",
+      "fetchedAt": null,
+      "stale": true
     }
   }
 }
