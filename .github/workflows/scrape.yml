@@ -2,6 +2,11 @@ name: Scrape
 
 on:
   workflow_dispatch:
+    inputs:
+      debug_brands:
+        description: 'Debug only: comma-separated brands to dump raw markdown to data/_debug/. Leave empty for normal runs.'
+        required: false
+        default: ''
   schedule:
     - cron: '0 2 * * *'      # daily; adjust later
 
@@ -19,6 +24,7 @@ jobs:
       - run: node scripts/scrape.mjs
         env:
           FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+          DEBUG_DUMP_BRANDS: ${{ github.event.inputs.debug_brands }}
       - name: Commit refreshed data
         run: |
           git config user.name  "github-actions[bot]"

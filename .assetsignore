@@ -8,6 +8,9 @@
 # CI-only scrape script (not served)
 scripts
 
+# Debug raw-markdown captures (committed for parser work, but not served)
+data/_debug
+
 # Dependencies & lockfiles
 node_modules
 package.json

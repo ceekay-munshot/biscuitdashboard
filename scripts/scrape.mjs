@@ -335,6 +335,12 @@ async function main(){
   const key = process.env.FIRECRAWL_API_KEY;
   if (!key){ console.error('FIRECRAWL_API_KEY not set'); process.exit(1); }
 
+  // Debug raw-markdown capture — OFF by default. Set DEBUG_DUMP_BRANDS to a
+  // comma-separated brand list (via the Scrape workflow's debug_brands input) to
+  // write those pages' raw Firecrawl markdown to data/_debug/ for parser work.
+  // Reuses the normal scrape fetch, so it costs no extra Firecrawl calls.
+  const DUMP_BRANDS = (process.env.DEBUG_DUMP_BRANDS||'').split(',').map(s=>s.trim()).filter(Boolean);
+
   const allSkus = [], globalSeen = new Set();
   let brandsOk = 0;
 
@@ -346,6 +352,11 @@ async function main(){
     for (const url of urls){
       try {
         const md = await firecrawl(url, key);
+        if (DUMP_BRANDS.includes(brand)){
+          mkdirSync('data/_debug', { recursive:true });
+          writeFileSync(`data/_debug/${brand.replace(/[^a-z0-9]+/gi,'_')}.${detectPlatform(url)}.md`, md);
+          console.log(`  [debug] dumped ${brand} ${detectPlatform(url)} (${md.length} chars)`);
+        }
         for (const s of parseSKUsFromPage(md, url, brand, company)){
           const k = dedupeKey(s);
           if (seen.has(k)) continue;
