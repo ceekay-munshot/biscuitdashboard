@@ -166,6 +166,16 @@ td a:hover{color:#B6772E;text-decoration:underline}
 .rq-chip .rq-val{font-size:10px;font-weight:700;background:rgba(10,74,58,.12);padding:1px 6px;border-radius:8px}
 .rq-chip.rq-break{background:#FCE9D6;color:#8A3B00;border-color:rgba(138,59,0,.25)}
 .rq-chip.rq-break .rq-val{background:#E8590C;color:#fff}
+/* Market Share & Sales view */
+.prov-banner{display:block;max-width:none;background:#FBF3E3;border:0.5px solid rgba(182,119,46,.35);color:#5A4300;line-height:1.55}
+.prov-audited{background:#DFF1EB;color:#0A4A3A}
+.prov-est{background:#FCE9D6;color:#8A3B00}
+.cls-leader{background:#DFF1EB;color:#0A4A3A}
+.cls-challenger{background:#E6EDF8;color:#102C58}
+.cls-insurgent{background:#FCE9D6;color:#8A3B00}
+.cls-declining{background:#F7E0E3;color:#7A0A1C}
+.share-src{font-size:10px;margin-top:8px;color:#9b9a96}
+.share-src a{color:#6E4300}
 
 /* Emerging-brands radar */
 .roster-ref{display:flex;flex-wrap:wrap;gap:8px;line-height:1.6}
@@ -257,6 +267,7 @@ let STATE = {
   trends:null,          // data/trends.json (seeded Google Trends snapshot)
   trendsMode:'brands',  // Trends view main-chart toggle: 'brands' | 'categories'
   trendsSeed:null,      // Trends view related-queries seed toggle (null → first seed)
+  share:null,           // data/marketshare.json (market share / sales — audited + labelled estimates)
   history:[],           // data/history.json
   loading:false,        // true while (re)loading the static JSON
   view:null,            // active route (null/'dashboard' default; objects carry .type)
@@ -374,6 +385,11 @@ async function loadData(){
     const r = await fetch('/data/trends.json' + bust, { cache:'no-store' });
     STATE.trends = r.ok ? await r.json() : null;     // seeded Google Trends snapshot
   } catch(e){ STATE.trends = null; }
+
+  try {
+    const r = await fetch('/data/marketshare.json' + bust, { cache:'no-store' });
+    STATE.share = r.ok ? await r.json() : null;      // market share / sales (audited + labelled estimates)
+  } catch(e){ STATE.share = null; }
 }
 
 async function reload(){
@@ -429,10 +445,9 @@ function render(){
       renderRadar();
       break;
 
-    /* ---- Views arriving in later build steps -----------------------------
-       case 'share':    renderShare();     break;
-       case 'history':  renderHistory();   break;
-       --------------------------------------------------------------------- */
+    case 'share':
+      renderShare();
+      break;
 
     case 'dashboard':
     default:
@@ -594,6 +609,7 @@ function overviewHTML(view){
       <button onclick="navigate({type:'packsize'})">Pack Sizes</button>
       <button onclick="navigate({type:'history'})">History</button>
       <button onclick="navigate({type:'trends'})">Google Trends</button>
+      <button onclick="navigate({type:'share'})">Market Share</button>
       <button onclick="navigate({type:'radar'})">Emerging Brands</button>
       <button onclick="reload()"${STATE.loading?' disabled':''}>↻ Reload</button>
     </div>
@@ -1384,6 +1400,138 @@ function renderRadar(){
     <div class="sec-title">Tracked roster (reference)</div>
     <div class="roster-ref">${roster}</div>
   </div></div>`;
+}
+
+/* ---- Market Share & Sales (data/marketshare.json — audited + labelled estimates) ---- */
+// PURE: position a company from market share % + YoY growth. Leader / Challenger /
+// Insurgent / Declining, with a colour and a one-line read.
+function classifyShare(sharePct, yoyPct){
+  const s = +sharePct || 0;
+  const g = (yoyPct == null) ? null : +yoyPct;
+  if (s >= 25)              return { label:'Leader',     cls:'cls-leader',     color:'#0A4A3A', read:'Dominant scale' + (g!=null && g<=0 ? ' — but growth has stalled' : '') };
+  if (g != null && g <= 0)  return { label:'Declining',  cls:'cls-declining',  color:'#7A0A1C', read:'Losing ground — flat/negative growth' };
+  if (s >= 8)               return { label:'Challenger',  cls:'cls-challenger', color:'#102C58', read:'Meaningful #2/#3 scale, still growing' };
+  if (g != null && g >= 20) return { label:'Insurgent',   cls:'cls-insurgent',  color:'#8A3B00', read:'Tiny base, breakout growth' };
+  return                           { label:'Insurgent',   cls:'cls-insurgent',  color:'#8A3B00', read:'Small but growing — one to watch' };
+}
+
+// Colour a company group consistently with the rest of the dashboard.
+function shareColor(name){
+  if (/Britannia/i.test(name))     return COL['Britannia'];
+  if (/ITC|Sunfeast/i.test(name))  return COL['ITC Sunfeast'];
+  if (/Parle/i.test(name))         return COL['Parle'];
+  if (/Mondelez|Oreo/i.test(name)) return COL['Mondelez'];
+  if (/Unibic/i.test(name))        return COL['Unibic'];
+  if (/Whole Truth|D2C/i.test(name)) return COL['Emerging / D2C'];
+  return '#B9B6AE';   // Others / Regional
+}
+const fmtCr = n => n==null ? '—' : '₹' + Number(n).toLocaleString('en-IN') + ' Cr';
+const yoyHtml = g => g==null ? '<span class="muted">n/a</span>'
+  : `<span style="color:${g>0?'#0A4A3A':g<0?'#7A0A1C':'#9b9a96'};font-weight:600">${g>0?'▲ +':g<0?'▼ ':''}${g}%</span>`;
+
+function renderShare(){
+  const s = STATE.share;
+  const backBar = `<div class="back-bar"><button onclick="navigate('dashboard')">← Back</button><strong>Market Share &amp; Sales</strong></div>`;
+  if (!s || !Array.isArray(s.companies) || !s.companies.length){
+    $app().innerHTML = backBar + `<div class="notice info">No market-share data — <code>data/marketshare.json</code> not found.</div>`;
+    return;
+  }
+  const cos = s.companies;
+  const shareCos = cos.filter(c => c.marketSharePct != null).sort((a,b)=>b.marketSharePct-a.marketSharePct);          // for the pie (incl. Others)
+  const ranked = cos.filter(c => c.biscuitRevenueCr != null).sort((a,b)=>b.biscuitRevenueCr-a.biscuitRevenueCr);     // for ranking + cards (exclude Others)
+  const auditedN = ranked.filter(c=>!c.isEstimated).length;
+  const estN     = cos.filter(c=>c.isEstimated).length;
+
+  // Provenance banner (prominent — which numbers are audited vs estimated).
+  const banner = `🧾 <strong>Provenance — read before trusting a number.</strong> ${esc(s.disclaimer||'')} `
+    + `<strong>${auditedN}</strong> group(s) AUDITED, <strong>${estN}</strong> ESTIMATED.`;
+
+  // Revenue ranking + YoY.
+  const maxRev = Math.max(...ranked.map(c=>c.biscuitRevenueCr), 1);
+  const revRows = ranked.map(c=>`
+    <div class="catbar-row">
+      <span class="catbar-label"><span class="dot" style="background:${shareColor(c.company)}"></span>${esc(c.company)}
+        <span class="badge ${c.isEstimated?'prov-est':'prov-audited'}" style="font-size:9px;padding:1px 6px;margin-left:4px">${c.isEstimated?'EST':'AUD'}</span></span>
+      <span class="bar-wrap"><span class="bar-fill" style="width:${Math.round(c.biscuitRevenueCr/maxRev*100)}%;background:${shareColor(c.company)}"></span></span>
+      <span class="catbar-val">${fmtCr(c.biscuitRevenueCr)} &nbsp; ${yoyHtml(c.yoyGrowthPct)}</span>
+    </div>`).join('');
+
+  // Classification cards (share × growth) with AUDITED/ESTIMATED badge, numbers, source, read.
+  const cards = ranked.map(c=>{
+    const cl = classifyShare(c.marketSharePct, c.yoyGrowthPct);
+    const col = shareColor(c.company);
+    return `<div class="card sig-card fadein"><div class="card-pad">
+      <div class="sig-brand"><span class="dot" style="background:${col}"></span>${esc(c.company)}
+        <span class="badge ${c.isEstimated?'prov-est':'prov-audited'}" style="float:right">${c.isEstimated?'ESTIMATED':'AUDITED'}</span></div>
+      <div class="sig-metrics"><span>share <strong>${c.marketSharePct}%</strong> <span class="muted">est.</span></span><span><strong>${fmtCr(c.biscuitRevenueCr)}</strong></span></div>
+      <div class="sig-metrics"><span>YoY ${yoyHtml(c.yoyGrowthPct)}</span><span class="muted">${esc(c.revenuePeriod||c.period||'')}</span></div>
+      <span class="badge ${cl.cls}">${cl.label}</span>
+      <div class="sig-sub">${esc(cl.read)}</div>
+      <div class="share-src">${c.sourceUrl?`<a href="${esc(c.sourceUrl)}" target="_blank" rel="noopener">source ↗</a>`:''}<span class="muted"> · ${esc(c.shareSource||'')}</span></div>
+    </div></div>`;
+  }).join('');
+
+  $app().innerHTML = `
+  ${backBar}
+  <div class="notice prov-banner">${banner}</div>
+
+  <div class="grid2">
+    <div class="card fadein"><div class="card-pad">
+      <div class="sec-title">Market share <span class="muted" style="text-transform:none;letter-spacing:0">· % of India biscuit market · ESTIMATE (industry reports)</span></div>
+      <div class="chart-box" style="height:300px"><canvas id="shareChart"></canvas></div>
+      <div class="hm-cap">${esc(s.shareNote||'')}</div>
+    </div></div>
+    <div class="card fadein"><div class="card-pad">
+      <div class="sec-title">Biscuit revenue ranking <span class="muted" style="text-transform:none;letter-spacing:0">· ₹ Cr · AUD = audited, EST = estimated</span></div>
+      ${revRows}
+      <div class="hm-cap">${esc(s.marketContext||'')}</div>
+    </div></div>
+  </div>
+
+  <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
+    <div class="sec-title">Share × growth matrix <span class="muted" style="text-transform:none;letter-spacing:0">· x = share % · y = YoY growth % · bubble = biscuit revenue</span></div>
+    <div class="chart-box" style="height:340px"><canvas id="shareScatter"></canvas></div>
+    <div class="hm-cap">Top-right = big &amp; growing (Leaders/Challengers); bottom = shrinking (Declining); far-left &amp; high = small, fast-rising (Insurgents).</div>
+  </div></div>
+
+  <div class="sec-title">Competitive position · ${ranked.length} groups</div>
+  <div class="grid3">${cards}</div>
+
+  <div class="card fadein" style="margin-top:16px"><div class="card-pad">
+    <div class="sec-title">Methodology &amp; caveats</div>
+    <p class="admin-p"><strong>Real vs estimated.</strong> Listed companies (<strong>Britannia, ITC</strong>) show <strong>AUDITED</strong> figures from their annual reports/results, with source links. <strong>ITC's biscuit (Sunfeast) split is an ESTIMATE</strong> — its audited number is the combined Branded Packaged Foods segment, not biscuits alone. Private &amp; D2C groups (<strong>Parle, Mondelez India, Unibic, The Whole Truth</strong>) use public RoC filings / press where available, but their <strong>biscuit-only revenue is ESTIMATED</strong> (these file blended or partial numbers). Nothing estimated is presented as audited — every card carries an AUDITED/ESTIMATED badge.</p>
+    <p class="admin-p"><strong>Market share %</strong> is <strong>industry-report-sourced</strong> (Statista/Nielsen/Euromonitor) and is treated as an <strong>ESTIMATE for every company, including the listed ones</strong> — exact share is not audited. Britannia leads by <em>value</em>; Parle leads by <em>volume</em> (Parle-G is the world's largest-selling biscuit).</p>
+    <p class="admin-p"><strong>Period-alignment caveat.</strong> Reporting periods differ (Britannia/ITC FY24, Parle FY23 with FY25 growth, Unibic FY24, The Whole Truth FY25) so cross-company comparisons are indicative, not exact. <strong>Update this file when new results publish.</strong> This is competitive-finance context — it is <em>not</em> the live ₹/g pricing data, which comes from the daily scrape.</p>
+  </div></div>`;
+
+  drawShareCharts();
+}
+
+function drawShareCharts(){
+  const s = STATE.share; if (!s || !Array.isArray(s.companies)) return;
+  const shareCos = s.companies.filter(c=>c.marketSharePct!=null).sort((a,b)=>b.marketSharePct-a.marketSharePct);
+  const ranked   = s.companies.filter(c=>c.biscuitRevenueCr!=null);
+  waitForChart(()=>{
+    mkChart('shareChart', { type:'doughnut',
+      data:{ labels: shareCos.map(c=>c.company), datasets:[{ data: shareCos.map(c=>c.marketSharePct), backgroundColor: shareCos.map(c=>shareColor(c.company)), borderColor:'#fff', borderWidth:1.5 }] },
+      options:{ responsive:true, maintainAspectRatio:false, cutout:'55%',
+        plugins:{ legend:{position:'right', labels:{boxWidth:10, font:{size:10}, padding:6}},
+          tooltip:{callbacks:{label:c=>`${c.label}: ${c.raw}% (est.)`}} } }
+    });
+    mkChart('shareScatter', { type:'bubble',
+      data:{ datasets: ranked.map(c=>{
+        const cl = classifyShare(c.marketSharePct, c.yoyGrowthPct);
+        return { label:c.company,
+          data:[{ x:c.marketSharePct, y:(c.yoyGrowthPct==null?0:c.yoyGrowthPct), r:Math.max(6, Math.sqrt(c.biscuitRevenueCr)/6) }],
+          backgroundColor: hexToRgba(cl.color, .45), borderColor: cl.color, borderWidth:1.5 };
+      }) },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{position:'bottom', labels:{boxWidth:10, font:{size:10}, padding:6}},
+          tooltip:{callbacks:{label:c=>{ const d=c.raw; return `${c.dataset.label}: ${d.x}% share, ${d.y>=0?'+':''}${d.y}% YoY`; }}} },
+        scales:{ x:{ title:{display:true, text:'Market share % (est.)', font:{size:10}}, beginAtZero:true, grid:{color:'rgba(26,26,24,.06)'}, ticks:{font:{size:10}} },
+                 y:{ title:{display:true, text:'YoY growth %', font:{size:10}}, grid:{color:'rgba(26,26,24,.06)'}, ticks:{font:{size:10}} } } }
+    });
+  });
 }
 
 function renderAdmin(){
