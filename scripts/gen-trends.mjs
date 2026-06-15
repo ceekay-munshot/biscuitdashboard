@@ -19,14 +19,9 @@ const CATEGORIES = ['Cookies','Digestive','Cream','Crackers','Rusk','Wafer'];
 const BRAND_ANCHOR = 'Parle-G';   // most-searched biscuit term — present in every brand batch
 const CAT_ANCHOR   = 'biscuit';   // normalization anchor for categories (not itself a category)
 
-const GEO='IN', TIME='today 12-m', HL='en-US', TZ=-330;
-const UA = {
-  'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36',
-  'Accept-Language':'en-US,en;q=0.9',
-};
+const GEO='IN', TIME='today 12-m';
 const sleep = ms => new Promise(r=>setTimeout(r, ms));
 const mean = a => a.length ? a.reduce((s,x)=>s+x,0)/a.length : 0;
-const stripPrefix = t => { const i = t.indexOf('{'); if (i<0) throw new Error('no JSON in response'); return t.slice(i); };
 
 // Reduce a (weekly) interest series to 12 monthly buckets (averaged).
 function to12(series){
@@ -60,34 +55,34 @@ function buildOutput(names, raw, prevMap, fetchedAt){
   return { out, fetchedCount: fetched.length };
 }
 
-async function getCookie(){
-  try {
-    const r = await fetch('https://trends.google.com/?geo='+GEO, { headers:UA, signal:AbortSignal.timeout(20000) });
-    const sc = r.headers.get('set-cookie');
-    if (sc) return sc.split(/,(?=[^;,]+=)/).map(c=>c.split(';')[0].trim()).join('; ');
-  } catch(e){ console.log('  cookie fetch failed:', e.message); }
-  return '';
-}
-async function gtFetch(url, cookie){
-  const r = await fetch(url, { headers: cookie ? {...UA, cookie} : UA, signal:AbortSignal.timeout(30000) });
-  if (!r.ok) throw new Error('HTTP '+r.status);
-  return JSON.parse(stripPrefix(await r.text()));
-}
-async function fetchBatch(keywords, cookie){
-  const req = { comparisonItem: keywords.map(kw=>({keyword:kw, geo:GEO, time:TIME})), category:0, property:'' };
-  const ex = await gtFetch(`https://trends.google.com/trends/api/explore?hl=${HL}&tz=${TZ}&req=${encodeURIComponent(JSON.stringify(req))}`, cookie);
-  const w = (ex.widgets||[]).find(x=>x.id==='TIMESERIES');
-  if (!w) throw new Error('no TIMESERIES widget');
-  await sleep(700);
-  const ml = await gtFetch(`https://trends.google.com/trends/api/widgetdata/multiline?hl=${HL}&tz=${TZ}&req=${encodeURIComponent(JSON.stringify(w.request))}&token=${w.token}`, cookie);
-  const tl = (ml.default && ml.default.timelineData) || [];
+// Parse a SerpApi google_trends TIMESERIES response → { keyword: number[12] }.
+function parseSerpTimeseries(data, keywords){
+  if (data && data.error) throw new Error('serpapi: '+data.error);
+  const tl = (data && data.interest_over_time && data.interest_over_time.timeline_data) || [];
+  if (!tl.length) throw new Error('no timeline_data');
   const out = {};
-  keywords.forEach((kw,i)=>{ out[kw] = to12(tl.map(p => (p.value && p.value[i]) || 0)); });
+  keywords.forEach((kw,i)=>{
+    out[kw] = to12(tl.map(td => {
+      const v = td.values && td.values[i];
+      return v ? (v.extracted_value != null ? v.extracted_value : (+v.value || 0)) : 0;
+    }));
+  });
   return out;
 }
 
+// One batch (≤5 terms incl. anchor) via SerpApi's google_trends engine (real Google Trends).
+async function fetchBatch(keywords, key){
+  const url = 'https://serpapi.com/search.json?engine=google_trends'
+    + `&q=${encodeURIComponent(keywords.join(','))}`
+    + `&data_type=TIMESERIES&geo=${GEO}&date=${encodeURIComponent(TIME)}&api_key=${key}`;
+  const r = await fetch(url, { signal: AbortSignal.timeout(45000) });
+  const data = await r.json().catch(()=>({}));
+  if (!r.ok) throw new Error('serpapi HTTP '+r.status+(data && data.error ? ': '+data.error : ''));
+  return parseSerpTimeseries(data, keywords);
+}
+
 // Fetch a set, anchor-normalized across batches. Returns { name: number[12] } for refreshed keys.
-async function fetchSet(items, anchor, cookie){
+async function fetchSet(items, anchor, key){
   const others = items.filter(x=>x!==anchor);
   const raw = {};
   let anchorRef = null;
@@ -95,7 +90,7 @@ async function fetchSet(items, anchor, cookie){
     const group = others.slice(i, i+4);
     let batch;
     for (let attempt=1; attempt<=2 && !batch; attempt++){
-      try { batch = await fetchBatch([anchor, ...group], cookie); }
+      try { batch = await fetchBatch([anchor, ...group], key); }
       catch(e){ console.log(`  batch [${group.join(', ')}] try ${attempt}: ${e.message}`); if (attempt<2) await sleep(4000); }
     }
     if (!batch) { await sleep(1500); continue; }
@@ -114,11 +109,12 @@ async function main(){
   try { if (existsSync('data/trends.json')) prev = JSON.parse(readFileSync('data/trends.json','utf8')); } catch(_){}
   const prevBrands = prev.brands || {}, prevCats = prev.categories || {};
 
-  const cookie = await getCookie();
+  const key = process.env.SERPAPI_KEY;
   const fetchedAt = new Date().toISOString();
+  if (!key) console.log('SERPAPI_KEY not set — keeping last-good (all values stale).');
 
-  const brandRaw = await fetchSet(BRANDS, BRAND_ANCHOR, cookie);
-  const catRaw   = await fetchSet(CATEGORIES, CAT_ANCHOR, cookie);
+  const brandRaw = key ? await fetchSet(BRANDS, BRAND_ANCHOR, key) : {};
+  const catRaw   = key ? await fetchSet(CATEGORIES, CAT_ANCHOR, key) : {};
 
   const B = buildOutput(BRANDS, brandRaw, prevBrands, fetchedAt);
   const C = buildOutput(CATEGORIES, catRaw, prevCats, fetchedAt);
@@ -131,7 +127,7 @@ async function main(){
   const out = {
     source: liveTotal ? 'google-trends-live' : 'google-trends-live (all last-good)',
     geo: GEO, updated: fetchedAt.slice(0,10), timeframe:'last 12 months', fetchedAt,
-    note: 'Relative search interest (0–100), NOT sales. Fetched live from Google Trends in CI; '
+    note: 'Relative search interest (0–100), NOT sales. Fetched live from Google Trends via SerpApi in CI; '
         + 'any value that could not refresh keeps its last-good and is flagged stale.',
     brands: B.out, categories: C.out,
   };
@@ -145,4 +141,4 @@ if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
   main().catch(e => { console.error(e); process.exit(1); });
 }
 
-export { to12, direction, buildOutput, stripPrefix };
+export { to12, direction, buildOutput, parseSerpTimeseries };
