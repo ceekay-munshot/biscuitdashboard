@@ -28,5 +28,31 @@
     "ts": "2026-06-15T08:02:25.552Z",
     "skuCount": 280,
     "brandsOk": 13
+  },
+  {
+    "ts": "2026-06-15T08:14:52.547Z",
+    "skuCount": 280,
+    "brandsOk": 13,
+    "overall": {
+      "medianPpg": 0.3,
+      "avgDiscount": 16.6,
+      "totalReviews": 4311823,
+      "avgRating": 4.2
+    },
+    "byCompany": {
+      "Britannia": 0.296,
+      "Parle": 0.222,
+      "ITC Sunfeast": 0.467,
+      "Mondelez": 0.3,
+      "Unibic": 0.49
+    },
+    "byCategory": {
+      "Cookies": 0.372,
+      "Cream": 0.3,
+      "Other": 0.16,
+      "Digestive": 0.398,
+      "Crackers": 0.25,
+      "Wafer": 0.878
+    }
   }
 ]
