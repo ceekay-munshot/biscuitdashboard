@@ -433,11 +433,6 @@
     "biscuit": {
       "top": [
         {
-          "query": "gold biscuit",
-          "value": "100",
-          "extracted": 100
-        },
-        {
           "query": "biscuit price",
           "value": "80",
           "extracted": 80
@@ -451,11 +446,6 @@
           "query": "parle biscuit",
           "value": "40",
           "extracted": 40
-        },
-        {
-          "query": "gold biscuit price",
-          "value": "39",
-          "extracted": 39
         },
         {
           "query": "oreo biscuit",
@@ -490,16 +480,6 @@
           "extracted": 7800
         },
         {
-          "query": "copper biscuit price",
-          "value": "+1,350%",
-          "extracted": 1350
-        },
-        {
-          "query": "copper biscuit",
-          "value": "+600%",
-          "extracted": 600
-        },
-        {
           "query": "britannia cheese biscuit",
           "value": "+300%",
           "extracted": 300
@@ -520,11 +500,6 @@
           "extracted": 150
         },
         {
-          "query": "silver biscuit",
-          "value": "+130%",
-          "extracted": 130
-        },
-        {
           "query": "lotus biscoff biscuits",
           "value": "+130%",
           "extracted": 130
@@ -533,11 +508,6 @@
           "query": "mari gold biscuit",
           "value": "+110%",
           "extracted": 110
-        },
-        {
-          "query": "1 gram gold biscuit price",
-          "value": "+100%",
-          "extracted": 100
         },
         {
           "query": "heart shape biscuit",
@@ -552,24 +522,9 @@
     "cookies": {
       "top": [
         {
-          "query": "with",
-          "value": "100",
-          "extracted": 100
-        },
-        {
           "query": "chocolate cookies",
           "value": "79",
           "extracted": 79
-        },
-        {
-          "query": "what is cookies",
-          "value": "66",
-          "extracted": 66
-        },
-        {
-          "query": "clear cookies",
-          "value": "66",
-          "extracted": 66
         },
         {
           "query": "best cookies",
@@ -580,16 +535,6 @@
           "query": "cookies price",
           "value": "60",
           "extracted": 60
-        },
-        {
-          "query": "by",
-          "value": "59",
-          "extracted": 59
-        },
-        {
-          "query": "use",
-          "value": "58",
-          "extracted": 58
         },
         {
           "query": "cookie",
@@ -603,26 +548,6 @@
         }
       ],
       "rising": [
-        {
-          "query": "www cookies forlove.com",
-          "value": "Breakout",
-          "extracted": 15900
-        },
-        {
-          "query": "cookiesforlove cookies archives",
-          "value": "Breakout",
-          "extracted": 15300
-        },
-        {
-          "query": "cookiesforlove raspberry lemonade cookies",
-          "value": "Breakout",
-          "extracted": 14750
-        },
-        {
-          "query": "crumbl cookies cherry hill cookiesforlove",
-          "value": "Breakout",
-          "extracted": 13650
-        },
         {
           "query": "crusant cookies",
           "value": "Breakout",
@@ -639,29 +564,9 @@
           "extracted": 6450
         },
         {
-          "query": "how to enable cookies in firefox",
-          "value": "+4,600%",
-          "extracted": 4600
-        },
-        {
           "query": "100 different types of cookies",
           "value": "+4,050%",
           "extracted": 4050
-        },
-        {
-          "query": "dutch cookies quasar cookiesforlove galaxy",
-          "value": "+3,000%",
-          "extracted": 3000
-        },
-        {
-          "query": "crumbl cookies san jose cookiesforlove",
-          "value": "+1,450%",
-          "extracted": 1450
-        },
-        {
-          "query": "how to enable cookies in safari",
-          "value": "+1,400%",
-          "extracted": 1400
         }
       ],
       "source": "google-trends-live",

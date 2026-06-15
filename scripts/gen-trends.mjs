@@ -33,7 +33,7 @@ const QUERY = {
 const queryOf = name => QUERY[name] || name;
 const BRAND_ANCHOR = 'Parle-G';   // brand-scale anchor (query "Parle G biscuit") — keeps brand resolution
 const CAT_ANCHOR   = 'biscuit';   // generic anchor for the (higher-volume) category terms
-const SEEDS        = ['biscuit','cookies'];  // related/rising "Explore" seeds — one SerpApi call each
+const SEEDS        = ['biscuit','cream biscuit'];  // related/rising "Explore" seeds (food-only) — one SerpApi call each
 
 const GEO='IN', TIME='today 12-m';
 const sleep = ms => new Promise(r=>setTimeout(r, ms));
@@ -92,6 +92,22 @@ function parseSerpTimeseries(data, keywords){
   return out;
 }
 
+// "biscuit"/"cookies" are HOMONYMS in Indian search: a gold bar is a "biscuit"
+// (gold/silver/copper bullion) and "cookies" mostly means browser cookies. We
+// drop those wrong-meaning queries + obvious spam/stopwords — NOT fabrication:
+// every query we KEEP is a real Google Trends query, we only exclude off-topic
+// senses of the word (same disambiguation as the timeseries: Monaco≠F1).
+function relevantQuery(q){
+  const s = String(q||'').trim().toLowerCase();
+  if (s.length < 3) return false;
+  if (['with','by','use','and','the','for','what is cookies','clear cookies'].includes(s)) return false;
+  if (/\b(copper|silver|platinum|bullion|ingot|tola)\b/.test(s)) return false;        // precious-metal "biscuit"
+  if (/\bgold\b/.test(s) && !/\bmar(i|ie)\b/.test(s)) return false;                    // gold bar — but keep "Marie/Mari Gold"
+  if (/forlove/.test(s)) return false;                                                 // spam domain (cookiesforlove)
+  if (/(clear|enable|disable|delete|block|accept|third).{0,12}cookie|cookie.{0,12}(firefox|safari|chrome|edge|browser|setting)|what (is|are) cookies?/.test(s)) return false; // browser cookies
+  return true;
+}
+
 // Parse a SerpApi google_trends RELATED_QUERIES response → { top:[], rising:[] }.
 // `top`    = most-searched related queries (indexed 0–100).
 // `rising` = fastest-growing; value is "+250%" or "Breakout" (>5000% growth).
@@ -99,11 +115,11 @@ function parseRelated(data){
   if (data && data.error) throw new Error('serpapi: '+data.error);
   const rq = data && data.related_queries;
   if (!rq || (!rq.top && !rq.rising)) throw new Error('no related_queries');
-  const clean = (arr, limit) => (Array.isArray(arr)?arr:[]).slice(0, limit).map(o=>({
+  const clean = (arr, limit) => (Array.isArray(arr)?arr:[]).map(o=>({
     query: String(o.query||'').trim(),
     value: o.value!=null ? String(o.value) : '',
     extracted: o.extracted_value!=null ? o.extracted_value : null,
-  })).filter(o=>o.query);
+  })).filter(o=>o.query && relevantQuery(o.query)).slice(0, limit);   // filter homonyms BEFORE limiting
   const top = clean(rq.top, 10), rising = clean(rq.rising, 12);
   if (!top.length && !rising.length) throw new Error('related_queries empty');
   return { top, rising };
@@ -222,4 +238,4 @@ if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
   main().catch(e => { console.error(e); process.exit(1); });
 }
 
-export { to12, direction, buildOutput, parseSerpTimeseries, parseRelated };
+export { to12, direction, buildOutput, parseSerpTimeseries, parseRelated, relevantQuery };
