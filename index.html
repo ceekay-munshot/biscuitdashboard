@@ -161,6 +161,10 @@ td a:hover{color:#B6772E;text-decoration:underline}
 .sig-fade{background:#f0ede8;color:#9b9a96}
 .sig-steady{background:#E6EDF8;color:#102C58}
 
+/* Emerging-brands radar */
+.roster-ref{display:flex;flex-wrap:wrap;gap:8px;line-height:1.6}
+.roster-ref .grp-chip{font-size:11px;white-space:normal}
+
 /* Admin / system info */
 .admin-h{font-size:18px;font-weight:700;margin-bottom:12px}
 .admin-h.sub{font-size:13px;margin:18px 0 8px}
@@ -179,7 +183,7 @@ td a:hover{color:#B6772E;text-decoration:underline}
 <script>
 /* ============================================================
    BISCUIT MARKET INTELLIGENCE DASHBOARD
-   Build Step 9 / 12 — real quick-commerce attempt (BigBasket) + category/D2C coverage
+   Build Step 10 / 14 — emerging-brands radar + attribution cleanup
    Single-file, zero-build. Vanilla ES6.
 
    Scraping runs in GitHub Actions (scripts/scrape.mjs) and commits
@@ -414,8 +418,11 @@ function render(){
       renderTrends();
       break;
 
+    case 'radar':
+      renderRadar();
+      break;
+
     /* ---- Views arriving in later build steps -----------------------------
-       case 'radar':    renderRadar();     break;
        case 'share':    renderShare();     break;
        case 'history':  renderHistory();   break;
        --------------------------------------------------------------------- */
@@ -580,6 +587,7 @@ function overviewHTML(view){
       <button onclick="navigate({type:'packsize'})">Pack Sizes</button>
       <button onclick="navigate({type:'history'})">History</button>
       <button onclick="navigate({type:'trends'})">Google Trends</button>
+      <button onclick="navigate({type:'radar'})">Emerging Brands</button>
       <button onclick="reload()"${STATE.loading?' disabled':''}>↻ Reload</button>
     </div>
   </div>
@@ -1266,6 +1274,56 @@ function drawTrendsChart(){
   });
 }
 
+/* ---- Emerging-brands radar (brands outside the tracked roster) ---- */
+function renderRadar(){
+  const backBar = `<div class="back-bar"><button onclick="navigate('dashboard')">← Back</button><strong>Emerging Brands Radar</strong></div>`;
+  const emg = STATE.skus.filter(s=>s.company==='Emerging / D2C');
+  if (!emg.length){
+    $app().innerHTML = backBar + `<div class="notice info">No emerging brands in the current data — run the Scrape workflow.</div>`;
+    return;
+  }
+  const m = new Map();
+  for (const s of emg){ const b = s.brand || 'Unknown'; if (!m.has(b)) m.set(b, []); m.get(b).push(s); }
+  const rows = [...m].map(([brand,gs])=>{
+    const reviews = gs.reduce((a,s)=>a+(s.reviewCount||0), 0);
+    const catCount = {}; gs.forEach(s=>catCount[s.category]=(catCount[s.category]||0)+1);
+    const cat = Object.keys(catCount).sort((a,b)=>catCount[b]-catCount[a])[0];
+    const sample = gs.slice().sort((a,b)=>(b.reviewCount||0)-(a.reviewCount||0)).find(s=>s.url) || gs[0];
+    const real = gs.length>=2 && reviews>=50 && brand!=='Unknown';
+    return { brand, count:gs.length, ppg:calcStats(gs.map(s=>s.pricePerGram),3).median, reviews, traction:gs.length*reviews, cat, sample, real };
+  }).sort((a,b)=> b.traction - a.traction || b.reviews - a.reviews);
+
+  const realCount = rows.filter(r=>r.real).length;
+  const tableRows = rows.map(r=>`<tr>
+    <td><strong>${esc(r.brand)}</strong></td>
+    <td class="num">${r.count}</td>
+    <td class="num">${rs2(r.ppg)}</td>
+    <td class="num">${kCompact(r.reviews)}</td>
+    <td class="num">${kCompact(r.traction)}</td>
+    <td>${esc(r.cat)}</td>
+    <td><span class="badge ${r.real?'sig-mass':'sig-fade'}">${r.real?'real brand':'low-signal'}</span></td>
+    <td>${r.sample&&r.sample.url?`<a href="${esc(r.sample.url)}" target="_blank" rel="noopener" title="${esc(r.sample.name)}">↗</a>`:''}</td>
+  </tr>`).join('');
+
+  const roster = Object.keys(COL).filter(c=>c!=='Emerging / D2C').map(co=>
+    `<span class="grp-chip" style="background:${BG[co]};color:${TXT[co]}">${esc(co)}: ${BRANDS.filter(b=>b.company===co).map(b=>esc(b.brand)).join(', ')}</span>`).join(' ');
+
+  $app().innerHTML = `${backBar}
+  <div class="notice info" style="margin-bottom:18px">Brands appearing in the category <strong>beyond the tracked roster</strong> — new / D2C / regional players. Traction = SKU count × review volume (<strong>no sales data exists</strong>).</div>
+  <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
+    <div class="results-meta"><strong>${rows.length}</strong> emerging brands · <strong>${realCount}</strong> look like real brands · ${emg.length} SKUs</div>
+    <div class="tbl-scroll"><table style="min-width:700px">
+      <thead><tr><th>Brand</th><th>SKUs</th><th>Median ₹/g</th><th>Reviews</th><th>Traction</th><th>Top Category</th><th>Confidence</th><th></th></tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table></div>
+    <div class="hm-cap">Traction = SKUs × total reviews (interest proxy, not sales). "Real brand" = ≥2 SKUs and ≥50 reviews.</div>
+  </div></div>
+  <div class="card fadein"><div class="card-pad">
+    <div class="sec-title">Tracked roster (reference)</div>
+    <div class="roster-ref">${roster}</div>
+  </div></div>`;
+}
+
 function renderAdmin(){
   const roster = Object.keys(COL).map(g=>{
     const brands = BRANDS.filter(b=>b.company===g).map(b=>b.brand).join(', ');
@@ -1314,7 +1372,7 @@ function renderAdmin(){
       <h3 class="admin-h sub">Status</h3>
       <p class="admin-p">
         Loaded ${TODAY}. ${histLine} Build progress:
-        <strong>Step 9 of 12</strong> — BigBasket attempted (blocked, logged) + Amazon coverage for Rusk/Wafer/D2C.
+        <strong>Step 10 of 14</strong> — emerging-brands radar + sub-brand attribution cleanup.
       </p>
 
       <h3 class="admin-h sub">Tracked roster</h3>

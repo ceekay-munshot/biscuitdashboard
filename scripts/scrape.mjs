@@ -56,6 +56,42 @@ const COMPANY_ALIASES = {
   "Unibic": ["unibic"],
 };
 
+// Known SUB-brands beyond the tracked roster → company (matched against the title)
+// so e.g. Britannia's "Toastea" rusk doesn't get mislabelled Emerging/D2C.
+const ALIASES = [
+  ["Toastea","Britannia"],["Milk Bikis","Britannia"],["Jim Jam","Britannia"],["Treat","Britannia"],
+  ["Tiger","Britannia"],["50-50","Britannia"],["Pure Magic","Britannia"],["Little Hearts","Britannia"],
+  ["Hide & Seek","Parle"],["Monaco","Parle"],["KrackJack","Parle"],["20-20","Parle"],
+  ["Magix","Parle"],["Happy Happy","Parle"],["Milano","Parle"],
+  ["Dark Fantasy","ITC Sunfeast"],["Bounce","ITC Sunfeast"],["Mom's Magic","ITC Sunfeast"],
+  ["Farmlite","ITC Sunfeast"],["Sunfeast","ITC Sunfeast"],["Nice","ITC Sunfeast"],
+  ["Oreo","Mondelez"],["Chocobakes","Mondelez"],["Bournvita","Mondelez"],
+].map(([brand,company])=>({brand,company}));
+
+// Non-brand words that must never become a derived emerging-brand label.
+const JUNK = new Set([
+  'pack','combo','set','box','of','midbreak','rusk','rusks','toast','toastea','biscuit','biscuits',
+  'cookie','cookies','wafer','wafers','cracker','crackers','assorted','value','premium','classic',
+  'original','pure','family','jar','pouch','the','with','and','for','flavour','flavored','flavoured',
+  'crispy','crunchy','snack','snacks','tea','special','no','mini','minis','suji','rava',
+  'chocolate','choco','vanilla','strawberry','orange','butter','cashew','almond','coconut','elaichi',
+  'milk','cream','creme','jeera','salt','salted','masala','pista','pistachio','walnut','oats','ragi',
+  'millet','jaggery','atta','wheat','digestive','glucose','marie','sugar','free','gluten','high','fibre','fiber',
+]);
+
+// Derive a clean emerging-brand label: leading proper-noun token(s), junk/numbers skipped.
+function deriveBrand(name){
+  const picked = [];
+  for (const raw of cleanName(name).split(/\s+/)){
+    const w = raw.replace(/[^A-Za-z0-9&'.-]/g,'');
+    if (!w) continue;
+    if (/^\d/.test(w) || JUNK.has(w.toLowerCase())){ if (picked.length) break; else continue; }
+    picked.push(w);
+    if (picked.length >= 2) break;
+  }
+  return picked.join(' ').trim();
+}
+
 /* ============================================================
    PARSER  (moved verbatim from index.html — the tested code)
    ============================================================ */
@@ -324,25 +360,25 @@ function extractSKU(link, block, brand, company, platform){
 
 const isProductUrl = u => /\/dp\/|\/gp\/|\/p\/|\/pd\/|\/prd\/|pid=/i.test(u);
 
-// Classify a discovered product to a known brand → company → emerging brand.
-function classifyBrand(name, url){
+// Classify a discovered product → tracked brand → known sub-brand alias →
+// known company → cleaned emerging-brand label.
+function earliestMatch(list, name, url){
   const nt = norm(name);
-  // known tracked brand — prefer the one whose name appears EARLIEST (then longest),
-  // so "Parle Hide & Seek Bourbon" attributes to Hide & Seek, not Bourbon.
   let best=null, bestPos=Infinity, bestLen=0;
-  for (const b of BRANDS){
-    if (!brandMatches(b.brand, name, url)) continue;
-    const nb = norm(b.brand); const pos = nt.indexOf(nb), p = pos<0 ? 9999 : pos;
-    if (p < bestPos || (p===bestPos && nb.length>bestLen)){ best=b; bestPos=p; bestLen=nb.length; }
+  for (const k of list){
+    if (!brandMatches(k.brand, name, url)) continue;
+    const nb = norm(k.brand), pos = nt.indexOf(nb), p = pos<0 ? 9999 : pos;
+    if (p < bestPos || (p===bestPos && nb.length>bestLen)){ best={brand:k.brand, company:k.company}; bestPos=p; bestLen=nb.length; }
   }
-  if (best) return { brand:best.brand, company:best.company };
-  for (const [co, aliases] of Object.entries(COMPANY_ALIASES)){
-    if (aliases.some(a => nt.includes(a))) return { brand: co, company: co };   // umbrella line
-  }
-  // emerging / unknown — derive a short brand label from the leading words
-  const label = cleanName(name).split(/\s+/).filter(w=>/[a-z]/i.test(w)).slice(0,2)
-    .join(' ').replace(/[^A-Za-z0-9 &'.-]/g,'').trim();
-  return { brand: label || 'Unknown', company: 'Emerging / D2C' };
+  return best;
+}
+function classifyBrand(name, url){
+  return earliestMatch(BRANDS, name, url)                          // 1) tracked roster (most specific)
+      || earliestMatch(ALIASES, name, url)                         // 2) known sub-brand aliases
+      || (()=>{ const nt=norm(name);                               // 3) known company word
+           for (const [co, al] of Object.entries(COMPANY_ALIASES)) if (al.some(a=>nt.includes(a))) return { brand:co, company:co };
+           return null; })()
+      || { brand: deriveBrand(name) || 'Unknown', company: 'Emerging / D2C' };   // 4) cleaned emerging label
 }
 
 // True when a page looks bot-blocked / product-less (e.g. BigBasket's pincode/JS wall).
@@ -527,8 +563,8 @@ if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
 }
 
 export {
-  BRANDS, SEARCH, COVERAGE,
+  BRANDS, SEARCH, COVERAGE, ALIASES,
   parseWeightGrams, detectCategory, parseRating, parseReviewCount,
   extractPrices, cleanName, repairText, detectPlatform, parseSKUsFromPage, dedupeKey,
-  parseSKUsDiscover, classifyBrand, looksBlocked,
+  parseSKUsDiscover, classifyBrand, looksBlocked, deriveBrand,
 };
