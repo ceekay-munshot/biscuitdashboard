@@ -92,7 +92,7 @@ td.num{font-variant-numeric:tabular-nums}
 .tier-value{background:#DFF1EB;color:#0A4A3A}
 .tier-mainstream{background:#FAF0DC;color:#6E4300}
 .tier-premium{background:#F2E7F5;color:#45184F}
-.ov-actions{display:flex;gap:8px;flex-shrink:0}
+.ov-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;flex-shrink:0}
 
 /* Category filter chips */
 .chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px}
@@ -142,7 +142,7 @@ td.num{font-variant-numeric:tabular-nums}
 <script>
 /* ============================================================
    BISCUIT MARKET INTELLIGENCE DASHBOARD
-   Build Step 4 / 12 — category dimension (chips · heatmap · view)
+   Build Step 5 / 12 — pack-size view (bands · bulk curve · interest)
    Single-file, zero-build. Vanilla ES6.
 
    Scraping runs in GitHub Actions (scripts/scrape.mjs) and commits
@@ -178,6 +178,19 @@ const CATEGORIES = ["Cookies","Digestive","Cream","Crackers","Rusk","Wafer","Oth
 const CHIP_ORDER = ["Cookies","Cream","Digestive","Crackers","Rusk","Wafer","Other"]; // chip display order
 const HEATMAP_CATS = ["Cookies","Cream","Digestive","Crackers","Rusk","Wafer"];       // 6 client categories (heatmap columns)
 const CAT_COL = {Cookies:"#C77800",Cream:"#7B2D8E",Digestive:"#138A6E",Crackers:"#1D4E9C",Rusk:"#9B6B2E",Wafer:"#C8102E",Other:"#9b9a96"};
+
+// Pack-size bands (thresholds configurable). packBand(weightGrams) → band name.
+const PACK_ORDER = ["Mini","Small","Medium","Large","Family","Jumbo"];
+const PACK_RANGE = {Mini:"<50g",Small:"50–99g",Medium:"100–199g",Large:"200–399g",Family:"400–799g",Jumbo:"≥800g"};
+function packBand(g){
+  g = +g;
+  if (g < 50)  return "Mini";
+  if (g < 100) return "Small";
+  if (g < 200) return "Medium";
+  if (g < 400) return "Large";
+  if (g < 800) return "Family";
+  return "Jumbo";
+}
 
 /* ------------------------------------------------------------
    2. GLOBAL STATE
@@ -332,9 +345,12 @@ function render(){
       renderCategory();
       break;
 
+    case 'packsize':
+      renderPackSize();
+      break;
+
     /* ---- Views arriving in later build steps -----------------------------
        case 'brand':    renderBrand(v);    break;
-       case 'packsize': renderPackSize(v); break;
        case 'trends':   renderTrends();    break;
        case 'radar':    renderRadar();     break;
        case 'share':    renderShare();     break;
@@ -480,6 +496,7 @@ function overviewHTML(view){
     </div>
     <div class="ov-actions">
       <button onclick="navigate({type:'category'})">Categories</button>
+      <button onclick="navigate({type:'packsize'})">Pack Sizes</button>
       <button onclick="reload()"${STATE.loading?' disabled':''}>↻ Reload</button>
     </div>
   </div>
@@ -640,6 +657,129 @@ function drawCategoryChart(stats){
   });
 }
 
+/* ---- Pack-size intelligence ---- */
+// Per-band stats. Interest = total review volume (a PROXY — no public sales data).
+function packBandStats(skus){
+  const byBand = new Map(PACK_ORDER.map(b=>[b,[]]));
+  for (const s of skus) byBand.get(packBand(s.weightGrams)).push(s);
+  return PACK_ORDER.map(band=>{
+    const gs = byBand.get(band);
+    const catCount = {}; gs.forEach(s=>catCount[s.category]=(catCount[s.category]||0)+1);
+    const domCat = Object.keys(catCount).sort((a,b)=>catCount[b]-catCount[a])[0] || null;
+    const top = topBrands(gs, 1)[0];
+    const ratings = gs.map(s=>s.rating).filter(v=>v!=null);
+    return {
+      band, range: PACK_RANGE[band], skus: gs, count: gs.length,
+      ppg:  calcStats(gs.map(s=>s.pricePerGram), 3),
+      disc: calcStats(gs.map(s=>s.discount), 1),
+      reviews: gs.reduce((a,s)=>a+(s.reviewCount||0), 0),
+      ratingAvg: ratings.length ? +(ratings.reduce((a,b)=>a+b,0)/ratings.length).toFixed(1) : null,
+      domCat, topBrand: top ? top.brand : null
+    };
+  });
+}
+
+// Top-N distinct pack labels by SKU count, with total reviews each.
+function commonPackSizes(skus, n){
+  const m = new Map();
+  for (const s of skus){
+    const k = s.packLabel || (s.weightGrams + ' g');
+    if (!m.has(k)) m.set(k, { label:k, count:0, reviews:0 });
+    const e = m.get(k); e.count++; e.reviews += (s.reviewCount||0);
+  }
+  return [...m.values()].sort((a,b)=> b.count - a.count || b.reviews - a.reviews).slice(0, n);
+}
+
+const kReviews = n => n>=1000 ? (n/1000).toFixed(n>=100000?0:1).replace(/\.0$/,'')+'k' : String(n);
+
+function renderPackSize(){
+  if (!STATE.skus.length){
+    $app().innerHTML = `<div class="back-bar"><button onclick="navigate('dashboard')">← Back</button><strong>Pack-Size Intelligence</strong></div><div class="notice info">No data yet — run the Scrape workflow.</div>`;
+    return;
+  }
+  const bands = packBandStats(STATE.skus);
+  const common = commonPackSizes(STATE.skus, 8);
+
+  const rows = bands.map(b=>{
+    if (!b.count) return `<tr style="opacity:.5"><td><strong>${b.band}</strong> <span class="muted">${b.range}</span></td><td class="num">0</td><td class="num" colspan="6">—</td></tr>`;
+    const tcol = COL[brandCompany(b.topBrand)] || '#999';
+    return `<tr>
+      <td><strong>${b.band}</strong> <span class="muted">${b.range}</span></td>
+      <td class="num">${b.count}</td>
+      <td class="num"><strong>${rs2(b.ppg.median)}</strong></td>
+      <td class="num">${b.disc.avg.toFixed(1)}%</td>
+      <td class="num">${b.reviews.toLocaleString('en-IN')}</td>
+      <td class="num">${b.ratingAvg!=null?'★ '+b.ratingAvg.toFixed(1):'—'}</td>
+      <td>${b.domCat?esc(b.domCat):'—'}</td>
+      <td>${b.topBrand?`<span class="dot" style="background:${tcol}"></span>${esc(b.topBrand)}`:'—'}</td>
+    </tr>`;
+  }).join('');
+
+  const maxRev = Math.max(...common.map(c=>c.reviews), 1);
+  const commonList = common.map(c=>`
+    <div class="catbar-row">
+      <span class="catbar-label">${esc(c.label)}</span>
+      <span class="muted" style="width:58px;font-size:10.5px;flex-shrink:0">${c.count} SKUs</span>
+      <span class="bar-wrap"><span class="bar-fill" style="width:${Math.round(c.reviews/maxRev*100)}%;background:#1D4E9C"></span></span>
+      <span class="catbar-val">${kReviews(c.reviews)}</span>
+    </div>`).join('');
+
+  $app().innerHTML = `
+  <div class="back-bar">
+    <button onclick="navigate('dashboard')">← Back</button>
+    <strong>Pack-Size Intelligence</strong>
+  </div>
+  <div class="notice info" style="margin-bottom:18px">Interest is proxied by <strong>total review volume</strong> — no public sales data exists.</div>
+
+  <div class="grid2">
+    <div class="card fadein"><div class="card-pad">
+      <div class="sec-title">Bulk curve · median ₹/g by pack size</div>
+      <div class="chart-box" style="height:280px"><canvas id="chartBandPpg"></canvas></div>
+    </div></div>
+    <div class="card fadein"><div class="card-pad">
+      <div class="sec-title">Interest · total reviews by pack size</div>
+      <div class="chart-box" style="height:280px"><canvas id="chartBandRev"></canvas></div>
+    </div></div>
+  </div>
+
+  <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
+    <div class="sec-title">Pack-size bands</div>
+    <div class="tbl-scroll"><table style="min-width:780px">
+      <thead><tr><th>Band</th><th>SKUs</th><th>Median ₹/g</th><th>Avg Disc%</th><th>Reviews</th><th>Avg ★</th><th>Top Category</th><th>Top Brand</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+    <div class="hm-cap">“Reviews” = total review volume in the band — an interest proxy, not sales.</div>
+  </div></div>
+
+  <div class="card fadein"><div class="card-pad">
+    <div class="sec-title">Most common pack sizes <span class="muted" style="text-transform:none;letter-spacing:0">· top 8 by SKU count · bar = total reviews</span></div>
+    ${commonList}
+  </div></div>`;
+
+  drawPackCharts(bands);
+}
+
+function drawPackCharts(bands){
+  const present = bands.filter(b=>b.count>0);
+  const labels = present.map(b=>b.band);
+  waitForChart(()=>{
+    mkChart('chartBandPpg', { type:'bar',
+      data:{ labels, datasets:[{ data:present.map(b=>b.ppg.median), backgroundColor:'#B6772E', borderRadius:4, barPercentage:.7 }] },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>'₹'+(+c.raw).toFixed(2)+'/g'}} },
+        scales:{ y:{ beginAtZero:true, grid:{color:'rgba(26,26,24,.06)'}, ticks:{callback:v=>'₹'+v,font:{size:10}} }, x:{ grid:{display:false}, ticks:{font:{size:11}} } }
+      }
+    });
+    mkChart('chartBandRev', { type:'bar',
+      data:{ labels, datasets:[{ data:present.map(b=>b.reviews), backgroundColor:'#1D4E9C', borderRadius:4, barPercentage:.7 }] },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>(+c.raw).toLocaleString('en-IN')+' reviews'}} },
+        scales:{ y:{ beginAtZero:true, grid:{color:'rgba(26,26,24,.06)'}, ticks:{callback:v=>v>=1000?(v/1000)+'k':v,font:{size:10}} }, x:{ grid:{display:false}, ticks:{font:{size:11}} } }
+      }
+    });
+  });
+}
+
 function renderAdmin(){
   const roster = Object.keys(COL).map(g=>{
     const brands = BRANDS.filter(b=>b.company===g).map(b=>b.brand).join(', ');
@@ -686,7 +826,7 @@ function renderAdmin(){
       <h3 class="admin-h sub">Status</h3>
       <p class="admin-p">
         Loaded ${TODAY}. ${histLine} Build progress:
-        <strong>Step 4 of 12</strong> — category dimension (filter chips, heatmap, category view).
+        <strong>Step 5 of 12</strong> — pack-size intelligence (bands, bulk curve, interest proxy).
       </p>
 
       <h3 class="admin-h sub">Tracked roster</h3>
