@@ -68,11 +68,20 @@ const ALIASES = [
   ["Oreo","Mondelez"],["Chocobakes","Mondelez"],["Bournvita","Mondelez"],
 ].map(([brand,company])=>({brand,company}));
 
+// Curated allowlist of real independent / D2C / regional biscuit & wafer brands
+// (outside the 6 tracked groups). Matched against the title so genuine new
+// players surface cleanly; anything unmatched falls to "Other" (never faked).
+const EMERGING_BRANDS = [
+  'Dukes','Open Secret','Anmol','Priyagold','Bisk Farm','McVitie','Cremica','Pillsbury',
+  'Tasty Treat','Karachi','Bonn','Patanjali','Sri Sri','RiteBite','Slurrp Farm','Early Foods',
+  'Timios','Munchilicious','Wholsum','EatAnytime','Cookie Man','Yumznack',
+].map(brand=>({brand, company:'Emerging / D2C'}));
+
 // Non-brand words that must never become a derived emerging-brand label.
 const JUNK = new Set([
   'pack','combo','set','box','of','midbreak','rusk','rusks','toast','toastea','biscuit','biscuits',
   'cookie','cookies','wafer','wafers','cracker','crackers','assorted','value','premium','classic',
-  'unflavoured','unflavored',
+  'unflavoured','unflavored','gram','grams','whole','foxtail','tasty','health','protein','energy','gift',
   'original','pure','family','jar','pouch','the','with','and','for','flavour','flavor','flavored','flavoured',
   'crispy','crunchy','snack','snacks','tea','special','no','mini','minis','suji','rava','combo','box',
   'chocolate','choco','vanilla','strawberry','orange','butter','cashew','almond','coconut','elaichi','elachi',
@@ -82,14 +91,16 @@ const JUNK = new Set([
   'roll','rolls','delight','nut','nuts','crunch','choc','dark','white','fruit','honey','badam','kaju','desi',
 ]);
 
-// Derive a clean emerging-brand label: leading proper-noun token(s), junk/numbers skipped.
-// Generic products with no brand-like leading token return '' (→ "Unknown", not a fake brand).
+// Derive a clean emerging-brand label: leading proper-noun token(s). Junk and
+// numbers are skipped (digits also stripped before the junk check so "Pack75"→
+// "pack"→junk). Brand-less generic titles return '' → "Other", never a fake brand.
 function deriveBrand(name){
   const picked = [];
   for (const raw of cleanName(name).split(/\s+/)){
     const w = raw.replace(/[^A-Za-z0-9&'.-]/g,'').replace(/^[-'.]+|[-'.]+$/g,'');
-    if (!w || w.length<2) { if (picked.length) break; else continue; }
-    if (/^\d/.test(w) || JUNK.has(w.toLowerCase())){ if (picked.length) break; else continue; }
+    if (!w || w.length<3) { if (picked.length) break; else continue; }
+    const base = w.toLowerCase().replace(/\d+/g,'');
+    if (/^\d/.test(w) || JUNK.has(base) || JUNK.has(w.toLowerCase())) { if (picked.length) break; else continue; }
     picked.push(w);
     if (picked.length >= 2) break;
   }
@@ -382,7 +393,9 @@ function classifyBrand(name, url){
       || (()=>{ const nt=norm(name);                               // 3) known company word
            for (const [co, al] of Object.entries(COMPANY_ALIASES)) if (al.some(a=>nt.includes(a))) return { brand:co, company:co };
            return null; })()
-      || { brand: deriveBrand(name) || 'Unknown', company: 'Emerging / D2C' };   // 4) cleaned emerging label
+      || earliestMatch(EMERGING_BRANDS, name, url)                 // 4) curated independent/D2C brands
+      || (()=>{ const b = deriveBrand(name); return b ? { brand:b, company:'Emerging / D2C' } : null; })()  // 5) cleaned label
+      || { brand:'Other', company:'Emerging / D2C' };              // 6) genuinely brand-less
 }
 
 // True when a page looks bot-blocked / product-less (e.g. BigBasket's pincode/JS wall).
@@ -567,7 +580,7 @@ if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
 }
 
 export {
-  BRANDS, SEARCH, COVERAGE, ALIASES,
+  BRANDS, SEARCH, COVERAGE, ALIASES, EMERGING_BRANDS,
   parseWeightGrams, detectCategory, parseRating, parseReviewCount,
   extractPrices, cleanName, repairText, detectPlatform, parseSKUsFromPage, dedupeKey,
   parseSKUsDiscover, classifyBrand, looksBlocked, deriveBrand,
