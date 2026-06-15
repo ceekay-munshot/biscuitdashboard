@@ -70,14 +70,28 @@ input:focus{border-color:#B6772E;box-shadow:0 0 0 3px rgba(182,119,46,.12)}
 .hero-hint{margin-top:34px;font-size:11px;color:#b6b4af}
 .hero-hint kbd{font-family:inherit;font-size:10px;background:#fff;border:0.5px solid rgba(26,26,24,.18);border-radius:4px;padding:1px 5px}
 
-/* Raw results table (Step 2 verification — replaced in Step 3) */
-.results-head{display:flex;align-items:center;gap:12px;margin-bottom:22px;padding-bottom:16px;border-bottom:0.5px solid rgba(26,26,24,.1)}
-.results-meta{margin-bottom:12px;font-size:13px;line-height:1.5}
+/* Tables (shared) */
 .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.tbl-scroll table{min-width:900px}
 .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:middle}
-.cell-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 td.num{font-variant-numeric:tabular-nums}
+
+/* Overview — header, KPI cards, charts */
+.ov-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px}
+.ov-title{font-size:23px;font-weight:700;letter-spacing:-.02em}
+.ov-sub{font-size:12.5px;color:#5c5b57;margin-top:4px}
+.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#138A6E;margin-right:6px;vertical-align:middle;box-shadow:0 0 0 3px rgba(19,138,110,.16)}
+.ov-metricline{font-size:12px;color:#9b9a96;margin-bottom:18px}
+.sec-title{font-size:11px;font-weight:600;color:#9b9a96;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
+.chart-box{position:relative;height:380px}
+.kpi .kpi-co{font-size:12px;font-weight:600;margin-bottom:8px}
+.kpi-big{font-size:29px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.kpi-unit{font-size:15px;font-weight:600;color:#9b9a96;margin-left:1px}
+.kpi .badge{margin-top:10px}
+.kpi-sec{font-size:11.5px;color:#5c5b57;margin-top:11px;line-height:1.7}
+.kpi.empty{opacity:.5}
+.tier-value{background:#DFF1EB;color:#0A4A3A}
+.tier-mainstream{background:#FAF0DC;color:#6E4300}
+.tier-premium{background:#F2E7F5;color:#45184F}
 
 /* Admin / system info */
 .admin-h{font-size:18px;font-weight:700;margin-bottom:12px}
@@ -97,7 +111,7 @@ td.num{font-variant-numeric:tabular-nums}
 <script>
 /* ============================================================
    BISCUIT MARKET INTELLIGENCE DASHBOARD
-   Build Step 2 / 12 — CI scrape → static JSON
+   Build Step 3 / 12 — stats engine + aggregated dashboard
    Single-file, zero-build. Vanilla ES6.
 
    Scraping runs in GitHub Actions (scripts/scrape.mjs) and commits
@@ -137,7 +151,9 @@ const CATEGORIES = ["Cookies","Digestive","Cream","Crackers","Rusk","Wafer","Oth
 const TODAY = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
 
 let STATE = {
-  curr:null,            // { skus:[...], scrapedAt } from data/latest.json
+  skus:[],              // raw SKUs from data/latest.json
+  scrapedAt:null,       // ISO timestamp of the scrape
+  curr:null,            // buildStats() result (companyStats / brandStats / categoryStats)
   history:[],           // data/history.json
   loading:false,        // true while (re)loading the static JSON
   view:null,            // active route (null/'dashboard' default; objects carry .type)
@@ -166,18 +182,79 @@ function mkChart(id, cfg){
 }
 
 /* ------------------------------------------------------------
-   4. DATA LOADING  (reads the CI-committed static JSON)
+   4. STATS ENGINE  (price-per-gram aggregations — hero metric)
+   ------------------------------------------------------------ */
+// Summary stats for a numeric array, each rounded to `dp` decimals.
+function calcStats(nums, dp){
+  const r = v => +(+v).toFixed(dp);
+  if (!nums || !nums.length) return { avg:0, median:0, min:0, max:0, p25:0, p75:0, count:0 };
+  const a = nums.slice().sort((x,y)=>x-y), n = a.length;
+  const q = p => { const i=(n-1)*p, lo=Math.floor(i), hi=Math.ceil(i); return a[lo]+(a[hi]-a[lo])*(i-lo); };
+  return {
+    avg: r(a.reduce((s,x)=>s+x,0)/n),
+    median: r(q(0.5)),
+    min: r(a[0]), max: r(a[n-1]),
+    p25: r(q(0.25)), p75: r(q(0.75)),
+    count: n
+  };
+}
+
+// Positioning tier from median ₹/g (starting thresholds, easy to tweak).
+function positioning(medianPpg){
+  if (medianPpg < 0.25) return 'Value';
+  if (medianPpg <= 0.50) return 'Mainstream';
+  return 'Premium';
+}
+
+// Group SKUs by company / brand / category and compute ₹/g (hero) + discount
+// (secondary) stats, ratings and review sums for each group.
+function buildStats(skus, scrapedAt = STATE.scrapedAt){
+  const groupBy = key => {
+    const m = new Map();
+    for (const s of skus){ const k = s[key]; if (!m.has(k)) m.set(k, []); m.get(k).push(s); }
+    return m;
+  };
+  const statFor = (gs, label, extra) => {
+    const ratings = gs.map(s=>s.rating).filter(v=>v!=null);
+    const categoryCounts = {};
+    for (const s of gs) categoryCounts[s.category] = (categoryCounts[s.category]||0)+1;
+    return Object.assign({
+      name: label,
+      ppg:  calcStats(gs.map(s=>s.pricePerGram), 3),   // hero metric
+      disc: calcStats(gs.map(s=>s.discount), 1),       // secondary metric
+      ratingAvg: ratings.length ? +(ratings.reduce((a,b)=>a+b,0)/ratings.length).toFixed(1) : null,
+      reviewSum: gs.reduce((a,s)=>a+(s.reviewCount||0),0),
+      categoryCounts,
+      skus: gs
+    }, extra);
+  };
+
+  const companyStats  = [...groupBy('company')].map(([company,gs])  => statFor(gs, company,  { company }));
+  const brandStats    = [...groupBy('brand')].map(([brand,gs])      => statFor(gs, brand,    { brand, company: gs[0].company }));
+  const categoryStats = [...groupBy('category')].map(([category,gs])=> statFor(gs, category, { category }));   // rendered in Step 4
+
+  const byMedianDesc = (a,b) => b.ppg.median - a.ppg.median;       // premium-per-gram first
+  companyStats.sort(byMedianDesc);
+  brandStats.sort(byMedianDesc);
+
+  return { companyStats, brandStats, categoryStats, scrapedAt, skuCount: skus.length };
+}
+
+/* ------------------------------------------------------------
+   5. DATA LOADING  (reads the CI-committed static JSON)
    ------------------------------------------------------------ */
 async function loadData(){
   const bust = '?_=' + Date.now();   // cache-bust so ↻ Reload sees fresh data
 
-  STATE.curr = null;
+  STATE.skus = []; STATE.scrapedAt = null; STATE.curr = null;
   try {
     const r = await fetch('/data/latest.json' + bust, { cache:'no-store' });
     if (r.ok){
       const d = await r.json();
-      if (d && Array.isArray(d.skus) && d.skus.length){
-        STATE.curr = { skus: d.skus, scrapedAt: d.scrapedAt || null };
+      if (d && Array.isArray(d.skus)){
+        STATE.skus = d.skus;
+        STATE.scrapedAt = d.scrapedAt || null;
+        if (d.skus.length) STATE.curr = buildStats(d.skus);
       }
     }
   } catch(e){ /* fail soft → empty state */ }
@@ -198,7 +275,7 @@ async function reload(){
 }
 
 /* ------------------------------------------------------------
-   5. ROUTER
+   6. ROUTER
    ------------------------------------------------------------ */
 function navigate(view){
   STATE.view = view;
@@ -234,13 +311,14 @@ function render(){
 }
 
 /* ------------------------------------------------------------
-   6. RENDERERS
+   7. RENDERERS
    ------------------------------------------------------------ */
 const $app = () => document.getElementById('app');
 const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const rs2 = v => '₹' + (+v).toFixed(2);                 // ₹/g formatter
 
 function renderDashboard(){
-  if (STATE.curr && STATE.curr.skus && STATE.curr.skus.length){ $app().innerHTML = rawResultsHTML(); return; }
+  if (STATE.curr && STATE.skus.length){ $app().innerHTML = overviewHTML(); drawOverviewCharts(); return; }
   $app().innerHTML = emptyStateHTML();
 }
 
@@ -264,57 +342,131 @@ function emptyStateHTML(){
   </div>`;
 }
 
-/* TEMPORARY raw results table — replaced by aggregated views in Step 3. */
-function rawResultsHTML(){
-  const skus = STATE.curr.skus.slice().sort((a,b)=>
-    a.brand.localeCompare(b.brand) || a.pricePerGram-b.pricePerGram);
-  const brandsFound = new Set(skus.map(s=>s.brand)).size;
-  const scrapedAt = STATE.curr.scrapedAt ? new Date(STATE.curr.scrapedAt) : null;
-  const asOf = scrapedAt ? scrapedAt.toLocaleString('en-IN') : '—';
+/* Overview dashboard — hero: price-per-gram (₹/g); secondary: discount vs MRP. */
+function overviewHTML(){
+  const st = STATE.curr;
+  const asOf = STATE.scrapedAt ? new Date(STATE.scrapedAt).toLocaleString('en-IN') : '—';
 
-  const rows = skus.map(s=>{
-    const c = COL[s.company] || '#555';
+  // One KPI card per company group: present companies (by median ₹/g), then any
+  // group with no SKUs in the latest scrape as a muted placeholder.
+  const present = new Set(st.companyStats.map(c=>c.company));
+  const ordered = [
+    ...st.companyStats,
+    ...Object.keys(COL).filter(co=>!present.has(co)).map(co=>({ company:co, empty:true }))
+  ];
+  const cards = ordered.map(c=>{
+    const col = COL[c.company] || '#555';
+    if (c.empty){
+      return `
+      <div class="card kpi empty" style="border-top:3px solid ${col}"><div class="card-pad">
+        <div class="kpi-co" style="color:${col}">${esc(c.company)}</div>
+        <div class="kpi-big">—<span class="kpi-unit">/g</span></div>
+        <span class="badge" style="background:#f0ede8;color:#9b9a96">No SKUs yet</span>
+        <div class="kpi-sec">No products in the latest scrape.</div>
+      </div></div>`;
+    }
+    const tier = positioning(c.ppg.median);
+    return `
+    <div class="card kpi fadein" style="border-top:3px solid ${col}"><div class="card-pad">
+      <div class="kpi-co" style="color:${col}">${esc(c.company)}</div>
+      <div class="kpi-big">${rs2(c.ppg.median)}<span class="kpi-unit">/g</span></div>
+      <span class="badge tier-${tier.toLowerCase()}">${tier}</span>
+      <div class="kpi-sec">
+        ${Math.round(c.disc.avg)}% off · ${rs2(c.ppg.min)}–${(+c.ppg.max).toFixed(2)}/g<br>
+        ${c.skus.length} SKUs · ${c.ratingAvg!=null?'★ '+c.ratingAvg.toFixed(1):'—'}
+      </div>
+    </div></div>`;
+  }).join('');
+
+  const compRows = st.companyStats.map(c=>{
+    const col = COL[c.company] || '#555';
     return `<tr>
-      <td><span class="dot" style="background:${c}"></span>${esc(s.brand)}</td>
-      <td class="cell-name" title="${esc(s.name)}">${s.url?`<a href="${esc(s.url)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">${esc(s.name)}</a>`:esc(s.name)}</td>
-      <td>${esc(s.category)}</td>
-      <td>${esc(s.packLabel||'')} <span class="muted">(${s.weightGrams} g)</span></td>
-      <td class="num">${s.mrp!=null?'₹'+s.mrp:'<span class="muted">—</span>'}</td>
-      <td class="num"><strong>₹${s.selling}</strong></td>
-      <td class="num">${s.discount?`<span class="badge" style="background:#DFF1EB;color:#0A4A3A">${s.discount}%</span>`:'<span class="muted">—</span>'}</td>
-      <td class="num"><strong>₹${(s.pricePerGram).toFixed(2)}</strong></td>
-      <td>${esc(s.platform)}</td>
-      <td class="num">${s.rating!=null?'★ '+s.rating:'<span class="muted">—</span>'}</td>
-      <td class="num">${s.reviewCount!=null?Number(s.reviewCount).toLocaleString('en-IN'):'<span class="muted">—</span>'}</td>
+      <td><span class="dot" style="background:${col}"></span>${esc(c.company)}</td>
+      <td class="num"><strong>${rs2(c.ppg.median)}</strong></td>
+      <td class="num">${rs2(c.ppg.avg)}</td>
+      <td class="num">${rs2(c.ppg.min)}</td>
+      <td class="num">${rs2(c.ppg.max)}</td>
+      <td class="num">${c.disc.avg.toFixed(1)}%</td>
+      <td class="num">${c.ratingAvg!=null?'★ '+c.ratingAvg.toFixed(1):'—'}</td>
+      <td class="num">${c.skus.length}</td>
+    </tr>`;
+  }).join('');
+
+  const brandRows = st.brandStats.map(b=>{
+    const col = COL[b.company] || '#555';
+    return `<tr>
+      <td><span class="dot" style="background:${col}"></span>${esc(b.brand)}</td>
+      <td class="muted">${esc(b.company)}</td>
+      <td class="num"><strong>${rs2(b.ppg.median)}</strong></td>
+      <td class="num">${b.disc.avg.toFixed(1)}%</td>
+      <td class="num">${b.ratingAvg!=null?'★ '+b.ratingAvg.toFixed(1):'—'}</td>
+      <td class="num">${b.skus.length}</td>
     </tr>`;
   }).join('');
 
   return `
-  <div class="results-head">
-    <strong>Scrape Results <span class="muted">(raw — Step 2 verification)</span></strong>
-    <button style="margin-left:auto" onclick="reload()"${STATE.loading?' disabled':''}>↻ Reload</button>
+  <div class="ov-head">
+    <div>
+      <h1 class="ov-title">Biscuit Market Intelligence</h1>
+      <div class="ov-sub"><span class="live-dot"></span>Data as of ${asOf} · <strong>${st.skuCount}</strong> SKUs</div>
+    </div>
+    <button onclick="reload()"${STATE.loading?' disabled':''}>↻ Reload</button>
   </div>
+  <div class="ov-metricline">Hero metric: <strong>price per gram (₹/g)</strong> · secondary: discount vs MRP</div>
+
+  <div class="grid3">${cards}</div>
+
+  <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
+    <div class="sec-title">By company · price-per-gram</div>
+    <div class="tbl-scroll"><table style="min-width:720px">
+      <thead><tr><th>Company</th><th>Median ₹/g</th><th>Avg ₹/g</th><th>₹/g Min</th><th>₹/g Max</th><th>Avg Disc%</th><th>Avg ★</th><th>SKUs</th></tr></thead>
+      <tbody>${compRows}</tbody>
+    </table></div>
+  </div></div>
+
+  <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
+    <div class="sec-title">Hero · median price-per-gram by brand</div>
+    <div class="chart-box"><canvas id="chartPpg"></canvas></div>
+  </div></div>
+
+  <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
+    <div class="sec-title">Secondary · average discount vs MRP by brand</div>
+    <div class="chart-box"><canvas id="chartDisc"></canvas></div>
+  </div></div>
+
   <div class="card fadein"><div class="card-pad">
-    <div class="results-meta">
-      <strong>${skus.length}</strong> SKUs across <strong>${brandsFound}</strong> brands ·
-      data as of ${asOf}
-    </div>
-    <div class="tbl-scroll">
-    <table>
-      <colgroup>
-        <col style="width:12%"><col style="width:23%"><col style="width:9%"><col style="width:14%">
-        <col style="width:7%"><col style="width:8%"><col style="width:7%"><col style="width:7%">
-        <col style="width:9%"><col style="width:6%"><col style="width:7%">
-      </colgroup>
-      <thead><tr>
-        <th>Brand</th><th>Name</th><th>Category</th><th>Pack</th>
-        <th>MRP</th><th>Selling</th><th>Disc%</th><th>₹/g</th>
-        <th>Platform</th><th>★</th><th>#</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    </div>
+    <div class="sec-title">By brand</div>
+    <div class="tbl-scroll"><table style="min-width:560px">
+      <thead><tr><th>Brand</th><th>Group</th><th>Median ₹/g</th><th>Avg Disc%</th><th>Avg ★</th><th>SKUs</th></tr></thead>
+      <tbody>${brandRows}</tbody>
+    </table></div>
   </div></div>`;
+}
+
+/* Hero + secondary horizontal bar charts (Chart.js loads async → waitForChart). */
+function drawOverviewCharts(){
+  const bs = STATE.curr ? STATE.curr.brandStats : [];
+  if (!bs.length) return;
+  const labels = bs.map(b=>b.brand);
+  const colors = bs.map(b=>COL[b.company] || '#999');
+  const opts = unit => ({
+    indexAxis:'y', responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false},
+      tooltip:{ callbacks:{ label:c => unit==='ppg' ? '₹'+(+c.raw).toFixed(2)+'/g' : (+c.raw).toFixed(1)+'% off' } } },
+    scales:{
+      x:{ beginAtZero:true, grid:{color:'rgba(26,26,24,.06)'},
+          ticks:{ font:{size:10}, callback:v => unit==='ppg' ? '₹'+v : v+'%' } },
+      y:{ grid:{display:false}, ticks:{ font:{size:10.5} } }
+    }
+  });
+  waitForChart(()=>{
+    mkChart('chartPpg', { type:'bar',
+      data:{ labels, datasets:[{ data:bs.map(b=>b.ppg.median), backgroundColor:colors, borderRadius:4, barPercentage:.82 }] },
+      options: opts('ppg') });
+    mkChart('chartDisc', { type:'bar',
+      data:{ labels, datasets:[{ data:bs.map(b=>b.disc.avg), backgroundColor:colors, borderRadius:4, barPercentage:.82 }] },
+      options: opts('disc') });
+  });
 }
 
 function renderAdmin(){
@@ -363,7 +515,7 @@ function renderAdmin(){
       <h3 class="admin-h sub">Status</h3>
       <p class="admin-p">
         Loaded ${TODAY}. ${histLine} Build progress:
-        <strong>Step 2 of 12</strong> — CI scrape → static JSON.
+        <strong>Step 3 of 12</strong> — stats engine + aggregated dashboard.
       </p>
 
       <h3 class="admin-h sub">Tracked roster</h3>
@@ -373,7 +525,7 @@ function renderAdmin(){
 }
 
 /* ------------------------------------------------------------
-   7. BOOT
+   8. BOOT
    ------------------------------------------------------------ */
 document.addEventListener('keydown', e=>{
   if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')){
