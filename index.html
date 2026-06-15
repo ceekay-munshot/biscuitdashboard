@@ -1308,6 +1308,11 @@ function renderRadar(){
   const roster = Object.keys(COL).filter(c=>c!=='Emerging / D2C').map(co=>
     `<span class="grp-chip" style="background:${BG[co]};color:${TXT[co]}">${esc(co)}: ${BRANDS.filter(b=>b.company===co).map(b=>esc(b.brand)).join(', ')}</span>`).join(' ');
 
+  // Unrecognized "Other" products — show sample titles so new brands can be spotted & allow-listed.
+  const otherSkus = emg.filter(s=>s.brand==='Other').sort((a,b)=>(b.reviewCount||0)-(a.reviewCount||0));
+  const otherSamples = otherSkus.slice(0,12).map(s=>
+    `<div class="catbar-row"><span class="catbar-label" style="width:auto;flex:1">${s.url?`<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name.slice(0,62))}</a>`:esc(s.name.slice(0,62))}</span><span class="muted" style="font-size:11px;white-space:nowrap">${esc(s.category)} · ${kCompact(s.reviewCount||0)} rev</span></div>`).join('');
+
   $app().innerHTML = `${backBar}
   <div class="notice info" style="margin-bottom:18px">Brands appearing in the category <strong>beyond the tracked roster</strong> — new / D2C / regional players. Traction = SKU count × review volume (<strong>no sales data exists</strong>).</div>
   <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
@@ -1318,6 +1323,10 @@ function renderRadar(){
     </table></div>
     <div class="hm-cap">Traction = SKUs × total reviews (interest proxy, not sales). "Real brand" = ≥2 SKUs and ≥50 reviews.</div>
   </div></div>
+  ${otherSkus.length?`<div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
+    <div class="sec-title">Unrecognized products · "Other" <span class="muted" style="text-transform:none;letter-spacing:0">· ${otherSkus.length} SKUs · scan to spot new brands to allow-list</span></div>
+    ${otherSamples}
+  </div></div>`:''}
   <div class="card fadein"><div class="card-pad">
     <div class="sec-title">Tracked roster (reference)</div>
     <div class="roster-ref">${roster}</div>
