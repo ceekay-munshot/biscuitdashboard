@@ -171,6 +171,16 @@ function cleanName(s){
     .trim();
 }
 
+/* Remove markdown link targets and bare URLs from a block so their query
+   tokens (Amazon's "dib=" base64, which can contain "rs6"-like substrings)
+   can't be misread as prices/weights. Keeps the bracketed link TEXT, where the
+   visible price actually lives. */
+function stripUrls(s){
+  return String(s||'')
+    .replace(/\]\([^)]*\)/g, ']')        // [text](url) -> [text]
+    .replace(/https?:\/\/\S+/gi, ' ');   // any bare url
+}
+
 function absolutize(url, platform){
   if (/^https?:\/\//i.test(url)) return url;
   const base = platform==='Amazon' ? 'https://www.amazon.in'
@@ -222,15 +232,19 @@ function categoryFor(name, brand){
 
 function extractSKU(link, block, brand, company, platform){
   const name = cleanName(link.text);
+  // Read prices/reviews/weight from a URL-FREE view of the block. Link targets
+  // (Amazon's base64 "dib=" tokens) can contain substrings like "rs6" that the
+  // ₹/Rs price regex would otherwise misread as a price.
+  const text = stripUrls(block);
 
-  // Weight: prefer the title; fall back to the block with unit-price
+  // Weight: prefer the title; fall back to the (URL-free) block with unit-price
   // denominators ("/100 g") stripped so they can't be read as a pack weight.
   let w = parseWeightGrams(name);
-  if (!w) w = parseWeightGrams(block.replace(/\/\s*\d+\s*(?:g|kg|ml|l)\b/gi,' '));
+  if (!w) w = parseWeightGrams(text.replace(/\/\s*\d+\s*(?:g|kg|ml|l)\b/gi,' '));
   if (!w) return null;
   const weightGrams = w.grams, packLabel = w.label;
 
-  const prices = extractPrices(block);
+  const prices = extractPrices(text);
   if (!prices || !prices.selling) return null;
   const selling = prices.selling;
   const mrp = prices.mrp != null ? prices.mrp : selling;
@@ -249,8 +263,8 @@ function extractSKU(link, block, brand, company, platform){
     weightGrams, packLabel, pricePerGram, mrpPerGram,
     category: categoryFor(name, brand),
     platform,
-    rating: parseRating(block),
-    reviewCount: parseReviewCount(block),
+    rating: parseRating(text),
+    reviewCount: parseReviewCount(text),
     url,
     isProductPage: /\/dp\/|\/p\/|\/pd\/|pid=/i.test(url),
     isLive: true,
