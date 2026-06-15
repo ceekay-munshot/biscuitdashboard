@@ -145,6 +145,22 @@ td a:hover{color:#B6772E;text-decoration:underline}
 .spark-lbl{font-size:11.5px;font-weight:600;margin-bottom:6px}
 .spark{position:relative;height:46px}
 
+/* Google Trends / demand view */
+.trends-banner{display:block;max-width:none;background:#FFF7E8;border:0.5px solid rgba(182,119,46,.3);color:#6E4300}
+.board-h{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+.board-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 0;border-bottom:0.5px solid rgba(26,26,24,.06)}
+.board-row:last-child{border-bottom:0}
+.seg{font-size:12px;padding:5px 11px}
+.seg.active{background:#1a1a18;color:#fff;border-color:#1a1a18}
+.sig-card .sig-brand{font-size:13px;font-weight:700;margin-bottom:8px}
+.sig-metrics{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#5c5b57;margin-bottom:10px}
+.sig-sub{font-size:11px;color:#9b9a96;margin-top:6px}
+.sig-premium{background:#F2E7F5;color:#45184F}
+.sig-mass{background:#DFF1EB;color:#0A4A3A}
+.sig-rise{background:#FFF7E8;color:#6E4300}
+.sig-fade{background:#f0ede8;color:#9b9a96}
+.sig-steady{background:#E6EDF8;color:#102C58}
+
 /* Admin / system info */
 .admin-h{font-size:18px;font-weight:700;margin-bottom:12px}
 .admin-h.sub{font-size:13px;margin:18px 0 8px}
@@ -163,7 +179,7 @@ td a:hover{color:#B6772E;text-decoration:underline}
 <script>
 /* ============================================================
    BISCUIT MARKET INTELLIGENCE DASHBOARD
-   Build Step 7 / 12 — trend history (across scrape runs, static-file based)
+   Build Step 8 / 12 — Google Trends / demand intelligence (seeded layer)
    Single-file, zero-build. Vanilla ES6.
 
    Scraping runs in GitHub Actions (scripts/scrape.mjs) and commits
@@ -228,6 +244,8 @@ let STATE = {
   scrapedAt:null,       // ISO timestamp of the scrape
   curr:null,            // buildStats() result over the FULL dataset (chips, heatmap)
   categoryFilter:'All', // active category chip
+  trends:null,          // data/trends.json (seeded Google Trends snapshot)
+  trendsMode:'brands',  // Trends view main-chart toggle: 'brands' | 'categories'
   history:[],           // data/history.json
   loading:false,        // true while (re)loading the static JSON
   view:null,            // active route (null/'dashboard' default; objects carry .type)
@@ -340,6 +358,11 @@ async function loadData(){
       STATE.history = Array.isArray(h) ? h : [];
     }
   } catch(e){ STATE.history = []; }
+
+  try {
+    const r = await fetch('/data/trends.json' + bust, { cache:'no-store' });
+    STATE.trends = r.ok ? await r.json() : null;     // seeded Google Trends snapshot
+  } catch(e){ STATE.trends = null; }
 }
 
 async function reload(){
@@ -387,8 +410,11 @@ function render(){
       renderHistory();
       break;
 
+    case 'trends':
+      renderTrends();
+      break;
+
     /* ---- Views arriving in later build steps -----------------------------
-       case 'trends':   renderTrends();    break;
        case 'radar':    renderRadar();     break;
        case 'share':    renderShare();     break;
        case 'history':  renderHistory();   break;
@@ -553,6 +579,7 @@ function overviewHTML(view){
       <button onclick="navigate({type:'category'})">Categories</button>
       <button onclick="navigate({type:'packsize'})">Pack Sizes</button>
       <button onclick="navigate({type:'history'})">History</button>
+      <button onclick="navigate({type:'trends'})">Google Trends</button>
       <button onclick="reload()"${STATE.loading?' disabled':''}>↻ Reload</button>
     </div>
   </div>
@@ -1126,6 +1153,119 @@ function drawHistoryCharts(rich, runs, companies){
   });
 }
 
+/* ---- Demand Intelligence — Google Trends (seeded) ---- */
+function setTrendsMode(m){ STATE.trendsMode = m; render(); }
+
+// Marry seeded search interest with our live ₹/g into a positioning signal.
+function trendSignal(latest, dir, ppgMedian){
+  const high = latest >= 55;
+  const premium = ppgMedian != null && ppgMedian > 0.5;
+  if (high && premium) return { label:'Premium Demand', sub:'pricing power + pull', cls:'sig-premium' };
+  if (high)            return { label:'Mass Favourite',  sub:'volume pull',        cls:'sig-mass' };
+  if (dir === 'rising') return { label:'Momentum — watch', sub:'rising interest',  cls:'sig-rise' };
+  if (dir === 'falling' || latest < 30) return { label:'Fading / niche', sub: dir==='falling'?'losing interest':'low interest', cls:'sig-fade' };
+  return { label:'Steady', sub:'flat, mid interest', cls:'sig-steady' };
+}
+
+function renderTrends(){
+  const t = STATE.trends;
+  const backBar = `<div class="back-bar"><button onclick="navigate('dashboard')">← Back</button><strong>Demand Intelligence — Google Trends</strong></div>`;
+  if (!t || !t.brands){
+    $app().innerHTML = backBar + `<div class="notice info">No trends data — <code>data/trends.json</code> not found.</div>`;
+    return;
+  }
+  const mode = STATE.trendsMode === 'categories' ? 'categories' : 'brands';
+  const ppgByBrand = {}; if (STATE.curr) STATE.curr.brandStats.forEach(b=>ppgByBrand[b.brand]=b.ppg.median);
+  const arrow = d => d==='rising' ? '<span style="color:#0A4A3A">▲</span>' : d==='falling' ? '<span style="color:#7A0A1C">▼</span>' : '<span class="muted">→</span>';
+
+  const brandEntries = Object.entries(t.brands).map(([name,v])=>({name, ...v}));
+  const ranked = brandEntries.slice().sort((a,b)=>b.latest-a.latest);
+  const maxLatest = Math.max(...ranked.map(b=>b.latest), 1);
+  const rankRows = ranked.map(b=>{
+    const col = COL[brandCompany(b.name)] || '#999';
+    return `<div class="catbar-row">
+      <span class="catbar-label"><span class="dot" style="background:${col}"></span>${esc(b.name)}</span>
+      <span class="bar-wrap"><span class="bar-fill" style="width:${Math.round(b.latest/maxLatest*100)}%;background:${col}"></span></span>
+      <span class="catbar-val">${b.latest} ${arrow(b.direction)}</span>
+    </div>`;
+  }).join('');
+
+  const all = [...brandEntries, ...Object.entries(t.categories||{}).map(([n,v])=>({name:n, ...v, isCat:true}))];
+  const board = arr => arr.length
+    ? arr.sort((a,b)=>b.latest-a.latest).map(x=>`<div class="board-row"><span>${esc(x.name)}${x.isCat?' <span class="muted" style="font-size:10px">cat</span>':''}</span><strong>${x.latest}</strong></div>`).join('')
+    : '<div class="muted" style="font-size:12px">—</div>';
+
+  const sigCards = ranked.map(b=>{
+    const ppg = ppgByBrand[b.name];
+    const sig = trendSignal(b.latest, b.direction, ppg);
+    const col = COL[brandCompany(b.name)] || '#999';
+    return `<div class="card sig-card fadein"><div class="card-pad">
+      <div class="sig-brand"><span class="dot" style="background:${col}"></span>${esc(b.name)}</div>
+      <div class="sig-metrics"><span>interest <strong>${b.latest}</strong> ${arrow(b.direction)}</span><span>${ppg!=null?'₹'+ppg.toFixed(2)+'/g':'<span class="muted">no ₹/g</span>'}</span></div>
+      <span class="badge ${sig.cls}">${sig.label}</span>
+      <div class="sig-sub">${sig.sub}</div>
+    </div></div>`;
+  }).join('');
+
+  $app().innerHTML = `
+  ${backBar}
+  <div class="notice trends-banner">📈 <strong>Seeded snapshot</strong> · relative search interest (0–100), <strong>not sales</strong> · update from trends.google.com (geo: ${esc(t.geo||'IN')}) · updated ${esc(t.updated||'—')}</div>
+
+  <div class="grid2">
+    <div class="card fadein"><div class="card-pad">
+      <div class="sec-title">Search-interest ranking <span class="muted" style="text-transform:none;letter-spacing:0">· latest 0–100</span></div>
+      ${rankRows}
+    </div></div>
+    <div class="card fadein"><div class="card-pad">
+      <div class="sec-title">Rising vs falling</div>
+      <div class="grid2" style="margin:0;gap:14px">
+        <div><div class="board-h" style="color:#0A4A3A">▲ Rising</div>${board(all.filter(x=>x.direction==='rising'))}</div>
+        <div><div class="board-h" style="color:#7A0A1C">▼ Falling</div>${board(all.filter(x=>x.direction==='falling'))}</div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
+    <div class="ov-head" style="margin-bottom:12px">
+      <div class="sec-title" style="margin:0">Interest over 12 months</div>
+      <div class="ov-actions">
+        <button class="seg${mode==='brands'?' active':''}" onclick="setTrendsMode('brands')">Top brands</button>
+        <button class="seg${mode==='categories'?' active':''}" onclick="setTrendsMode('categories')">Categories</button>
+      </div>
+    </div>
+    <div class="chart-box" style="height:320px"><canvas id="trendsLine"></canvas></div>
+  </div></div>
+
+  <div class="sec-title">The signal · Google Trends × live ₹/g</div>
+  <div class="grid3">${sigCards}</div>
+
+  <div class="card fadein" style="margin-top:16px"><div class="card-pad">
+    <div class="sec-title">Methodology</div>
+    <p class="admin-p">Google Trends reports <strong>relative search interest</strong> (0–100 within the set &amp; timeframe), <strong>not sales</strong>. These are <strong>seeded placeholder values</strong> in <code>data/trends.json</code> — paste a real Google Trends CSV export (same shape) and refresh periodically. The signal marries this demand proxy with our live median ₹/g from <code>data/latest.json</code> (high interest + premium ₹/g = pricing power; high + value = volume pull; rising = momentum; low/falling = fading).</p>
+  </div></div>`;
+
+  drawTrendsChart();
+}
+
+function drawTrendsChart(){
+  const t = STATE.trends; if (!t) return;
+  const mode = STATE.trendsMode === 'categories' ? 'categories' : 'brands';
+  const src = mode === 'categories' ? (t.categories||{}) : (t.brands||{});
+  let entries = Object.entries(src).map(([name,v])=>({name, ...v}));
+  if (mode === 'brands') entries = entries.sort((a,b)=>b.latest-a.latest).slice(0,8);   // cap to avoid clutter
+  const months = (()=>{ const o=[]; const d=new Date(); for(let i=11;i>=0;i--) o.push(new Date(d.getFullYear(),d.getMonth()-i,1).toLocaleDateString('en-IN',{month:'short'})); return o; })();
+  const colorFor = name => mode==='categories' ? (CAT_COL[name]||'#B6772E') : (COL[brandCompany(name)]||'#999');
+  waitForChart(()=>{
+    mkChart('trendsLine', { type:'line',
+      data:{ labels: months, datasets: entries.map(e=>({ label:e.name, data:e.interest, borderColor:colorFor(e.name), backgroundColor:colorFor(e.name), borderWidth:2, tension:.3, pointRadius:0 })) },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, font:{size:10}, padding:8 } }, tooltip:{ callbacks:{ label:c=>c.dataset.label+': '+c.raw } } },
+        scales:{ y:{ beginAtZero:true, max:100, grid:{color:'rgba(26,26,24,.06)'}, ticks:{font:{size:10}} },
+                 x:{ grid:{display:false}, ticks:{font:{size:9}} } } }
+    });
+  });
+}
+
 function renderAdmin(){
   const roster = Object.keys(COL).map(g=>{
     const brands = BRANDS.filter(b=>b.company===g).map(b=>b.brand).join(', ');
@@ -1172,7 +1312,7 @@ function renderAdmin(){
       <h3 class="admin-h sub">Status</h3>
       <p class="admin-p">
         Loaded ${TODAY}. ${histLine} Build progress:
-        <strong>Step 7 of 12</strong> — trend history across scrape runs (data/history.json).
+        <strong>Step 8 of 12</strong> — Google Trends demand intelligence (seeded data/trends.json).
       </p>
 
       <h3 class="admin-h sub">Tracked roster</h3>
