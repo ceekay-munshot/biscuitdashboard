@@ -31,8 +31,8 @@ const QUERY = {
   biscuit:'biscuit',
 };
 const queryOf = name => QUERY[name] || name;
-const BRAND_ANCHOR = 'biscuit';   // stable, high-volume, biscuit-relevant anchor in every batch
-const CAT_ANCHOR   = 'biscuit';   // same anchor for categories (excluded from output)
+const BRAND_ANCHOR = 'Parle-G';   // brand-scale anchor (query "Parle G biscuit") — keeps brand resolution
+const CAT_ANCHOR   = 'biscuit';   // generic anchor for the (higher-volume) category terms
 
 const GEO='IN', TIME='today 12-m';
 const sleep = ms => new Promise(r=>setTimeout(r, ms));
