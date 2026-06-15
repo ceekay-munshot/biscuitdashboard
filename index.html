@@ -183,7 +183,7 @@ td a:hover{color:#B6772E;text-decoration:underline}
 <script>
 /* ============================================================
    BISCUIT MARKET INTELLIGENCE DASHBOARD
-   Build Step 10 / 14 — emerging-brands radar + attribution cleanup
+   Build Step 11 / 14 — real Google Trends fetch (CI, best-effort, replaces seed)
    Single-file, zero-build. Vanilla ES6.
 
    Scraping runs in GitHub Actions (scripts/scrape.mjs) and commits
@@ -1186,6 +1186,14 @@ function renderTrends(){
   const ppgByBrand = {}; if (STATE.curr) STATE.curr.brandStats.forEach(b=>ppgByBrand[b.brand]=b.ppg.median);
   const arrow = d => d==='rising' ? '<span style="color:#0A4A3A">▲</span>' : d==='falling' ? '<span style="color:#7A0A1C">▼</span>' : '<span class="muted">→</span>';
 
+  // Banner: real (live) vs seeded; flag any stale (couldn't-refresh) keys honestly.
+  const isLive = /live/i.test(t.source||'') || !!t.fetchedAt;
+  const staleN = [...Object.values(t.brands||{}), ...Object.values(t.categories||{})].filter(x=>x&&x.stale).length;
+  const fetchedDate = t.fetchedAt ? new Date(t.fetchedAt).toLocaleString('en-IN') : (t.updated||'—');
+  const banner = isLive
+    ? `📈 <strong>Live Google Trends</strong> · relative search interest (0–100), <strong>not sales</strong> · geo ${esc(t.geo||'IN')}, last 12 months · fetched ${esc(fetchedDate)}${staleN?` · <strong>${staleN} value(s) stale</strong> (refresh blocked — last-good kept)`:''}`
+    : `📈 <strong>Seeded snapshot</strong> · relative search interest (0–100), <strong>not sales</strong> · update from trends.google.com (geo ${esc(t.geo||'IN')}) · updated ${esc(t.updated||'—')}`;
+
   const brandEntries = Object.entries(t.brands).map(([name,v])=>({name, ...v}));
   const ranked = brandEntries.slice().sort((a,b)=>b.latest-a.latest);
   const maxLatest = Math.max(...ranked.map(b=>b.latest), 1);
@@ -1217,7 +1225,7 @@ function renderTrends(){
 
   $app().innerHTML = `
   ${backBar}
-  <div class="notice trends-banner">📈 <strong>Seeded snapshot</strong> · relative search interest (0–100), <strong>not sales</strong> · update from trends.google.com (geo: ${esc(t.geo||'IN')}) · updated ${esc(t.updated||'—')}</div>
+  <div class="notice trends-banner">${banner}</div>
 
   <div class="grid2">
     <div class="card fadein"><div class="card-pad">
@@ -1249,7 +1257,7 @@ function renderTrends(){
 
   <div class="card fadein" style="margin-top:16px"><div class="card-pad">
     <div class="sec-title">Methodology</div>
-    <p class="admin-p">Google Trends reports <strong>relative search interest</strong> (0–100 within the set &amp; timeframe), <strong>not sales</strong>. These are <strong>seeded placeholder values</strong> in <code>data/trends.json</code> — paste a real Google Trends CSV export (same shape) and refresh periodically. The signal marries this demand proxy with our live median ₹/g from <code>data/latest.json</code> (high interest + premium ₹/g = pricing power; high + value = volume pull; rising = momentum; low/falling = fading).</p>
+    <p class="admin-p">Google Trends reports <strong>relative search interest</strong> (0–100 within the set &amp; timeframe), <strong>not sales</strong>. Values are <strong>fetched live from Google Trends in CI</strong> (the weekly <em>Trends</em> workflow, geo India, last 12 months) — terms are batched in groups of ≤5 with a shared anchor and normalized for comparability. It's best-effort: any value Google rate-limits keeps its <strong>last-good</strong> and is flagged <em>stale</em> — never fabricated. The signal marries this demand proxy with our live median ₹/g from <code>data/latest.json</code> (high interest + premium ₹/g = pricing power; high + value = volume pull; rising = momentum; low/falling = fading).</p>
   </div></div>`;
 
   drawTrendsChart();
@@ -1381,7 +1389,7 @@ function renderAdmin(){
       <h3 class="admin-h sub">Status</h3>
       <p class="admin-p">
         Loaded ${TODAY}. ${histLine} Build progress:
-        <strong>Step 10 of 14</strong> — emerging-brands radar + sub-brand attribution cleanup.
+        <strong>Step 11 of 14</strong> — real Google Trends fetched live in CI (best-effort, last-good fallback).
       </p>
 
       <h3 class="admin-h sub">Tracked roster</h3>

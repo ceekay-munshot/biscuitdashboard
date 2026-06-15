@@ -1,0 +1,29 @@
+name: Trends
+
+# Real Google Trends fetch — DECOUPLED from the price Scrape workflow.
+# Free public endpoint (no secret). Weekly is plenty for search interest and
+# eases Google rate-limiting. A failure here never affects the price scrape.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 1'      # weekly, Mondays 03:00 UTC
+
+permissions:
+  contents: write
+
+jobs:
+  trends:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/gen-trends.mjs
+      - name: Commit refreshed trends
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/trends.json
+          git diff --staged --quiet || git commit -m "trends: refresh $(date -u +%F)"
+          git push
