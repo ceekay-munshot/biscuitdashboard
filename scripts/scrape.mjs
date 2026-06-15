@@ -72,24 +72,28 @@ const ALIASES = [
 const JUNK = new Set([
   'pack','combo','set','box','of','midbreak','rusk','rusks','toast','toastea','biscuit','biscuits',
   'cookie','cookies','wafer','wafers','cracker','crackers','assorted','value','premium','classic',
-  'original','pure','family','jar','pouch','the','with','and','for','flavour','flavored','flavoured',
-  'crispy','crunchy','snack','snacks','tea','special','no','mini','minis','suji','rava',
-  'chocolate','choco','vanilla','strawberry','orange','butter','cashew','almond','coconut','elaichi',
-  'milk','cream','creme','jeera','salt','salted','masala','pista','pistachio','walnut','oats','ragi',
-  'millet','jaggery','atta','wheat','digestive','glucose','marie','sugar','free','gluten','high','fibre','fiber',
+  'unflavoured','unflavored',
+  'original','pure','family','jar','pouch','the','with','and','for','flavour','flavor','flavored','flavoured',
+  'crispy','crunchy','snack','snacks','tea','special','no','mini','minis','suji','rava','combo','box',
+  'chocolate','choco','vanilla','strawberry','orange','butter','cashew','almond','coconut','elaichi','elachi',
+  'milk','cream','creme','crme','jeera','salt','salted','masala','pista','pistachio','walnut','walnuts','oats','ragi',
+  'millet','grain','multigrain','multi','jaggery','atta','wheat','digestive','glucose','marie','sugar','free',
+  'gluten','high','fibre','fiber','marble','cake','palm','oil','without','plain','mixed','little','bite','bites',
+  'roll','rolls','delight','nut','nuts','crunch','choc','dark','white','fruit','honey','badam','kaju','desi',
 ]);
 
 // Derive a clean emerging-brand label: leading proper-noun token(s), junk/numbers skipped.
+// Generic products with no brand-like leading token return '' (→ "Unknown", not a fake brand).
 function deriveBrand(name){
   const picked = [];
   for (const raw of cleanName(name).split(/\s+/)){
-    const w = raw.replace(/[^A-Za-z0-9&'.-]/g,'');
-    if (!w) continue;
+    const w = raw.replace(/[^A-Za-z0-9&'.-]/g,'').replace(/^[-'.]+|[-'.]+$/g,'');
+    if (!w || w.length<2) { if (picked.length) break; else continue; }
     if (/^\d/.test(w) || JUNK.has(w.toLowerCase())){ if (picked.length) break; else continue; }
     picked.push(w);
     if (picked.length >= 2) break;
   }
-  return picked.join(' ').trim();
+  return picked.join(' ').replace(/\s+/g,' ').trim();
 }
 
 /* ============================================================
