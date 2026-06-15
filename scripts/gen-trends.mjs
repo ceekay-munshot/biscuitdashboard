@@ -33,6 +33,7 @@ const QUERY = {
 const queryOf = name => QUERY[name] || name;
 const BRAND_ANCHOR = 'Parle-G';   // brand-scale anchor (query "Parle G biscuit") — keeps brand resolution
 const CAT_ANCHOR   = 'biscuit';   // generic anchor for the (higher-volume) category terms
+const SEEDS        = ['biscuit','cookies'];  // related/rising "Explore" seeds — one SerpApi call each
 
 const GEO='IN', TIME='today 12-m';
 const sleep = ms => new Promise(r=>setTimeout(r, ms));
@@ -40,7 +41,7 @@ const mean = a => a.length ? a.reduce((s,x)=>s+x,0)/a.length : 0;
 
 // FREE-TIER SAFETY: hard ceiling on SerpApi calls per run, and halt immediately
 // on any key/quota/plan error so we never burn through (or exceed) the free quota.
-const MAX_CALLS = 12;          // our run needs ~6; 12 is a generous ceiling
+const MAX_CALLS = 16;          // run needs ~8 (6 timeseries + 2 related); 16 is a generous ceiling
 let CALLS = 0, HALT = false;
 const isFatalSerp = m => /api key|run out|exceeded|quota|upgrade|billing|plan|account|unauthor|payment/i.test(String(m||''));
 
@@ -91,6 +92,23 @@ function parseSerpTimeseries(data, keywords){
   return out;
 }
 
+// Parse a SerpApi google_trends RELATED_QUERIES response → { top:[], rising:[] }.
+// `top`    = most-searched related queries (indexed 0–100).
+// `rising` = fastest-growing; value is "+250%" or "Breakout" (>5000% growth).
+function parseRelated(data){
+  if (data && data.error) throw new Error('serpapi: '+data.error);
+  const rq = data && data.related_queries;
+  if (!rq || (!rq.top && !rq.rising)) throw new Error('no related_queries');
+  const clean = (arr, limit) => (Array.isArray(arr)?arr:[]).slice(0, limit).map(o=>({
+    query: String(o.query||'').trim(),
+    value: o.value!=null ? String(o.value) : '',
+    extracted: o.extracted_value!=null ? o.extracted_value : null,
+  })).filter(o=>o.query);
+  const top = clean(rq.top, 10), rising = clean(rq.rising, 12);
+  if (!top.length && !rising.length) throw new Error('related_queries empty');
+  return { top, rising };
+}
+
 // One batch (≤5 terms incl. anchor) via SerpApi's google_trends engine (real Google Trends).
 async function fetchBatch(keywords, key){
   if (HALT) throw new Error('halted');
@@ -107,6 +125,24 @@ async function fetchBatch(keywords, key){
     throw new Error('serpapi: ' + ((r.ok ? '' : 'HTTP '+r.status+' ') + apiErr).trim());
   }
   return parseSerpTimeseries(data, keywords);
+}
+
+// Related/rising "Explore"-style queries for ONE seed (single q, one SerpApi call).
+async function fetchRelated(seed, key){
+  if (HALT) throw new Error('halted');
+  if (CALLS >= MAX_CALLS){ HALT = true; throw new Error(`call budget reached (${MAX_CALLS})`); }
+  CALLS++;
+  const url = 'https://serpapi.com/search.json?engine=google_trends'
+    + `&q=${encodeURIComponent(queryOf(seed))}`
+    + `&data_type=RELATED_QUERIES&geo=${GEO}&date=${encodeURIComponent(TIME)}&api_key=${key}`;
+  const r = await fetch(url, { signal: AbortSignal.timeout(45000) });
+  const data = await r.json().catch(()=>({}));
+  const apiErr = (data && data.error) || '';
+  if (!r.ok || apiErr){
+    if (isFatalSerp(apiErr) || [401,402,403,429].includes(r.status)) HALT = true;
+    throw new Error('serpapi: ' + ((r.ok ? '' : 'HTTP '+r.status+' ') + apiErr).trim());
+  }
+  return parseRelated(data);
 }
 
 // Fetch a set, anchor-normalized across batches. Returns { name: number[12] } for refreshed keys.
@@ -144,6 +180,20 @@ async function main(){
 
   const brandRaw = key ? await fetchSet(BRANDS, BRAND_ANCHOR, key) : {};
   const catRaw   = (key && !HALT) ? await fetchSet(CATEGORIES, CAT_ANCHOR, key) : {};
+
+  // Related & rising/breakout queries — the real Google Trends "Explore" panels (one call per seed).
+  const prevRelated = prev.related || {};
+  const related = {};
+  for (const seed of SEEDS){
+    if (key && !HALT){
+      try {
+        related[seed] = { ...await fetchRelated(seed, key), source:'google-trends-live', fetchedAt, stale:false };
+        await sleep(1500);
+        continue;
+      } catch(e){ console.log(`  related [${seed}]: ${e.message}`); }
+    }
+    if (prevRelated[seed]) related[seed] = { ...prevRelated[seed], stale:true };   // keep last-good, never fabricate
+  }
   if (HALT) console.log(`  fetch halted early (key/quota/${MAX_CALLS}-call cap) — kept last-good for the rest.`);
 
   const B = buildOutput(BRANDS, brandRaw, prevBrands, fetchedAt);
@@ -159,16 +209,17 @@ async function main(){
     geo: GEO, updated: fetchedAt.slice(0,10), timeframe:'last 12 months', fetchedAt,
     note: 'Relative search interest (0–100), NOT sales. Fetched live from Google Trends via SerpApi in CI; '
         + 'any value that could not refresh keeps its last-good and is flagged stale.',
-    brands: B.out, categories: C.out,
+    brands: B.out, categories: C.out, related,
   };
   writeFileSync('data/trends.json', JSON.stringify(out, null, 2));
   const staleB = Object.values(B.out).filter(x=>x.stale).length;
   const staleC = Object.values(C.out).filter(x=>x.stale).length;
-  console.log(`trends.json written — brands ${B.fetchedCount}/${BRANDS.length} live (${staleB} stale), categories ${C.fetchedCount}/${CATEGORIES.length} live (${staleC} stale) · ${CALLS} SerpApi call(s) · ${fetchedAt}`);
+  const relLive = Object.values(related).filter(x=>!x.stale).length;
+  console.log(`trends.json written — brands ${B.fetchedCount}/${BRANDS.length} live (${staleB} stale), categories ${C.fetchedCount}/${CATEGORIES.length} live (${staleC} stale), related ${relLive}/${SEEDS.length} live · ${CALLS} SerpApi call(s) · ${fetchedAt}`);
 }
 
 if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
   main().catch(e => { console.error(e); process.exit(1); });
 }
 
-export { to12, direction, buildOutput, parseSerpTimeseries };
+export { to12, direction, buildOutput, parseSerpTimeseries, parseRelated };

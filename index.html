@@ -160,6 +160,12 @@ td a:hover{color:#B6772E;text-decoration:underline}
 .sig-rise{background:#FFF7E8;color:#6E4300}
 .sig-fade{background:#f0ede8;color:#9b9a96}
 .sig-steady{background:#E6EDF8;color:#102C58}
+/* Related / rising-query chips (Google Trends "Explore" panels) */
+.rq-wrap{display:flex;flex-wrap:wrap;gap:7px}
+.rq-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 9px;border-radius:14px;background:#DFF1EB;color:#0A4A3A;border:0.5px solid rgba(10,74,58,.18)}
+.rq-chip .rq-val{font-size:10px;font-weight:700;background:rgba(10,74,58,.12);padding:1px 6px;border-radius:8px}
+.rq-chip.rq-break{background:#FCE9D6;color:#8A3B00;border-color:rgba(138,59,0,.25)}
+.rq-chip.rq-break .rq-val{background:#E8590C;color:#fff}
 
 /* Emerging-brands radar */
 .roster-ref{display:flex;flex-wrap:wrap;gap:8px;line-height:1.6}
@@ -250,6 +256,7 @@ let STATE = {
   categoryFilter:'All', // active category chip
   trends:null,          // data/trends.json (seeded Google Trends snapshot)
   trendsMode:'brands',  // Trends view main-chart toggle: 'brands' | 'categories'
+  trendsSeed:null,      // Trends view related-queries seed toggle (null → first seed)
   history:[],           // data/history.json
   loading:false,        // true while (re)loading the static JSON
   view:null,            // active route (null/'dashboard' default; objects carry .type)
@@ -1163,6 +1170,7 @@ function drawHistoryCharts(rich, runs, companies){
 
 /* ---- Demand Intelligence — Google Trends (seeded) ---- */
 function setTrendsMode(m){ STATE.trendsMode = m; render(); }
+function setTrendsSeed(s){ STATE.trendsSeed = s; render(); }
 
 // Marry seeded search interest with our live ₹/g into a positioning signal.
 function trendSignal(latest, dir, ppgMedian){
@@ -1223,6 +1231,43 @@ function renderTrends(){
     </div></div>`;
   }).join('');
 
+  // Related & rising/breakout queries — the real Google Trends "Explore" panels (via SerpApi).
+  const rel = t.related || {};
+  const relSeeds = Object.keys(rel);
+  let relatedCard = '';
+  if (relSeeds.length){
+    const seed = (STATE.trendsSeed && rel[STATE.trendsSeed]) ? STATE.trendsSeed : relSeeds[0];
+    const r = rel[seed] || {};
+    const top = r.top || [], rising = r.rising || [];
+    const isBreak = x => /breakout/i.test(x.value||'') || (x.extracted!=null && x.extracted>=5000);
+    const topMax = Math.max(...top.map(x=>x.extracted||0), 1);
+    const topRows = top.length ? top.map(x=>`
+      <div class="catbar-row">
+        <span class="catbar-label" style="width:auto;flex:1;min-width:0">${esc(x.query)}</span>
+        <span class="bar-wrap" style="max-width:110px"><span class="bar-fill" style="width:${Math.round((x.extracted||0)/topMax*100)}%;background:#B6772E"></span></span>
+        <span class="catbar-val">${x.extracted!=null?x.extracted:esc(x.value)}</span>
+      </div>`).join('') : '<div class="muted" style="font-size:12px">—</div>';
+    const risingChips = rising.length ? rising.map(x=>{
+      const brk = isBreak(x);
+      const lbl = brk ? 'Breakout' : (x.value && /%/.test(x.value) ? x.value : (x.extracted!=null?'+'+x.extracted+'%':''));
+      return `<span class="rq-chip${brk?' rq-break':''}">${esc(x.query)}${lbl?`<span class="rq-val">${esc(lbl)}</span>`:''}</span>`;
+    }).join('') : '<div class="muted" style="font-size:12px">—</div>';
+    const seedTabs = relSeeds.map(s=>`<button class="seg${s===seed?' active':''}" onclick="setTrendsSeed('${esc(s)}')">${esc(s)}</button>`).join('');
+    const rstale = r.stale ? ' <span class="muted" style="font-size:11px;text-transform:none;letter-spacing:0">(last-good)</span>' : '';
+    relatedCard = `
+    <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
+      <div class="ov-head" style="margin-bottom:12px">
+        <div class="sec-title" style="margin:0">What India actually searches <span class="muted" style="text-transform:none;letter-spacing:0">· related to "${esc(seed)}"${rstale}</span></div>
+        ${relSeeds.length>1?`<div class="ov-actions">${seedTabs}</div>`:''}
+      </div>
+      <div class="grid2" style="margin:0;gap:20px">
+        <div><div class="board-h">🔝 Top searches</div>${topRows}</div>
+        <div><div class="board-h" style="color:#0A4A3A">🚀 Rising &amp; breakout</div><div class="rq-wrap">${risingChips}</div></div>
+      </div>
+      <div class="hm-cap">Real Google Trends <em>related queries</em> for "${esc(seed)}", geo ${esc(t.geo||'IN')}. <strong>Top</strong> = most-searched related terms (indexed 0–100); <strong>Rising</strong> = fastest-growing, where <strong>Breakout</strong> means &gt;5000% growth — a genuinely emerging search.</div>
+    </div></div>`;
+  }
+
   $app().innerHTML = `
   ${backBar}
   <div class="notice trends-banner">${banner}</div>
@@ -1240,7 +1285,7 @@ function renderTrends(){
       </div>
     </div></div>
   </div>
-
+  ${relatedCard}
   <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
     <div class="ov-head" style="margin-bottom:12px">
       <div class="sec-title" style="margin:0">Interest over 12 months</div>
@@ -1257,7 +1302,7 @@ function renderTrends(){
 
   <div class="card fadein" style="margin-top:16px"><div class="card-pad">
     <div class="sec-title">Methodology</div>
-    <p class="admin-p">Google Trends reports <strong>relative search interest</strong> (0–100 within the set &amp; timeframe), <strong>not sales</strong>. Values are <strong>fetched live from Google Trends via SerpApi in CI</strong> (the weekly <em>Trends</em> workflow, geo India, last 12 months) — Queries are <strong>disambiguated to the biscuit context</strong> (e.g. "Monaco biscuit", "Bourbon biscuit") so they don't measure the F1 race or the whiskey, batched in groups of ≤5 with a shared "biscuit" anchor, and normalized for comparability. It's best-effort: any value that can't refresh keeps its <strong>last-good</strong> and is flagged <em>stale</em> — never fabricated. The signal marries this demand proxy with our live median ₹/g from <code>data/latest.json</code> (high interest + premium ₹/g = pricing power; high + value = volume pull; rising = momentum; low/falling = fading).</p>
+    <p class="admin-p">Google Trends reports <strong>relative search interest</strong> (0–100 within the set &amp; timeframe), <strong>not sales</strong>. Values are <strong>fetched live from Google Trends via SerpApi in CI</strong> (the weekly <em>Trends</em> workflow, geo India, last 12 months) — Queries are <strong>disambiguated to the biscuit context</strong> (e.g. "Monaco biscuit", "Bourbon biscuit") so they don't measure the F1 race or the whiskey, batched in groups of ≤5 with a shared "biscuit" anchor, and normalized for comparability. It's best-effort: any value that can't refresh keeps its <strong>last-good</strong> and is flagged <em>stale</em> — never fabricated. The <strong>related &amp; rising/breakout</strong> queries are the real Google Trends "Explore" panels for the seed terms (one call each) — <em>Breakout</em> flags &gt;5000% growth, i.e. genuinely emerging demand. The signal marries this demand proxy with our live median ₹/g from <code>data/latest.json</code> (high interest + premium ₹/g = pricing power; high + value = volume pull; rising = momentum; low/falling = fading).</p>
   </div></div>`;
 
   drawTrendsChart();
