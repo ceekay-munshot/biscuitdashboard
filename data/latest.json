@@ -1,5 +1,5 @@
 {
-  "scrapedAt": "2026-06-15T09:34:19.297Z",
+  "scrapedAt": "2026-06-15T09:56:42.437Z",
   "skus": [
     {
       "brand": "Good Day",
@@ -5322,8 +5322,8 @@
       "isLive": true
     },
     {
-      "brand": "Rusk Toastea",
-      "company": "Emerging / D2C",
+      "brand": "Toastea",
+      "company": "Britannia",
       "name": "Rusk Toastea Premium Bake, 668g, Brown",
       "mrp": 140,
       "selling": 134,
@@ -5341,8 +5341,8 @@
       "isLive": true
     },
     {
-      "brand": "Toastea Premium",
-      "company": "Emerging / D2C",
+      "brand": "Toastea",
+      "company": "Britannia",
       "name": "Toastea Premium Bake Rusk with goodness of Elaichi, Sooji & Wheat, 183g",
       "mrp": 40,
       "selling": 40,
@@ -5360,7 +5360,7 @@
       "isLive": true
     },
     {
-      "brand": "Chai Toast",
+      "brand": "Chai",
       "company": "Emerging / D2C",
       "name": "Chai Toast Rusk, 400g",
       "mrp": 95,
@@ -5379,7 +5379,7 @@
       "isLive": true
     },
     {
-      "brand": "Britannia",
+      "brand": "Toastea",
       "company": "Britannia",
       "name": "britannia Toastea premium bake Rusk 250g x 2 pc",
       "mrp": 330,
@@ -5398,7 +5398,7 @@
       "isLive": true
     },
     {
-      "brand": "Britannia",
+      "brand": "Toastea",
       "company": "Britannia",
       "name": "Britannia Toastea Premium Bake Rusk 250g or 250g+50g (Weight May Vary)",
       "mrp": 175,
@@ -5417,7 +5417,7 @@
       "isLive": true
     },
     {
-      "brand": "Britannia",
+      "brand": "Toastea",
       "company": "Britannia",
       "name": "Britannia Toastea Premium Bake Rusk, 400g",
       "mrp": 85,
@@ -5436,8 +5436,8 @@
       "isLive": true
     },
     {
-      "brand": "Toastea Premium",
-      "company": "Emerging / D2C",
+      "brand": "Toastea",
+      "company": "Britannia",
       "name": "Toastea Premium Bake Rusk Toast, 250g (Pack of 4)",
       "mrp": 260,
       "selling": 240,
@@ -5455,7 +5455,7 @@
       "isLive": true
     },
     {
-      "brand": "TEA SPECIAL",
+      "brand": "GM",
       "company": "Emerging / D2C",
       "name": "TEA SPECIAL RUSK, 700 GM",
       "mrp": 130,
@@ -5474,7 +5474,7 @@
       "isLive": true
     },
     {
-      "brand": "Rusk Unflavoured",
+      "brand": "Unflavoured Elachi",
       "company": "Emerging / D2C",
       "name": "Rusk, Unflavoured Elachi, 291.2 Gram",
       "mrp": 55,
@@ -5493,8 +5493,8 @@
       "isLive": true
     },
     {
-      "brand": "Maska Chaska",
-      "company": "Emerging / D2C",
+      "brand": "50-50",
+      "company": "Britannia",
       "name": "50-50 Maska Chaska Biscuits, 300 g",
       "mrp": 100,
       "selling": 75,
@@ -5512,7 +5512,7 @@
       "isLive": true
     },
     {
-      "brand": "Rusk Milk",
+      "brand": "Unknown",
       "company": "Emerging / D2C",
       "name": "Rusk Milk, 200g",
       "mrp": 55,
@@ -5531,8 +5531,8 @@
       "isLive": true
     },
     {
-      "brand": "Toastea Premium",
-      "company": "Emerging / D2C",
+      "brand": "Toastea",
+      "company": "Britannia",
       "name": "Toastea, Premium Bake Rusk, 250g",
       "mrp": 80,
       "selling": 49,
@@ -5550,7 +5550,7 @@
       "isLive": true
     },
     {
-      "brand": "Britannia",
+      "brand": "Toastea",
       "company": "Britannia",
       "name": "Britannia Toastea Premium Bake Rusk 250g X 2Pc, Combo Pack",
       "mrp": 350,
@@ -5569,8 +5569,8 @@
       "isLive": true
     },
     {
-      "brand": "Treat Jim",
-      "company": "Emerging / D2C",
+      "brand": "Treat",
+      "company": "Britannia",
       "name": "Treat Jim Jam Biscuits, 138g",
       "mrp": 40,
       "selling": 34,
@@ -5588,8 +5588,8 @@
       "isLive": true
     },
     {
-      "brand": "Toastea Premium",
-      "company": "Emerging / D2C",
+      "brand": "Toastea",
+      "company": "Britannia",
       "name": "Toastea, Premium Bake Rusk, 250g",
       "mrp": 70,
       "selling": 65,
@@ -5627,7 +5627,7 @@
     },
     {
       "brand": "Milk Bikis",
-      "company": "Emerging / D2C",
+      "company": "Britannia",
       "name": "Milk Bikis Biscuits,500 Gram",
       "mrp": 75,
       "selling": 59,
@@ -5645,8 +5645,8 @@
       "isLive": true
     },
     {
-      "brand": "Maska Chaska",
-      "company": "Emerging / D2C",
+      "brand": "50-50",
+      "company": "Britannia",
       "name": "50-50, Maska Chaska, 105 gram",
       "mrp": 30,
       "selling": 26,
@@ -5683,7 +5683,7 @@
       "isLive": true
     },
     {
-      "brand": "Grain Digestive",
+      "brand": "Grain",
       "company": "Emerging / D2C",
       "name": "5 Grain Digestive Biscuits 200g",
       "mrp": 125,
@@ -5702,7 +5702,7 @@
       "isLive": true
     },
     {
-      "brand": "Elaichi Rusk",
+      "brand": "Maida-Free Extra",
       "company": "Emerging / D2C",
       "name": "Elaichi Rusk \\| Maida-Free \\| Extra Crispy Tea Rusk \\| 700gm Pack",
       "mrp": 240,
@@ -5721,7 +5721,7 @@
       "isLive": true
     },
     {
-      "brand": "Gluten-Free Rusk",
+      "brand": "Gluten-Free",
       "company": "Emerging / D2C",
       "name": "Gluten-Free Rusk – Crispy & Crunchy Tea-Time Toast \\| No Maida Rusk Biscuit \\| High-Fiber & Easy to Digest \\| Healthy Wheat-Free S",
       "mrp": 180,
@@ -5740,7 +5740,7 @@
       "isLive": true
     },
     {
-      "brand": "MidBreak No",
+      "brand": "Added",
       "company": "Emerging / D2C",
       "name": "MidBreak No Added Sugar Rusk 200g \\ Pack of 1 \\| Elaichi Flavoured Crispy Toast \\| Handmade Eggless Healthy Tea-Time Snack",
       "mrp": 160,
@@ -5759,7 +5759,7 @@
       "isLive": true
     },
     {
-      "brand": "Foxtail Millet",
+      "brand": "Foxtail",
       "company": "Emerging / D2C",
       "name": "Foxtail Millet Rusk-Crispy & Crunchy Tea-Time Toast \\| Made with Foxtail Millet (Kangni) Flour, Wheat Flour & Cardamom \\| No Maida",
       "mrp": 360,
@@ -5778,7 +5778,7 @@
       "isLive": true
     },
     {
-      "brand": "Mulitgrain Rusks",
+      "brand": "Mulitgrain",
       "company": "Emerging / D2C",
       "name": "Mulitgrain Rusks \\| Millet Rusk Sugar Free \\| No Maida Toast\\| Rusks for Kids \\| Millet Toast Biscuits Rusk 270g",
       "mrp": 219,
@@ -5797,7 +5797,7 @@
       "isLive": true
     },
     {
-      "brand": "Toast Garlic",
+      "brand": "Garlic",
       "company": "Emerging / D2C",
       "name": "Toast Garlic Rusk, 200g",
       "mrp": 250,
@@ -5816,7 +5816,7 @@
       "isLive": true
     },
     {
-      "brand": "Whole Wheat",
+      "brand": "Whole",
       "company": "Emerging / D2C",
       "name": "Whole Wheat Rusk \\| No Maida, No Added Sugar \\| High Fiber Atta Toast \\| Crispy Elaichi(Cardamom) Tea Toast \\| Healthy Rusk for Br",
       "mrp": 60,
@@ -5835,7 +5835,7 @@
       "isLive": true
     },
     {
-      "brand": "Original Family",
+      "brand": "Unknown",
       "company": "Emerging / D2C",
       "name": "Original Family Toast Rusk, 250Grams",
       "mrp": 211,
@@ -5854,7 +5854,7 @@
       "isLive": true
     },
     {
-      "brand": "PADMAZ Rusk",
+      "brand": "PADMAZ",
       "company": "Emerging / D2C",
       "name": "PADMA’Z Rusk Finger Toast \\| Crunchy Baked Tea Time Snack \\| Light Sweet Toast Biscuits \\| Perfect with Tea Coffee Milk \\| Everyda",
       "mrp": 100,
@@ -5873,7 +5873,7 @@
       "isLive": true
     },
     {
-      "brand": "Sugar Free",
+      "brand": "Jowar",
       "company": "Emerging / D2C",
       "name": "Sugar Free Jowar Rusk - 225g (Pack of 1) \\| High Fiber Wholegrain Rusks \\| No Added Sugar, No maida & No Palm Oil \\| Healthy Snack",
       "mrp": 300,
@@ -5892,8 +5892,8 @@
       "isLive": true
     },
     {
-      "brand": "Whole Wheat.Rusk",
-      "company": "Emerging / D2C",
+      "brand": "Toastea",
+      "company": "Britannia",
       "name": "Whole Wheat.Rusk 700g \\| Whole Wheat.Rusk toast biscuit.Rusk \\| Tostea Toastea \\| Whole Wheat.Rusk Without Maida \\| Whole Wheat.Ru",
       "mrp": 300,
       "selling": 225,
@@ -5930,7 +5930,7 @@
       "isLive": true
     },
     {
-      "brand": "Elaichi Suji",
+      "brand": "&",
       "company": "Emerging / D2C",
       "name": "Elaichi & Suji Rusk, Crispy, Crunchy and Delicious Tea Time Toast Biscuits with Rich Cardamom Flavor \\| Perfect Indian Bakery Bisc",
       "mrp": 120,
@@ -5949,7 +5949,7 @@
       "isLive": true
     },
     {
-      "brand": "Whole Wheat",
+      "brand": "Whole",
       "company": "Emerging / D2C",
       "name": "Whole Wheat Rusk \\| No Maida, No Added Sugar \\| High Fiber Atta Toast \\| Crispy Elaichi(Cardamom) Tea Toast \\| Healthy Rusk for Br",
       "mrp": 240,
@@ -5968,7 +5968,7 @@
       "isLive": true
     },
     {
-      "brand": "Bakers Suji",
+      "brand": "Bakers",
       "company": "Emerging / D2C",
       "name": "Bakers Suji Elaichi Rusks (Pack of 4, 500gm Each) Sooji Cardamom Rusk Biscuits, Handmade Tea Toasts, Healthy Evening Snacks, Ready",
       "mrp": 445,
@@ -5987,7 +5987,7 @@
       "isLive": true
     },
     {
-      "brand": "Foxtail Millet",
+      "brand": "Foxtail",
       "company": "Emerging / D2C",
       "name": "Foxtail Millet Rusk-Crispy & Crunchy Tea-Time Toast \\| Made with Foxtail Millet (Kangni) Flour, Wheat Flour & Cardamom \\| No Maida",
       "mrp": 540,
@@ -6006,7 +6006,7 @@
       "isLive": true
     },
     {
-      "brand": "Premium Punjabi",
+      "brand": "Punjabi",
       "company": "Emerging / D2C",
       "name": "Premium Punjabi Suji Elaichi Rusk Toast \\| 2 Packs of 350g Each (Total 700g)",
       "mrp": 240,
@@ -6025,7 +6025,7 @@
       "isLive": true
     },
     {
-      "brand": "Pack of",
+      "brand": "Jowar &",
       "company": "Emerging / D2C",
       "name": "Pack of 2 : Jowar & Multigrain Rusks \\| Millet Rusk Sugar Free \\| No Maida Toast \\| Rusks for Kids \\| Millet Toast Biscuits 270 g ",
       "mrp": 438,
@@ -6082,7 +6082,7 @@
       "isLive": true
     },
     {
-      "brand": "Pack of",
+      "brand": "Pc",
       "company": "Emerging / D2C",
       "name": "Pack of 6 Suji Rusk , 2 Pc Crispy Toast , 2 Tea Toast ,2 Round Rusk ,2100 Gm ,Family Combo Pack , Rusk Toast ,Cookies Biscuit",
       "mrp": 520,
@@ -6101,7 +6101,7 @@
       "isLive": true
     },
     {
-      "brand": "Delight Suji",
+      "brand": "Delight",
       "company": "Emerging / D2C",
       "name": "Delight Suji Rusks/Toast/Handcrafted Biscuits/Rusks/Toast Crisping Snacks Rusk/Toast-150gm",
       "mrp": 499,
@@ -6120,7 +6120,7 @@
       "isLive": true
     },
     {
-      "brand": "Chota Pack",
+      "brand": "Chota",
       "company": "Emerging / D2C",
       "name": "Chota Pack of 2 : Ragi & Wheat Rusks \\| Millet Toast Sugar Free \\| No Maida Rusk \\| Rusks for Kids \\| Millet Toast Biscuits Rusk 8",
       "mrp": 258,
@@ -6139,8 +6139,8 @@
       "isLive": true
     },
     {
-      "brand": "Original Rusk",
-      "company": "Emerging / D2C",
+      "brand": "Treat",
+      "company": "Britannia",
       "name": "Original Rusk 700g \\| Tea Toast Biscuit \\| Whole Wheat & Suji, Maida-Free \\| Crispy Bakery-Style Snack \\| Ideal for Tea, Coffee, B",
       "mrp": 300,
       "selling": 225,
@@ -6158,7 +6158,7 @@
       "isLive": true
     },
     {
-      "brand": "Cake Rusk",
+      "brand": "Cake",
       "company": "Emerging / D2C",
       "name": "Cake Rusk Cookies \\| Handmade Butter Cake Rusk \\| Crispy, Light & Crunchy Tea-Time Snack \\| Twice Baked Premium Toast Biscuits \\| ",
       "mrp": 399,
@@ -6196,7 +6196,7 @@
       "isLive": true
     },
     {
-      "brand": "Waffy Chocolate",
+      "brand": "Waffy -",
       "company": "Emerging / D2C",
       "name": "Waffy - Chocolate, Pineapple, Vanilla, Orange, Strawberry, And Dark Vanilla Flavoured Creamy & Crunchy Wafers,360/330 Gram (Flavor",
       "mrp": 145,
@@ -6215,7 +6215,7 @@
       "isLive": true
     },
     {
-      "brand": "Waffy Strawberry",
+      "brand": "Waffy",
       "company": "Emerging / D2C",
       "name": "Waffy Strawberry flavoured Wafer roll Jar (250g)",
       "mrp": 180,
@@ -6234,7 +6234,7 @@
       "isLive": true
     },
     {
-      "brand": "Waffy Wafer",
+      "brand": "Waffy",
       "company": "Emerging / D2C",
       "name": "Waffy Wafer Biscuits - Vanilla, 75 Gram",
       "mrp": 45,
@@ -6253,7 +6253,7 @@
       "isLive": true
     },
     {
-      "brand": "Waffy Chocolate",
+      "brand": "Waffy -",
       "company": "Emerging / D2C",
       "name": "Waffy - Chocolate Flavoured Creamy & Crunchy Wafers (Pack of 6 - 360g)",
       "mrp": 300,
@@ -6272,7 +6272,7 @@
       "isLive": true
     },
     {
-      "brand": "Crme Fun",
+      "brand": "Crme",
       "company": "Emerging / D2C",
       "name": "Crème 4 Fun Pineapple flavoured Sandwich Biscuits (145g)",
       "mrp": 36,
@@ -6291,7 +6291,7 @@
       "isLive": true
     },
     {
-      "brand": "Chocolate Wafer",
+      "brand": "Roll",
       "company": "Emerging / D2C",
       "name": "Chocolate Wafer Roll Combo (250 Gram) - Pack of 2",
       "mrp": 360,
@@ -6348,7 +6348,7 @@
       "isLive": true
     },
     {
-      "brand": "Crme Fun",
+      "brand": "Crme",
       "company": "Emerging / D2C",
       "name": "Crème 4 Fun Strawberry Flavoured Sandwich Biscuits (145g)",
       "mrp": 36,
@@ -6367,7 +6367,7 @@
       "isLive": true
     },
     {
-      "brand": "Waffy Chocolate",
+      "brand": "Waffy",
       "company": "Emerging / D2C",
       "name": "Waffy Chocolate Flavoured Wafer Roll Jar (Pack of 2 - 500Gram)",
       "mrp": 180,
@@ -6386,7 +6386,7 @@
       "isLive": true
     },
     {
-      "brand": "Waffy Chocolate",
+      "brand": "Waffy -",
       "company": "Emerging / D2C",
       "name": "Waffy - Chocolate Flavoured Creamy & Crunchy Wafer Rolls Tray Pack 150g",
       "mrp": 60,
@@ -6405,7 +6405,7 @@
       "isLive": true
     },
     {
-      "brand": "Waffy Orange",
+      "brand": "Waffy -",
       "company": "Emerging / D2C",
       "name": "Waffy - Orange Flavoured Creamy & Crunchy Wafers Tray Pack 150g",
       "mrp": 60,
@@ -6443,7 +6443,7 @@
       "isLive": true
     },
     {
-      "brand": "Waffy Wafers",
+      "brand": "Waffy",
       "company": "Emerging / D2C",
       "name": "Waffy Wafers - Chocolate Flavoured, 75g (Buy 1 get 1) Promo Pack",
       "mrp": 100,
@@ -6538,7 +6538,7 @@
       "isLive": true
     },
     {
-      "brand": "Potato Wafers",
+      "brand": "Potato",
       "company": "Emerging / D2C",
       "name": "Potato Wafers Salted - 70g \\| Plant-Based Vegan, No Artificial Flavors or Colors, Zero Trans Fat & Cholesterol \\| Made with Rock S",
       "mrp": 40,
@@ -6557,8 +6557,8 @@
       "isLive": true
     },
     {
-      "brand": "NICE Sugar",
-      "company": "Emerging / D2C",
+      "brand": "Nice",
+      "company": "ITC Sunfeast",
       "name": "NICE Sugar Sprinkled Coconut Biscuit (150g/145g)",
       "mrp": 32,
       "selling": 23,
@@ -6595,7 +6595,7 @@
       "isLive": true
     },
     {
-      "brand": "Quadratini Chocolate",
+      "brand": "Quadratini",
       "company": "Emerging / D2C",
       "name": "Quadratini Chocolate Wafer Cookies - 54grams (Italy)",
       "mrp": 109,
@@ -6633,7 +6633,7 @@
       "isLive": true
     },
     {
-      "brand": "Minis Assorted",
+      "brand": "Tin",
       "company": "Emerging / D2C",
       "name": "Minis Assorted Wafer Cookies 10G (Pack of 8) with Tin",
       "mrp": 199,
@@ -6652,7 +6652,7 @@
       "isLive": true
     },
     {
-      "brand": "Assorted Wafer",
+      "brand": "Pack75 Gram",
       "company": "Emerging / D2C",
       "name": "Assorted Wafer Biscuits Combo Pack\\|75 Gram x 4\\|Chocolate, Orange, Pineapple, Strawberry Flavors\\|100% Vegetarian\\|Indulge In Our",
       "mrp": 240,
@@ -6671,8 +6671,8 @@
       "isLive": true
     },
     {
-      "brand": "Caprice Classic",
-      "company": "Emerging / D2C",
+      "brand": "Treat",
+      "company": "Britannia",
       "name": "Caprice Classic Delicious Wafer Roll Sticks with Hazelnut and Cocoa Cream, Smooth Crunchy Snacks, Biscuits, Crackers, Sweet Treats",
       "mrp": 319,
       "selling": 219,
@@ -6709,7 +6709,7 @@
       "isLive": true
     },
     {
-      "brand": "Chocolate Strawberry",
+      "brand": "&",
       "company": "Emerging / D2C",
       "name": "Chocolate & Strawberry Flavoured Wafer Rolls - Combo Pack, 150gm x 2 Jar \\| Indulge in our crispy, cream biscuit snacks-perfect fo",
       "mrp": 330,
@@ -6728,7 +6728,7 @@
       "isLive": true
     },
     {
-      "brand": "Assorted Wafer",
+      "brand": "Pack75 Gram",
       "company": "Emerging / D2C",
       "name": "Assorted Wafer Biscuits Combo Pack\\|75 Gram x 6\\|Chocolate, Orange, Pineapple, Strawberry, Vanilla & Mix fruit Flavours\\|100% Vege",
       "mrp": 360,
@@ -6747,7 +6747,7 @@
       "isLive": true
     },
     {
-      "brand": "Wafers Cream",
+      "brand": "Onion",
       "company": "Emerging / D2C",
       "name": "Wafers, Cream and Onion, 70 gram /75 gram (Weight May Vary)",
       "mrp": 40,
@@ -6766,8 +6766,8 @@
       "isLive": true
     },
     {
-      "brand": "Perk Mini",
-      "company": "Emerging / D2C",
+      "brand": "Treat",
+      "company": "Britannia",
       "name": "Perk Mini Treats Chocolate Coated Wafers Bars, 115.5 g",
       "mrp": 115.5,
       "selling": 115.5,
@@ -6804,8 +6804,8 @@
       "isLive": true
     },
     {
-      "brand": "Treat Creme",
-      "company": "Emerging / D2C",
+      "brand": "Treat",
+      "company": "Britannia",
       "name": "Treat Creme Wafers Chocolate 75 gm Pouch",
       "mrp": 50,
       "selling": 23,
@@ -6823,7 +6823,7 @@
       "isLive": true
     },
     {
-      "brand": "Choco Wafer",
+      "brand": "Rolls",
       "company": "Emerging / D2C",
       "name": "Choco Wafer Rolls 100Gm",
       "mrp": 60,
@@ -6842,7 +6842,7 @@
       "isLive": true
     },
     {
-      "brand": "Wafers Spicy",
+      "brand": "Spicy Chilli",
       "company": "Emerging / D2C",
       "name": "Wafers Spicy Chilli, 79g",
       "mrp": 45,
@@ -6880,7 +6880,7 @@
       "isLive": true
     },
     {
-      "brand": "Orange Flavoured",
+      "brand": "Biscuits-",
       "company": "Emerging / D2C",
       "name": "Orange Flavoured Wafer Biscuits- Combo Pack (75gm x 3)",
       "mrp": 180,
@@ -6956,7 +6956,7 @@
       "isLive": true
     },
     {
-      "brand": "Choco Almond",
+      "brand": "Story",
       "company": "Emerging / D2C",
       "name": "Choco Almond Story Box \\| 1 Healthy Choco Almond Cookies Story Box\\|Nutty & Chocolatey \\| Family Snacks Biscuit \\| No Added Maida ",
       "mrp": 105,
@@ -6975,8 +6975,8 @@
       "isLive": true
     },
     {
-      "brand": "ITC Sunfeast",
-      "company": "ITC Sunfeast",
+      "brand": "Treat",
+      "company": "Britannia",
       "name": "Chocolate Almond Cookies (25g) Pack of 2 Cookies \\| Healthy Biscuit Combo \\| Badam Snack Pack \\| Gifting Treat for Family & Friend",
       "mrp": 42,
       "selling": 30,
@@ -6994,7 +6994,7 @@
       "isLive": true
     },
     {
-      "brand": "Premium Whole",
+      "brand": "Whole",
       "company": "Emerging / D2C",
       "name": "Premium Whole Wheat Digestive Biscuits \\| High-Fibre Crunchy Biscuits \\| No Artificial Colours or Flavours \\| Healthy Tea-Time Sna",
       "mrp": 55,
@@ -7013,7 +7013,7 @@
       "isLive": true
     },
     {
-      "brand": "White Choco",
+      "brand": "White",
       "company": "Emerging / D2C",
       "name": "White Choco Cashew Story Box \\| Family Snacks Biscuit \\| No Added Maida 6 Cookies, 75g",
       "mrp": 105,
@@ -7032,7 +7032,7 @@
       "isLive": true
     },
     {
-      "brand": "Peanut Butter",
+      "brand": "Peanut",
       "company": "Emerging / D2C",
       "name": "Peanut Butter Story Box -1 \\| Peanuts & Chocolate- All at Once\\|Family Snacks Biscuit \\|No Added Maida\\| 6 Cookies Per Box, 75 gm",
       "mrp": 105,
@@ -7108,7 +7108,7 @@
       "isLive": true
     },
     {
-      "brand": "Mini Nuts",
+      "brand": "Nuts",
       "company": "Emerging / D2C",
       "name": "Mini Nuts\\| Pack of 4 (23g each)\\|Snacks Gift hamper \\|Caramel Sea Salt & Orange Cocoa Almonds, Cream & Onion Cashew, Tandoori Nut",
       "mrp": 200,
@@ -7127,7 +7127,7 @@
       "isLive": true
     },
     {
-      "brand": "Jaggery Oats",
+      "brand": "Palm Oil",
       "company": "Emerging / D2C",
       "name": "Jaggery Oats Cookies, 100g\\| No Palm Oil, High Fibre Digestive\\| 3X Oats\\| 0% Maida, Refined Sugar\\| With Nuts & Seeds\\| Anytime S",
       "mrp": 80,
@@ -7184,7 +7184,7 @@
       "isLive": true
     },
     {
-      "brand": "Jaggery Atta",
+      "brand": "Palm oil",
       "company": "Emerging / D2C",
       "name": "Jaggery Atta Cookies, 120g\\| No Palm oil, Made with Butter \\| 0% Maida, Refined Sugar\\| With Goodness of 6 Nuts & Seeds\\| Anytime ",
       "mrp": 100,
@@ -7203,8 +7203,8 @@
       "isLive": true
     },
     {
-      "brand": "Oh Crumb",
-      "company": "Emerging / D2C",
+      "brand": "Treat",
+      "company": "Britannia",
       "name": "Oh Crumb Dunkin Delight Hazelnut Cookies Rich Choco Layer\\| Soft Center \\| Gourmet Treat for Tea-Time\\| Gifting & Snacking \\| Fres",
       "mrp": 300,
       "selling": 249,
@@ -7222,7 +7222,7 @@
       "isLive": true
     },
     {
-      "brand": "Dozen Pista",
+      "brand": "Dozen -",
       "company": "Emerging / D2C",
       "name": "Dozen - Pista Badam Cookies\\|No Preservative\\|Zero Transfat\\|Handmade Cookies\\|Goodness Of Nuts,60 G",
       "mrp": 59,
@@ -7241,7 +7241,7 @@
       "isLive": true
     },
     {
-      "brand": "Premium Pistachio",
+      "brand": "Healthy",
       "company": "Emerging / D2C",
       "name": "Premium Pistachio \\| 200g \\| Pista, Healthy Snacks, Pistachios, Dry Fruits, Roasted and Salted Pistachios, Low Calorie Nuts, High ",
       "mrp": 450,
@@ -7260,7 +7260,7 @@
       "isLive": true
     },
     {
-      "brand": "Jaggery Ragi",
+      "brand": "Palm Oil",
       "company": "Emerging / D2C",
       "name": "Jaggery Ragi Cookies, 100g \\| No Palm Oil, No Maida, No Refined Sugar \\| High Fibre Digestives \\| Guilt Free Snacks for Adults",
       "mrp": 80,
@@ -7279,7 +7279,7 @@
       "isLive": true
     },
     {
-      "brand": "Chocolate Flavour",
+      "brand": "x",
       "company": "Emerging / D2C",
       "name": "Chocolate Flavour 30g x Pack of 2 \\|Baked Coconut Crispy Crunchy Vegan No Preservatives Healthy Snack for Parties, Adults, Kids, S",
       "mrp": 120,
@@ -7298,7 +7298,7 @@
       "isLive": true
     },
     {
-      "brand": "Premium Walnut",
+      "brand": "Walnuts Without",
       "company": "Emerging / D2C",
       "name": "Premium Walnut \\| 900g \\| Walnuts, Without Shell, Akhrot, walnut Kernel, Dry Fruits, Healthy Snacks, Gluten Free Healthy Lifestyle",
       "mrp": 2250,
@@ -7317,7 +7317,7 @@
       "isLive": true
     },
     {
-      "brand": "Assorted Pack",
+      "brand": "Multi Grain",
       "company": "Emerging / D2C",
       "name": "Assorted Pack Of Multi Grain, Millet, Ragi & Banana Millet Digestive Cookies\\|Home/Office Snack\\|Free Of White Sugar & White Flour",
       "mrp": 280,
@@ -7336,7 +7336,7 @@
       "isLive": true
     },
     {
-      "brand": "Millet Cookies",
+      "brand": "- Tasty",
       "company": "Emerging / D2C",
       "name": "Millet Cookies 75gm Pack of 5 - Tasty & Healthy Snack with Natural Sweetness - Best Healthy Cookies for Kids & Adults",
       "mrp": 375,
@@ -7374,7 +7374,7 @@
       "isLive": true
     },
     {
-      "brand": "Oats Choco",
+      "brand": "Chip",
       "company": "Emerging / D2C",
       "name": "Oats Choco Chip Cookies 226g",
       "mrp": 220,

@@ -82,5 +82,33 @@
       "Wafer": 0.6,
       "Rusk": 0.321
     }
+  },
+  {
+    "ts": "2026-06-15T09:56:42.437Z",
+    "skuCount": 389,
+    "brandsOk": 13,
+    "overall": {
+      "medianPpg": 0.37,
+      "avgDiscount": 16.7,
+      "totalReviews": 4456209,
+      "avgRating": 4.2
+    },
+    "byCompany": {
+      "Britannia": 0.296,
+      "Parle": 0.222,
+      "ITC Sunfeast": 0.484,
+      "Mondelez": 0.3,
+      "Unibic": 0.495,
+      "Emerging / D2C": 0.62
+    },
+    "byCategory": {
+      "Cookies": 0.474,
+      "Cream": 0.301,
+      "Other": 0.224,
+      "Digestive": 0.469,
+      "Crackers": 0.4,
+      "Wafer": 0.6,
+      "Rusk": 0.321
+    }
   }
 ]
