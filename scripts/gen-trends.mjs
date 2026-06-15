@@ -23,6 +23,12 @@ const GEO='IN', TIME='today 12-m';
 const sleep = ms => new Promise(r=>setTimeout(r, ms));
 const mean = a => a.length ? a.reduce((s,x)=>s+x,0)/a.length : 0;
 
+// FREE-TIER SAFETY: hard ceiling on SerpApi calls per run, and halt immediately
+// on any key/quota/plan error so we never burn through (or exceed) the free quota.
+const MAX_CALLS = 12;          // our run needs ~6; 12 is a generous ceiling
+let CALLS = 0, HALT = false;
+const isFatalSerp = m => /api key|run out|exceeded|quota|upgrade|billing|plan|account|unauthor|payment/i.test(String(m||''));
+
 // Reduce a (weekly) interest series to 12 monthly buckets (averaged).
 function to12(series){
   if (!series || !series.length) return null;
@@ -72,12 +78,19 @@ function parseSerpTimeseries(data, keywords){
 
 // One batch (≤5 terms incl. anchor) via SerpApi's google_trends engine (real Google Trends).
 async function fetchBatch(keywords, key){
+  if (HALT) throw new Error('halted');
+  if (CALLS >= MAX_CALLS){ HALT = true; throw new Error(`call budget reached (${MAX_CALLS})`); }
+  CALLS++;
   const url = 'https://serpapi.com/search.json?engine=google_trends'
     + `&q=${encodeURIComponent(keywords.join(','))}`
     + `&data_type=TIMESERIES&geo=${GEO}&date=${encodeURIComponent(TIME)}&api_key=${key}`;
   const r = await fetch(url, { signal: AbortSignal.timeout(45000) });
   const data = await r.json().catch(()=>({}));
-  if (!r.ok) throw new Error('serpapi HTTP '+r.status+(data && data.error ? ': '+data.error : ''));
+  const apiErr = (data && data.error) || '';
+  if (!r.ok || apiErr){
+    if (isFatalSerp(apiErr) || [401,402,403,429].includes(r.status)) HALT = true;  // bad key / quota / rate → stop spending
+    throw new Error('serpapi: ' + ((r.ok ? '' : 'HTTP '+r.status+' ') + apiErr).trim());
+  }
   return parseSerpTimeseries(data, keywords);
 }
 
@@ -87,11 +100,12 @@ async function fetchSet(items, anchor, key){
   const raw = {};
   let anchorRef = null;
   for (let i=0;i<others.length;i+=4){
+    if (HALT) break;
     const group = others.slice(i, i+4);
     let batch;
-    for (let attempt=1; attempt<=2 && !batch; attempt++){
+    for (let attempt=1; attempt<=2 && !batch && !HALT; attempt++){
       try { batch = await fetchBatch([anchor, ...group], key); }
-      catch(e){ console.log(`  batch [${group.join(', ')}] try ${attempt}: ${e.message}`); if (attempt<2) await sleep(4000); }
+      catch(e){ console.log(`  batch [${group.join(', ')}] try ${attempt}: ${e.message}`); if (HALT) break; if (attempt<2) await sleep(4000); }
     }
     if (!batch) { await sleep(1500); continue; }
     const aMean = mean(batch[anchor]||[]);
@@ -114,7 +128,8 @@ async function main(){
   if (!key) console.log('SERPAPI_KEY not set — keeping last-good (all values stale).');
 
   const brandRaw = key ? await fetchSet(BRANDS, BRAND_ANCHOR, key) : {};
-  const catRaw   = key ? await fetchSet(CATEGORIES, CAT_ANCHOR, key) : {};
+  const catRaw   = (key && !HALT) ? await fetchSet(CATEGORIES, CAT_ANCHOR, key) : {};
+  if (HALT) console.log(`  fetch halted early (key/quota/${MAX_CALLS}-call cap) — kept last-good for the rest.`);
 
   const B = buildOutput(BRANDS, brandRaw, prevBrands, fetchedAt);
   const C = buildOutput(CATEGORIES, catRaw, prevCats, fetchedAt);
@@ -134,7 +149,7 @@ async function main(){
   writeFileSync('data/trends.json', JSON.stringify(out, null, 2));
   const staleB = Object.values(B.out).filter(x=>x.stale).length;
   const staleC = Object.values(C.out).filter(x=>x.stale).length;
-  console.log(`trends.json written — brands ${B.fetchedCount}/${BRANDS.length} live (${staleB} stale), categories ${C.fetchedCount}/${CATEGORIES.length} live (${staleC} stale) · ${fetchedAt}`);
+  console.log(`trends.json written — brands ${B.fetchedCount}/${BRANDS.length} live (${staleB} stale), categories ${C.fetchedCount}/${CATEGORIES.length} live (${staleC} stale) · ${CALLS} SerpApi call(s) · ${fetchedAt}`);
 }
 
 if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
