@@ -20,7 +20,9 @@ on:
         required: false
         default: ''
   schedule:
-    - cron: '0 2 * * *'      # daily; adjust later
+    # CADENCE — single tunable line. Weekly (Mon 02:00 UTC): Amazon + Blinkit + Zepto together,
+    # one run/week (credit control). Bump to daily later by changing this to '0 2 * * *'.
+    - cron: '0 2 * * 1'
 
 permissions:
   contents: write

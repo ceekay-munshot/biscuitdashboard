@@ -229,6 +229,10 @@ td a:hover{color:#B6772E;text-decoration:underline}
 .pf-list li{margin-bottom:5px}
 .pf-caveat{font-size:12px;line-height:1.6;color:#5A4300;background:#FBF3E3;border:0.5px solid rgba(182,119,46,.3);border-radius:8px;padding:10px 12px;margin:10px 0}
 .pf-legend{font-size:11.5px;color:#6b6a66;line-height:1.8}
+/* Channel filter row + Compare */
+.chips-ch{margin-bottom:8px}
+.chips-ch .chip{border-style:dashed}
+.ch-badge{display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:6px;background:#DFF1EB;color:#0A4A3A;margin-left:5px;vertical-align:middle;letter-spacing:.02em}
 
 /* Emerging-brands radar */
 .roster-ref{display:flex;flex-wrap:wrap;gap:8px;line-height:1.6}
@@ -317,6 +321,8 @@ let STATE = {
   scrapedAt:null,       // ISO timestamp of the scrape
   curr:null,            // buildStats() result over the FULL dataset (chips, heatmap)
   categoryFilter:'All', // active category chip
+  channelFilter:'All',  // active channel chip ('All'|'amazon'|'blinkit'|'zepto')
+  compareMode:'brand',  // Channel Compare grouping: 'brand' | 'category'
   trends:null,          // data/trends.json (seeded Google Trends snapshot)
   trendsMode:'brands',  // Trends view main-chart toggle: 'brands' | 'categories'
   trendsSeed:null,      // Trends view related-queries seed toggle (null → first seed)
@@ -668,12 +674,6 @@ async function loadData(){
   } catch(e){ STATE.share = null; }
 }
 
-async function reload(){
-  STATE.loading = true; render();
-  await loadData();
-  STATE.loading = false; render();
-}
-
 /* ------------------------------------------------------------
    6. ROUTER
    ------------------------------------------------------------ */
@@ -719,6 +719,10 @@ function render(){
 
     case 'radar':
       renderRadar();
+      break;
+
+    case 'compare':
+      renderCompare();
       break;
 
     case 'share':
@@ -797,11 +801,13 @@ function provenanceFooterHTML(){
   </div></div>`;
 }
 
-/* Category filter + small helpers */
+/* Category + channel filters (stack together) */
 function setCategoryFilter(cat){ STATE.categoryFilter = cat; render(); }
+function setChannelFilter(ch){ STATE.channelFilter = ch; render(); }
 function currentFilterSkus(){
-  const f = STATE.categoryFilter || 'All';
-  return f === 'All' ? STATE.skus : STATE.skus.filter(s=>s.category===f);
+  const cat = STATE.categoryFilter || 'All';
+  const ch  = STATE.channelFilter  || 'All';
+  return STATE.skus.filter(s => (cat==='All' || s.category===cat) && (ch==='All' || s.channel===ch));
 }
 function brandCompany(brand){ const b = BRANDS.find(x=>x.brand===brand); return b ? b.company : null; }
 function hexToRgba(hex, a){
@@ -827,8 +833,8 @@ function renderDashboard(){
 function emptyStateHTML(){
   const groups = Object.keys(COL).join(' · ');
   const msg = STATE.loading
-    ? `<div class="notice info"><span class="pulse-dot" style="color:#B6772E"></span>Loading data…</div>`
-    : `<div class="notice info">No data yet — run the <strong>Scrape</strong> workflow (GitHub → <strong>Actions</strong> tab → <em>Run workflow</em>) to populate, then reload.</div>`;
+    ? `<div class="notice info"><span class="pulse-dot" style="color:#B6772E"></span>Loading the latest data…</div>`
+    : `<div class="notice info">No data yet — the weekly <strong>Scrape</strong> workflow populates <code>data/latest.json</code>; once it has run, just revisit this page.</div>`;
 
   return `
   <div class="hero fadein">
@@ -839,7 +845,6 @@ function emptyStateHTML(){
       with <strong>price-per-gram</strong> as the hero metric.
     </p>
     <div>${msg}</div>
-    <div><button class="btn-accent" onclick="reload()">↻ Reload</button></div>
     <div class="hero-hint"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd> for admin / system info</div>
   </div>`;
 }
@@ -848,15 +853,29 @@ function emptyStateHTML(){
 function overviewHTML(view){
   const st = view;                         // filtered stats (KPI cards, tables, charts)
   const intel = buildIntel(st.companyStats);   // Step 13 — per-company archetype/sentiment/narrative
-  const filter = STATE.categoryFilter || 'All';
+  const catF = STATE.categoryFilter || 'All';
+  const chF  = STATE.channelFilter  || 'All';
   const asOf = STATE.scrapedAt ? new Date(STATE.scrapedAt).toLocaleString('en-IN') : '—';
 
-  // Category chips — counts from the FULL dataset; only categories that exist.
-  const counts = {}; STATE.skus.forEach(s=>counts[s.category]=(counts[s.category]||0)+1);
-  const chip = (key,label,nn)=>`<button class="chip${filter===key?' active':''}" onclick="setCategoryFilter('${key}')">${esc(label)}<span class="chip-n">${nn}</span></button>`;
-  const chips = [ chip('All','All',STATE.skus.length),
+  // Chips stack: channel-chip counts reflect the active category; category-chip counts reflect the active channel.
+  const catSkus = catF==='All' ? STATE.skus : STATE.skus.filter(s=>s.category===catF);
+  const chSkus  = chF==='All'  ? STATE.skus : STATE.skus.filter(s=>s.channel===chF);
+  const showChannels = STATE.skus.some(s=>s.channel==='blinkit'||s.channel==='zepto');
+
+  const chCounts = {}; catSkus.forEach(s=>chCounts[s.channel]=(chCounts[s.channel]||0)+1);
+  const chChip = (k,l,n)=>`<button class="chip${chF===k?' active':''}" onclick="setChannelFilter('${k}')">${esc(l)}<span class="chip-n">${n}</span></button>`;
+  const channelChips = [ chChip('All','All channels',catSkus.length),
+    ...['amazon','blinkit','zepto'].filter(c=>chCounts[c]>0).map(c=>chChip(c,CH_LABEL[c],chCounts[c])) ].join('');
+
+  const counts = {}; chSkus.forEach(s=>counts[s.category]=(counts[s.category]||0)+1);
+  const chip = (key,label,nn)=>`<button class="chip${catF===key?' active':''}" onclick="setCategoryFilter('${key}')">${esc(label)}<span class="chip-n">${nn}</span></button>`;
+  const chips = [ chip('All','All',chSkus.length),
     ...CHIP_ORDER.filter(c=>counts[c]>0).map(c=>chip(c,c,counts[c])) ].join('');
-  const filterNote = filter!=='All' ? `<span class="filter-note">showing ${st.skuCount} SKUs in ${esc(filter)}</span>` : '';
+
+  const fbits = []; if (chF!=='All') fbits.push(CH_LABEL[chF]||chF); if (catF!=='All') fbits.push(catF);
+  const subNote = fbits.length
+    ? `<strong>${st.skuCount}</strong> SKUs · ${fbits.map(esc).join(' · ')}`
+    : `<strong>${STATE.skus.length}</strong> SKUs · all channels`;
 
   // One KPI card per company group: present companies (by median ₹/g), then any
   // group with no SKUs (under the current filter) as a muted placeholder.
@@ -924,21 +943,22 @@ function overviewHTML(view){
   <div class="ov-head">
     <div>
       <h1 class="ov-title">Biscuit Market Intelligence</h1>
-      <div class="ov-sub"><span class="live-dot"></span>Data as of ${asOf} · <strong>${STATE.skus.length}</strong> SKUs ${filterNote}</div>
+      <div class="ov-sub"><span class="live-dot"></span>Data as of ${asOf} · ${subNote}</div>
     </div>
     <div class="ov-actions">
       <button onclick="navigate({type:'category'})">Categories</button>
       <button onclick="navigate({type:'packsize'})">Pack Sizes</button>
+      <button onclick="navigate({type:'compare'})">Compare</button>
       <button onclick="navigate({type:'history'})">History</button>
       <button onclick="navigate({type:'trends'})">Google Trends</button>
       <button onclick="navigate({type:'share'})">Market Share</button>
       <button onclick="navigate({type:'radar'})">Emerging Brands</button>
       <button class="btn-accent" onclick="downloadExcel()">⤓ Export Excel</button>
-      <button onclick="reload()"${STATE.loading?' disabled':''}>↻ Reload</button>
     </div>
   </div>
   <div class="ov-metricline">Hero metric: <strong>price per gram (₹/g)</strong> · secondary: discount vs MRP</div>
 
+  ${showChannels ? `<div class="chips chips-ch">${channelChips}</div>` : ''}
   <div class="chips">${chips}</div>
 
   <div class="grid3">${cards}</div>
@@ -1888,6 +1908,124 @@ function drawShareCharts(){
   });
 }
 
+/* ---- Channel Compare (Amazon vs Blinkit vs Zepto, by brand or category) ---- */
+const CH_LABEL = { amazon:'Amazon', blinkit:'Blinkit', zepto:'Zepto' };
+const CH_COL   = { amazon:'#E8730C', blinkit:'#C99700', zepto:'#7A2D8E' };
+const CH_KEYS  = ['amazon','blinkit','zepto'];
+function setCompareMode(m){ STATE.compareMode = m; render(); }
+
+// median ₹/g + avg discount per channel, grouped by brand or category (in-stock only).
+function compareRows(groupKey){
+  const med = a => { a = a.filter(x=>x>0).sort((x,y)=>x-y); if(!a.length) return null; const n=a.length; return +(n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2).toFixed(3); };
+  const avg = a => a.length ? +(a.reduce((s,x)=>s+x,0)/a.length).toFixed(1) : null;
+  const groups = {};
+  for (const s of STATE.skus){
+    if (s.inStock===false || !CH_KEYS.includes(s.channel)) continue;
+    const g = s[groupKey] || '—';
+    (groups[g] = groups[g] || { company:s.company, ppg:{amazon:[],blinkit:[],zepto:[]}, disc:{amazon:[],blinkit:[],zepto:[]} });
+    groups[g].ppg[s.channel].push(s.pricePerGram);
+    groups[g].disc[s.channel].push(s.discount);
+  }
+  return Object.entries(groups).map(([name,g])=>{
+    const ppg  = { amazon:med(g.ppg.amazon),  blinkit:med(g.ppg.blinkit),  zepto:med(g.ppg.zepto) };
+    const disc = { amazon:avg(g.disc.amazon), blinkit:avg(g.disc.blinkit), zepto:avg(g.disc.zepto) };
+    const present = CH_KEYS.filter(c=>ppg[c]!=null);
+    const cheapest = present.length ? present.reduce((a,b)=>ppg[b]<ppg[a]?b:a) : null;
+    return { name, company:g.company, ppg, disc, present, cheapest };
+  });
+}
+
+function renderCompare(){
+  const backBar = `<div class="back-bar"><button onclick="navigate('dashboard')">← Back</button><strong>Channel Compare — Amazon vs Blinkit vs Zepto</strong></div>`;
+  const hasQ = STATE.skus.some(s=>s.channel==='blinkit'||s.channel==='zepto');
+  if (!STATE.skus.length || !hasQ){
+    $app().innerHTML = backBar + `<div class="notice info">No quick-commerce data yet — once the Scrape workflow has populated Blinkit/Zepto, revisit this page.</div>`;
+    return;
+  }
+  const mode = STATE.compareMode==='category' ? 'category' : 'brand';
+  const rows = compareRows(mode);
+  const multi  = rows.filter(r=>r.present.length>=2).sort((a,b)=>(a.ppg.amazon??9)-(b.ppg.amazon??9));
+  const single = rows.filter(r=>r.present.length===1);
+
+  // INSIGHT — overall q-comm vs e-comm gap + biggest per-group gaps.
+  const med = a => { a=a.filter(x=>x>0).sort((x,y)=>x-y); if(!a.length) return null; const n=a.length; return n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2; };
+  const inStock = STATE.skus.filter(s=>s.inStock!==false);
+  const eMed = med(inStock.filter(s=>s.channelType==='ecomm').map(s=>s.pricePerGram));
+  const qMed = med(inStock.filter(s=>s.channelType==='qcomm').map(s=>s.pricePerGram));
+  const gapPct = (eMed && qMed) ? Math.round((eMed-qMed)/eMed*100) : null;
+  const gaps = multi.filter(r=>r.ppg.amazon!=null && (r.ppg.blinkit!=null||r.ppg.zepto!=null)).map(r=>{
+    const q = Math.min(...[r.ppg.blinkit, r.ppg.zepto].filter(v=>v!=null));
+    return { name:r.name, diffPct: Math.round((r.ppg.amazon-q)/r.ppg.amazon*100) };
+  }).sort((a,b)=>Math.abs(b.diffPct)-Math.abs(a.diffPct)).slice(0,3);
+  const gapLine = gapPct!=null
+    ? `On median ₹/g, <strong>quick-commerce runs ${Math.abs(gapPct)}% ${gapPct>=0?'cheaper':'dearer'}</strong> than Amazon (q-comm ${rs2(qMed)} vs Amazon ${rs2(eMed)} per gram).`
+    : 'Not enough overlapping data for a q-comm vs e-comm gap yet.';
+  const gapBrands = gaps.length
+    ? ` Biggest ${mode} gaps: ` + gaps.map(g=>`<strong>${esc(g.name)}</strong> (${g.diffPct>=0?'−':'+'}${Math.abs(g.diffPct)}% on q-comm)`).join(' · ') + '.'
+    : '';
+
+  const cell = (r,c) => r.ppg[c]==null ? '<span class="muted">—</span>'
+    : `${rs2(r.ppg[c])}${r.cheapest===c?' <span class="ch-badge">cheapest</span>':''}<div class="exec-sub2">${r.disc[c]!=null?Math.round(r.disc[c])+'% off':''}</div>`;
+  const rowHtml = r => `<tr>
+    <td>${mode==='brand'?`<span class="dot" style="background:${COL[r.company]||'#999'}"></span>`:''}${esc(r.name)}</td>
+    <td class="num">${cell(r,'amazon')}</td><td class="num">${cell(r,'blinkit')}</td><td class="num">${cell(r,'zepto')}</td>
+  </tr>`;
+  const singleHtml = single.length
+    ? single.map(r=>`<span class="grp-chip" style="background:#f0ede8;color:#5c5b57">${esc(r.name)} · ${CH_LABEL[r.present[0]]} only (${rs2(r.ppg[r.present[0]])})</span>`).join(' ')
+    : '<span class="muted">none</span>';
+
+  $app().innerHTML = `${backBar}
+  <div class="notice trends-banner">📦 ₹/g here is the <strong>brand-median per channel</strong> (in-stock only), <strong>not exact-SKU matching</strong>. Quick-commerce (Blinkit/Zepto) is <strong>"representative metro"</strong> — the delivery pincode didn't reliably apply, so treat q-comm prices as indicative of a metro store.</div>
+
+  <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
+    <div class="sec-title">The gap · quick-commerce vs e-commerce</div>
+    <p class="admin-p" style="margin:0">${gapLine}${gapBrands}</p>
+  </div></div>
+
+  <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
+    <div class="ov-head" style="margin-bottom:12px">
+      <div class="sec-title" style="margin:0">Median ₹/g by ${mode} × channel</div>
+      <div class="ov-actions">
+        <button class="seg${mode==='brand'?' active':''}" onclick="setCompareMode('brand')">By brand</button>
+        <button class="seg${mode==='category'?' active':''}" onclick="setCompareMode('category')">By category</button>
+      </div>
+    </div>
+    <div class="chart-box" style="height:340px"><canvas id="compareChart"></canvas></div>
+  </div></div>
+
+  <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
+    <div class="sec-title">${mode==='brand'?'Brands':'Categories'} in ≥2 channels <span class="muted" style="text-transform:none;letter-spacing:0">· median ₹/g · % off · cheapest flagged</span></div>
+    <div class="tbl-scroll"><table style="min-width:520px">
+      <thead><tr><th>${mode==='brand'?'Brand':'Category'}</th><th>Amazon</th><th>Blinkit</th><th>Zepto</th></tr></thead>
+      <tbody>${multi.map(rowHtml).join('') || '<tr><td colspan="4" class="muted">No multi-channel overlap yet.</td></tr>'}</tbody>
+    </table></div>
+    <div class="hm-cap">Cheapest channel per ${mode} is badged. Only ${mode}s present in ≥2 channels are compared.</div>
+  </div></div>
+
+  <div class="card fadein"><div class="card-pad">
+    <div class="sec-title">Single-channel ${mode}s <span class="muted" style="text-transform:none;letter-spacing:0">· listed separately, not compared</span></div>
+    <div class="roster-ref">${singleHtml}</div>
+  </div></div>`;
+
+  drawCompareChart(multi);
+}
+
+function drawCompareChart(multi){
+  if (!multi || !multi.length) return;
+  const top = multi.slice(0, 12);   // cap for readability
+  waitForChart(()=>{
+    mkChart('compareChart', { type:'bar',
+      data:{ labels: top.map(r=>r.name),
+        datasets: CH_KEYS.map(c=>({ label:CH_LABEL[c], data: top.map(r=>r.ppg[c]), backgroundColor:CH_COL[c], borderRadius:3, barPercentage:.9, categoryPercentage:.78 })) },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{position:'bottom', labels:{boxWidth:10, font:{size:10}, padding:8}},
+          tooltip:{ callbacks:{ label:c=>`${c.dataset.label}: ${c.raw==null?'—':'₹'+(+c.raw).toFixed(3)+'/g'}` } } },
+        scales:{ x:{ grid:{display:false}, ticks:{font:{size:9}} },
+                 y:{ beginAtZero:true, grid:{color:'rgba(26,26,24,.06)'}, ticks:{font:{size:10}, callback:v=>'₹'+v } } } }
+    });
+  });
+}
+
 function renderAdmin(){
   const roster = Object.keys(COL).map(g=>{
     const brands = BRANDS.filter(b=>b.company===g).map(b=>b.brand).join(', ');
@@ -2093,8 +2231,11 @@ document.addEventListener('keydown', e=>{
   }
 });
 
+// Boot: paint immediately (loading state), then fetch the latest static data and re-render.
+// No client refresh button — a page visit IS the refresh; the weekly scrape keeps data current.
+STATE.loading = true;
 render();
-loadData().then(render);
+loadData().then(() => { STATE.loading = false; render(); });
 </script>
 </body>
 </html>
