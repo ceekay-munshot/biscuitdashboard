@@ -176,6 +176,35 @@ td a:hover{color:#B6772E;text-decoration:underline}
 .cls-declining{background:#F7E0E3;color:#7A0A1C}
 .share-src{font-size:10px;margin-top:8px;color:#9b9a96}
 .share-src a{color:#6E4300}
+/* Executive intelligence (Step 13) */
+.kpi-signal{font-size:10.5px;color:#6b6a66;margin:6px 0 2px;line-height:1.35}
+.arch-badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap}
+.arch-value{background:#DFF1EB;color:#0A4A3A}
+.arch-scale{background:#FCE9D6;color:#8A3B00}
+.arch-premium{background:#F2E7F5;color:#45184F}
+.arch-challenger{background:#E6EDF8;color:#102C58}
+.arch-insurgent{background:#FCEAE1;color:#7A2D10}
+.arch-discount{background:#FBE7EA;color:#7A0A1C}
+.exec-card{border-radius:12px;overflow:hidden;background:#fff;border:0.5px solid rgba(26,26,24,.08);box-shadow:0 1px 4px rgba(26,26,24,.07);margin-bottom:14px}
+.exec-head{padding:13px 18px;color:#fff}
+.exec-slide{font-size:10px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;opacity:.85}
+.exec-h{font-size:17px;font-weight:800;margin-top:3px;line-height:1.2}
+.exec-h-sub{font-weight:500;font-size:12px;opacity:.9}
+.exec-g1{background:linear-gradient(135deg,#C77800,#7A2D10)}
+.exec-g2{background:linear-gradient(135deg,#0A4A3A,#138A6E)}
+.exec-g3{background:linear-gradient(135deg,#102C58,#45184F)}
+.exec-body{padding:8px 14px 14px;overflow-x:auto}
+.exec-tbl{width:100%;border-collapse:collapse;font-size:12px;min-width:560px}
+.exec-tbl th{text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:#9b9a96;font-weight:700;padding:7px 8px;border-bottom:0.5px solid rgba(26,26,24,.1)}
+.exec-tbl td{padding:8px;border-bottom:0.5px solid rgba(26,26,24,.06);vertical-align:top}
+.exec-tbl tr:last-child td{border-bottom:0}
+.exec-tbl td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.exec-tbl .dot{margin-right:6px}
+.exec-tbl a{color:#1a1a18;font-weight:600;text-decoration:none;border-bottom:1px solid rgba(26,26,24,.2)}
+.exec-sub2{font-size:10px;color:#9b9a96;margin-top:1px}
+.exec-take{margin-top:12px;padding:12px 14px;background:#FAF7F1;border:0.5px solid rgba(182,119,46,.18);border-radius:8px;font-size:13px;line-height:1.65;color:#3f3e3b}
+.mr-para{border-left:3px solid #ccc;padding:6px 0 8px 13px;margin-bottom:13px;font-size:13px;line-height:1.6;color:#3f3e3b}
+.mr-co{font-weight:700;font-size:12px;margin-bottom:3px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 
 /* Emerging-brands radar */
 .roster-ref{display:flex;flex-wrap:wrap;gap:8px;line-height:1.6}
@@ -352,6 +381,228 @@ function buildStats(skus, scrapedAt = STATE.scrapedAt){
   brandStats.sort(byMedianDesc);
 
   return { companyStats, brandStats, categoryStats, scrapedAt, skuCount: skus.length };
+}
+
+/* ===========================================================
+   INTELLIGENCE ENGINE (Step 13) — synthesises ₹/g pricing +
+   market share + Google Trends demand into per-company intel.
+   companyIntel(stat, share, demand, ctx) is PURE & deterministic
+   from real data — nothing fabricated, shelf-life NOT a driver,
+   estimated shares never stated as hard fact.
+   =========================================================== */
+const PPG_LOW=0.25, PPG_HIGH=0.55, SHARE_HIGH=25, SHARE_MID=8, DISC_HEAVY=25, YOY_EMERGING=20;  // editable thresholds
+
+const ARCH = {
+  value:     { key:'value',     label:'Value Leader',      descriptor:'owns mass-market value' },
+  premium:   { key:'premium',   label:'Premium Hold',      descriptor:'pricing power per gram' },
+  scale:     { key:'scale',     label:'Scale Premiumizer', descriptor:'scale + premiumization' },
+  challenger:{ key:'challenger',label:'Growth Challenger',  descriptor:'buying share' },
+  insurgent: { key:'insurgent', label:'Insurgent (D2C)',   descriptor:'disruptor to watch' },
+  discount:  { key:'discount',  label:'Discount-Led',      descriptor:'promo-driven volume' },
+};
+const ARCH_PHRASE = { value:'the mass-market value engine', scale:'the scale player', premium:'a premium holder',
+  challenger:'a growth challenger', insurgent:'an insurgent disruptor', discount:'a promo-led player' };
+const ARCH_TAKE = {
+  value:'the volume engine; defend ₹/g and guard against premium leakage',
+  scale:'a dominant premiumizer holding the centre of the market',
+  premium:'pricing power intact — protect the premium',
+  challenger:'spending demand and promo to take share; momentum to track',
+  insurgent:'tiny but fast — the disruptor to watch',
+  discount:'leaning on promotions for volume, with margin risk' };
+const SENT = {
+  strong:    { key:'strong',    icon:'🟢', word:'Strong',    cls:'sent-strong' },
+  steady:    { key:'steady',    icon:'🟡', word:'Steady',    cls:'sent-steady' },
+  pressured: { key:'pressured', icon:'🟠', word:'Pressured', cls:'sent-pressured' },
+  watch:     { key:'watch',     icon:'🔴', word:'Watch',     cls:'sent-watch' },
+};
+
+function pickSku(skus, score){ let best=null, bs=-Infinity; for (const s of skus){ const v=score(s); if (v>bs){ bs=v; best=s; } } return best; }
+
+// Roll the company's tracked brands up into one search-interest reading + direction.
+function demandForCompany(company){
+  const t = STATE.trends; if (!t || !t.brands) return null;
+  const present = BRANDS.filter(b=>b.company===company).map(b=>t.brands[b.brand]).filter(Boolean);
+  if (!present.length) return null;
+  const interest = Math.round(present.reduce((a,x)=>a+(x.latest||0),0)/present.length);
+  const dirs = present.map(x=>x.direction);
+  const direction = dirs.includes('rising') && !dirs.includes('falling') ? 'rising'
+                  : dirs.length && dirs.every(d=>d==='falling') ? 'falling' : 'flat';
+  return { interest, direction, brandCount: present.length };
+}
+// Find this company group's market-share record (names differ slightly between files).
+function shareForCompany(company){
+  const s = STATE.share; if (!s || !Array.isArray(s.companies)) return null;
+  const rx = { 'Britannia':/^Britannia/, 'Parle':/^Parle/, 'ITC Sunfeast':/ITC|Sunfeast/i,
+    'Mondelez':/Mondelez/i, 'Unibic':/Unibic/i, 'Emerging / D2C':/Whole Truth|D2C/i }[company];
+  return rx ? s.companies.find(c=>rx.test(c.company)) : null;
+}
+// A real, current breakout/rising query from Google Trends related (for the sector read).
+function marketBreakoutQuery(){
+  const rel = STATE.trends && STATE.trends.related; if (!rel) return null;
+  for (const seed of Object.keys(rel)){
+    const rising = rel[seed].rising || [];
+    const brk = rising.find(x=>/breakout/i.test(x.value||'')) || rising[0];
+    if (brk && brk.query) return brk.query;
+  }
+  return null;
+}
+// Mark the cheapest/priciest company by median ₹/g (for narrative framing).
+function marketPpgContext(companyStats){
+  const withPpg = companyStats.filter(c=>c.ppg && c.ppg.count);
+  const map = {};
+  if (!withPpg.length) return map;
+  const sorted = withPpg.slice().sort((a,b)=>a.ppg.median-b.ppg.median);
+  const lo = sorted[0].company, hi = sorted[sorted.length-1].company;
+  companyStats.forEach(c=>map[c.company] = { cheapest:c.company===lo, priciest:c.company===hi });
+  return map;
+}
+
+function archetypeOf(sig){
+  const ppg=sig.medianPpg, sh=sig.share==null?0:sig.share, disc=sig.avgDisc, g=sig.yoy==null?0:sig.yoy;
+  const dir=sig.direction, emerging=/Emerging|D2C/i.test(sig.company||'');
+  if (disc >= DISC_HEAVY)                                      return ARCH.discount;
+  if (ppg < PPG_LOW  && sh >= SHARE_HIGH)                      return ARCH.value;
+  if (ppg < PPG_HIGH && sh >= SHARE_HIGH)                      return ARCH.scale;
+  if (ppg >= PPG_HIGH && sh >= SHARE_MID)                      return ARCH.premium;
+  if (sh < SHARE_MID && (g >= YOY_EMERGING || emerging) && ppg >= 0.45) return ARCH.insurgent;
+  if (dir==='rising' || (sh>=SHARE_MID && sh<SHARE_HIGH) || (g>0 && sh<SHARE_HIGH)) return ARCH.challenger;
+  return ARCH.challenger;
+}
+function sentimentOf(sig){
+  const dir=sig.direction, g=sig.yoy==null?0:sig.yoy, disc=sig.avgDisc, i=sig.interest||0;
+  if (dir==='falling' && (g<=3 || disc>=DISC_HEAVY))                            return SENT.watch;
+  if ((dir==='rising' && g>5) || (g>=8 && dir!=='falling' && i>=20 && disc<22)) return SENT.strong;
+  if (disc>=DISC_HEAVY || dir==='falling' || g<=0)                              return SENT.pressured;
+  return SENT.steady;
+}
+function narrativeOf(sig, arch, ctx){
+  const ppg = (sig.medianPpg!=null ? sig.medianPpg : 0).toFixed(2);
+  const place = ctx && ctx.cheapest ? ' — the lowest ₹/g on the board'
+              : ctx && ctx.priciest ? ' — the most premium ₹/g on the board' : '';
+  const s1 = `${sig.company} is ${ARCH_PHRASE[arch.key]||arch.label} at ₹${ppg}/g (median) across ${sig.skuCount} SKUs${place}.`;
+  let s2 = '';
+  if (sig.share!=null) s2 += `It holds an estimated ~${sig.share}% market share`;
+  if (sig.revenue!=null){
+    const basis = sig.shareEstimated ? 'estimated' : 'audited';
+    s2 += `${sig.share!=null?' on ':'On '}${basis} ${fmtCr(sig.revenue)}${sig.yoy!=null?` (${sig.yoy>=0?'+':''}${sig.yoy}% YoY)`:''}`;
+  }
+  const dirWord = sig.direction==='rising'?'rising':sig.direction==='falling'?'softening':'flat';
+  s2 += `${s2?', with ':'With '}${dirWord} search interest${sig.interest!=null?` (${sig.interest}/100)`:''}.`;
+  const s3 = `Its range skews ${sig.topCategory} and discounts ~${Math.round(sig.avgDisc)}% on average — ${ARCH_TAKE[arch.key]||''}.`;
+  return `${s1} ${s2} ${s3}`;
+}
+
+// PURE: the three real datasets → one company's intelligence.
+function companyIntel(stat, share, demand, ctx){
+  const skus = stat.skus || [];
+  const priced = skus.filter(s=>s.pricePerGram>0);
+  const sig = {
+    company: stat.company || stat.name,
+    medianPpg: stat.ppg.median, avgDisc: stat.disc.avg, skuCount: skus.length, reviews: stat.reviewSum||0,
+    topCategory: Object.entries(stat.categoryCounts||{}).sort((a,b)=>b[1]-a[1]).map(([k])=>k)[0] || '—',
+    share: share ? share.marketSharePct : null,
+    shareEstimated: share ? !!share.isEstimated : true,
+    revenue: share ? share.biscuitRevenueCr : null,
+    yoy: share ? share.yoyGrowthPct : null,
+    interest: demand ? demand.interest : null,
+    direction: demand ? demand.direction : 'flat',
+    cheapest: pickSku(priced, s=>-s.pricePerGram),
+    priciest: pickSku(priced, s=>s.pricePerGram),
+    mostDiscounted: pickSku(skus, s=>s.discount||0),
+    mostReviewed: pickSku(skus, s=>s.reviewCount||0),
+  };
+  const archetype = archetypeOf(sig);
+  const sentiment = sentimentOf(sig);
+  const signal = `${archetype.descriptor} · ${sentiment.word}`;
+  return { archetype, sentiment, narrative: narrativeOf(sig, archetype, ctx), signal, signals: sig };
+}
+
+// Compute intel for every present company once (reused by KPI cards, exec cards, market read).
+function buildIntel(companyStats){
+  const ctxMap = marketPpgContext(companyStats);
+  const map = {};
+  companyStats.forEach(c=>{ map[c.company] = companyIntel(c, shareForCompany(c.company), demandForCompany(c.company), ctxMap[c.company]); });
+  return map;
+}
+const demandArrow = d => d==='rising' ? '<span style="color:#0A4A3A">▲</span>' : d==='falling' ? '<span style="color:#7A0A1C">▼</span>' : '<span class="muted">→</span>';
+
+// PART C — three screenshot-worthy executive-summary slides.
+function execSummaryHTML(companyStats, intel){
+  const cos = companyStats.filter(c=>intel[c.company]);
+  if (cos.length < 2) return '';
+  const byShare = cos.slice().sort((a,b)=>(intel[b.company].signals.share||0)-(intel[a.company].signals.share||0));
+  const byPpg   = cos.slice().sort((a,b)=>a.ppg.median-b.ppg.median);
+  const dot = co => `<span class="dot" style="background:${COL[co]||'#999'}"></span>`;
+
+  const c1 = byShare.map(c=>{ const S=intel[c.company].signals, a=intel[c.company].archetype; return `<tr>
+    <td>${dot(c.company)}${esc(c.company)}</td>
+    <td><span class="arch-badge arch-${a.key}">${a.label}</span></td>
+    <td class="num">${rs2(S.medianPpg)}</td>
+    <td class="num">${Math.round(S.avgDisc)}%</td>
+    <td class="num">${S.share!=null?'~'+S.share+'%':'—'}</td>
+    <td class="num">${demandArrow(S.direction)} ${S.interest!=null?S.interest:'—'}</td></tr>`; }).join('');
+
+  const skuCell = (s, metric) => s ? `<a href="${esc(s.url||'#')}" target="_blank" rel="noopener" title="${esc(s.name||'')}">${esc((s.name||'').slice(0,32))}</a><div class="exec-sub2">${metric}</div>` : '<span class="muted">—</span>';
+  const c2 = byPpg.map(c=>{ const S=intel[c.company].signals; return `<tr>
+    <td>${dot(c.company)}${esc(c.company)}</td>
+    <td>${skuCell(S.cheapest, S.cheapest?rs2(S.cheapest.pricePerGram)+'/g · best value':'')}</td>
+    <td>${skuCell(S.priciest, S.priciest?rs2(S.priciest.pricePerGram)+'/g · premium':'')}</td>
+    <td>${skuCell(S.mostDiscounted, S.mostDiscounted?Math.round(S.mostDiscounted.discount||0)+'% off':'')}</td>
+    <td>${skuCell(S.mostReviewed, S.mostReviewed?kCompact(S.mostReviewed.reviewCount||0)+' reviews':'')}</td></tr>`; }).join('');
+
+  const c3 = byShare.map(c=>{ const S=intel[c.company].signals, se=intel[c.company].sentiment; return `<tr>
+    <td>${dot(c.company)}${esc(c.company)}</td>
+    <td>${se.icon} ${se.word}</td>
+    <td class="num">${demandArrow(S.direction)} ${S.interest!=null?S.interest:'—'}</td>
+    <td class="num">${rs2(S.medianPpg)}</td>
+    <td class="num">${S.share!=null?'~'+S.share+'%':'—'}</td>
+    <td class="num">${Math.round(S.avgDisc)}%</td></tr>`; }).join('');
+
+  const slide = (g, n, title, sub, head, body) => `
+    <div class="exec-card fadein">
+      <div class="exec-head ${g}"><div class="exec-slide">Exec Summary · Slide ${n} of 3</div><div class="exec-h">${title} <span class="exec-h-sub">${sub}</span></div></div>
+      <div class="exec-body"><table class="exec-tbl"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>${body===c3?`<div class="exec-take">${sectorTakeaway(cos, intel)}</div>`:''}</div>
+    </div>`;
+
+  return `<div class="sec-title" style="margin-top:4px">Executive summary</div>`
+    + slide('exec-g1', 1, 'Who’s playing what game?', 'market archetypes',
+        '<th>Company</th><th>Archetype</th><th>Median ₹/g</th><th>Avg disc</th><th>Share</th><th>Demand</th>', c1)
+    + slide('exec-g2', 2, 'Cheapest vs premium per gram', 'the value spectrum',
+        '<th>Company</th><th>Best value (₹/g)</th><th>Most premium</th><th>Deepest discount</th><th>Demand hero</th>', c2)
+    + slide('exec-g3', 3, 'Demand &amp; momentum scorecard', 'sentiment × search × ₹/g',
+        '<th>Company</th><th>Sentiment</th><th>Search</th><th>Median ₹/g</th><th>Share</th><th>Avg disc</th>', c3);
+}
+
+// Card-3 synthesis paragraph — who leads value/premium, who's rising, a real breakout query, the ₹/g spread.
+function sectorTakeaway(cos, intel){
+  const sigs = cos.map(c=>intel[c.company].signals);
+  const byPpg = sigs.slice().sort((a,b)=>a.medianPpg-b.medianPpg);
+  const valueLeader = byPpg[0], premiumLeader = byPpg[byPpg.length-1];
+  const spread = premiumLeader.medianPpg / (valueLeader.medianPpg || 1);
+  const rising = sigs.filter(s=>s.direction==='rising').sort((a,b)=>(b.interest||0)-(a.interest||0))[0]
+              || sigs.slice().sort((a,b)=>(b.yoy||0)-(a.yoy||0))[0];
+  const brk = marketBreakoutQuery();
+  return `<strong>Sector read.</strong> ${esc(valueLeader.company)} anchors the value end at ₹${valueLeader.medianPpg.toFixed(2)}/g, while ${esc(premiumLeader.company)} sits at the premium end (₹${premiumLeader.medianPpg.toFixed(2)}/g) — a <strong>${spread.toFixed(1)}× ₹/g spread</strong> across the market. `
+    + (rising ? `${esc(rising.company)} carries the momentum (${rising.direction==='rising'?'rising search interest':'+'+rising.yoy+'% revenue growth'}). ` : '')
+    + (brk ? `A genuine breakout query right now: <em>“${esc(brk)}”</em> — emerging demand worth tracking. ` : '')
+    + `Median ₹/g stays the hero metric; discount intensity and search interest are the secondary tells.`;
+}
+
+// PART D — per-company data-driven narrative, colour-coded (NOT AI).
+function marketReadHTML(companyStats, intel){
+  const cos = companyStats.filter(c=>intel[c.company]);
+  if (!cos.length) return '';
+  const paras = cos.slice().sort((a,b)=>(intel[b.company].signals.share||0)-(intel[a.company].signals.share||0)).map(c=>{
+    const I = intel[c.company], col = COL[c.company]||'#999';
+    return `<div class="mr-para" style="border-left-color:${col}">
+      <div class="mr-co" style="color:${col}">${esc(c.company)} · <span class="arch-badge arch-${I.archetype.key}">${I.archetype.label}</span> <span class="muted">${I.sentiment.icon} ${I.sentiment.word}</span></div>
+      ${esc(I.narrative)}</div>`;
+  }).join('');
+  return `<div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
+    <div class="sec-title">Market Read <span class="muted" style="text-transform:none;letter-spacing:0">· data-driven, per company</span></div>
+    ${paras}
+    <div class="hm-cap">Generated <strong>deterministically</strong> from the three live datasets (₹/g × market share × search demand) — <strong>not AI</strong>. Estimated shares are stated as estimates; shelf-life is not used as a signal. <em>Future upgrade (not built): render these as prose via a Claude call in CI.</em></div>
+  </div></div>`;
 }
 
 /* ------------------------------------------------------------
@@ -531,6 +782,7 @@ function emptyStateHTML(){
 /* Overview dashboard — hero: price-per-gram (₹/g); secondary: discount vs MRP. */
 function overviewHTML(view){
   const st = view;                         // filtered stats (KPI cards, tables, charts)
+  const intel = buildIntel(st.companyStats);   // Step 13 — per-company archetype/sentiment/narrative
   const filter = STATE.categoryFilter || 'All';
   const asOf = STATE.scrapedAt ? new Date(STATE.scrapedAt).toLocaleString('en-IN') : '—';
 
@@ -559,12 +811,14 @@ function overviewHTML(view){
         <div class="kpi-sec">No products in the latest scrape.</div>
       </div></div>`;
     }
-    const tier = positioning(c.ppg.median);
+    const I = intel[c.company];
+    const a = I.archetype;
     return `
     <div class="card kpi fadein clickable" style="border-top:3px solid ${col}" onclick="${navAttr('company','company',c.company)}"><div class="card-pad">
       <div class="kpi-co" style="color:${col}">${esc(c.company)}</div>
       <div class="kpi-big">${rs2(c.ppg.median)}<span class="kpi-unit">/g</span></div>
-      <span class="badge tier-${tier.toLowerCase()}">${tier}</span>
+      <span class="badge arch-${a.key}">${a.label}</span>
+      <div class="kpi-signal">${I.sentiment.icon} ${esc(I.signal)}</div>
       <div class="kpi-sec">
         ${Math.round(c.disc.avg)}% off · ${rs2(c.ppg.min)}–${(+c.ppg.max).toFixed(2)}/g<br>
         ${c.skus.length} SKUs · ${c.ratingAvg!=null?'★ '+c.ratingAvg.toFixed(1):'—'}
@@ -619,6 +873,10 @@ function overviewHTML(view){
   <div class="chips">${chips}</div>
 
   <div class="grid3">${cards}</div>
+
+  ${execSummaryHTML(st.companyStats, intel)}
+
+  ${marketReadHTML(st.companyStats, intel)}
 
   ${heatmapHTML()}
 
