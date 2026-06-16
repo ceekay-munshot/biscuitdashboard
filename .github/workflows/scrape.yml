@@ -7,6 +7,10 @@ on:
         description: 'Debug only: comma-separated brands to dump raw markdown to data/_debug/. Leave empty for normal runs.'
         required: false
         default: ''
+      debug_blinkit:
+        description: 'FREE TEST: set to "1" to probe Blinkit only (Parle-G + Good Day) and dump raw to data/_debug/blinkit/. Skips the normal scrape.'
+        required: false
+        default: ''
   schedule:
     - cron: '0 2 * * *'      # daily; adjust later
 
@@ -25,6 +29,7 @@ jobs:
         env:
           FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
           DEBUG_DUMP_BRANDS: ${{ github.event.inputs.debug_brands }}
+          DEBUG_BLINKIT: ${{ github.event.inputs.debug_blinkit }}
       - name: Commit refreshed data
         run: |
           git config user.name  "github-actions[bot]"

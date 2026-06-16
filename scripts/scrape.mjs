@@ -486,9 +486,110 @@ async function firecrawl(url, key){
   return (data.data && data.data.markdown) || '';
 }
 
+/* ---- Blinkit FREE-scrape probe (gated by DEBUG_BLINKIT) --------------------
+   Honest test: can Firecrawl pull real products off Blinkit's search page?
+   Dumps the raw response to data/_debug/blinkit/ and classifies the outcome —
+   block / location-shell / products. Fabricates nothing; a 0 is a 0.        */
+async function firecrawlScrape(url, key, body){
+  let status = 0, json = null;
+  try {
+    const res = await fetch('https://api.firecrawl.dev/v1/scrape', {
+      method:'POST',
+      headers:{ Authorization:`Bearer ${key}`, 'Content-Type':'application/json' },
+      body: JSON.stringify({ url, ...body }),
+      signal: AbortSignal.timeout(150000),
+    });
+    status = res.status;
+    json = await res.json().catch(()=>null);
+  } catch(e){ json = { success:false, error:String((e && e.message) || e) }; }
+  return { status, json };
+}
+
+// Pure: decide what Blinkit actually returned, from the raw text + HTTP status.
+function classifyBlinkit(md, html, status){
+  md = md || ''; html = html || '';
+  const lc = (md + ' ' + html).toLowerCase();
+  const priceHits = ((md + ' ' + html).match(/₹\s?\d|Rs\.?\s?\d/gi) || []).length;
+  const blocked = status===403 || status===429 ||
+    /captcha|access denied|forbidden|just a moment|attention required|cloudflare|unusual traffic/i.test(lc);
+  const shell = !priceHits &&
+    /(detecting your location|select.*location|enter.*(pincode|location|address)|set your location|not serviceable|choose.*location|download.*app)/i.test(lc);
+  let outcome;
+  if (blocked)             outcome = 'BLOCK (403/429/captcha/cloudflare)';
+  else if (priceHits > 0)  outcome = `PRODUCTS (~${priceHits} ₹-price hits)`;
+  else if (shell)          outcome = 'LOCATION SHELL (no products)';
+  else if (md.length < 200 && html.length < 2000) outcome = 'EMPTY / near-blank';
+  else                     outcome = 'NO PRODUCTS (no ₹, not an obvious shell — inspect dump)';
+  return { outcome, priceHits, blocked, shell };
+}
+
+async function probeBlinkit(key){
+  const PINCODE = '110001';                                   // New Delhi metro
+  const queries = ['Parle-G', 'Good Day biscuit'];
+  mkdirSync('data/_debug/blinkit', { recursive:true });
+  const summary = [];
+
+  for (const q of queries){
+    const url = `https://blinkit.com/s/?q=${encodeURIComponent(q)}`;
+    // Attempt WITH actions: JS render, try to set a delivery pincode, screenshot, then capture.
+    const withActions = {
+      formats:['markdown','html'], onlyMainContent:false, waitFor:6000, timeout:120000,
+      location:{ country:'IN', languages:['en-IN'] },
+      actions:[
+        { type:'wait', milliseconds:4000 },
+        { type:'screenshot' },
+        { type:'click', selector:'[class*="LocationBar"], [class*="location"], [data-test-id*="location"], header [class*="Address"]' },
+        { type:'wait', milliseconds:1200 },
+        { type:'write', text: PINCODE },
+        { type:'wait', milliseconds:1800 },
+        { type:'press', key:'ENTER' },
+        { type:'wait', milliseconds:4500 },
+        { type:'screenshot' },
+      ],
+    };
+    let res = await firecrawlScrape(url, key, withActions);
+    let usedActions = true;
+    // If the actions request failed (e.g. selector not found), fall back to a plain JS render so we still get a dump.
+    if (!(res.json && res.json.success)){
+      console.log(`  [blinkit] "${q}" actions attempt failed (status ${res.status}${res.json && res.json.error ? ': '+res.json.error : ''}) — retrying plain JS render`);
+      res = await firecrawlScrape(url, key, { formats:['markdown','html'], onlyMainContent:false, waitFor:9000, timeout:120000, location:{ country:'IN', languages:['en-IN'] } });
+      usedActions = false;
+    }
+
+    const data = (res.json && res.json.data) || {};
+    const md = data.markdown || '', html = data.html || '';
+    const shots = (data.actions && data.actions.screenshots) || [];
+    const cls = classifyBlinkit(md, html, res.status);
+
+    const slug = q.replace(/[^a-z0-9]+/gi,'_');
+    writeFileSync(`data/_debug/blinkit/${slug}.summary.json`, JSON.stringify({
+      url, query:q, httpStatus:res.status, firecrawlSuccess: !!(res.json && res.json.success),
+      firecrawlError: (res.json && res.json.error) || null, usedActions, outcome: cls.outcome,
+      markdownBytes: md.length, htmlBytes: html.length, rupeePriceHits: cls.priceHits,
+      screenshots: shots, sampleMarkdown: md.slice(0, 3000),
+    }, null, 2));
+    writeFileSync(`data/_debug/blinkit/${slug}.md`, md || '(empty markdown)');
+    if (html) writeFileSync(`data/_debug/blinkit/${slug}.html`, html.slice(0, 200000));
+
+    console.log(`  [blinkit] "${q}" → ${cls.outcome} | status ${res.status} | md ${md.length}b | html ${html.length}b | ₹hits ${cls.priceHits} | actions ${usedActions} | shots ${shots.length}`);
+    summary.push({ query:q, outcome:cls.outcome, status:res.status, priceHits:cls.priceHits });
+  }
+
+  writeFileSync('data/_debug/blinkit/RESULT.json', JSON.stringify(
+    { platform:'Blinkit', testedAt:new Date().toISOString(), pincodeTried:PINCODE, results:summary }, null, 2));
+  console.log('  [blinkit] RESULT:', JSON.stringify(summary));
+}
+
 async function main(){
   const key = process.env.FIRECRAWL_API_KEY;
   if (!key){ console.error('FIRECRAWL_API_KEY not set'); process.exit(1); }
+
+  // FREE TEST (gated): probe Blinkit only, then stop — no Amazon scrape, latest.json untouched.
+  if (/^(1|true|yes|blinkit)$/i.test(process.env.DEBUG_BLINKIT || '')){
+    console.log('DEBUG_BLINKIT set — running Blinkit probe ONLY (no Amazon scrape this run).');
+    await probeBlinkit(key);
+    return;
+  }
 
   // Debug raw-markdown capture — OFF by default. Set DEBUG_DUMP_BRANDS to a
   // comma-separated brand list (via the Scrape workflow's debug_brands input) to
@@ -583,5 +684,5 @@ export {
   BRANDS, SEARCH, COVERAGE, ALIASES, EMERGING_BRANDS,
   parseWeightGrams, detectCategory, parseRating, parseReviewCount,
   extractPrices, cleanName, repairText, detectPlatform, parseSKUsFromPage, dedupeKey,
-  parseSKUsDiscover, classifyBrand, looksBlocked, deriveBrand,
+  parseSKUsDiscover, classifyBrand, looksBlocked, deriveBrand, classifyBlinkit,
 };
