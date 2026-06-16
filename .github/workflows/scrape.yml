@@ -15,6 +15,10 @@ on:
         description: 'FREE TEST: set to "1" to probe Zepto only (Parle-G + Good Day) and dump raw to data/_debug/zepto/. Skips the normal scrape.'
         required: false
         default: ''
+      debug_instamart:
+        description: 'FREE TEST: set to "1" to probe Swiggy Instamart only (Parle-G + Good Day) and dump raw to data/_debug/instamart/. Skips the normal scrape.'
+        required: false
+        default: ''
   schedule:
     - cron: '0 2 * * *'      # daily; adjust later
 
@@ -35,6 +39,7 @@ jobs:
           DEBUG_DUMP_BRANDS: ${{ github.event.inputs.debug_brands }}
           DEBUG_BLINKIT: ${{ github.event.inputs.debug_blinkit }}
           DEBUG_ZEPTO: ${{ github.event.inputs.debug_zepto }}
+          DEBUG_INSTAMART: ${{ github.event.inputs.debug_instamart }}
       - name: Commit refreshed data
         run: |
           git config user.name  "github-actions[bot]"

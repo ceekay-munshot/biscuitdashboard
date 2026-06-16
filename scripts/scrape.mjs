@@ -505,6 +505,20 @@ async function firecrawlScrape(url, key, body){
   return { status, json };
 }
 
+// Retry on TRANSIENT Firecrawl failures only (5xx / proxy-tunnel/timeout) — not on real blocks.
+async function firecrawlScrapeRetry(url, key, body, label){
+  let res;
+  for (let attempt=1; attempt<=3; attempt++){
+    res = await firecrawlScrape(url, key, body);
+    const err = (res.json && res.json.error) || '';
+    const transient = res.status>=500 || /tunnel|proxy|timeout|temporarily|internal/i.test(err);
+    if (!transient) break;
+    console.log(`  [${label}] transient ${res.status} (${String(err).slice(0,70)}) — retry ${attempt}/3`);
+    if (attempt<3) await new Promise(r=>setTimeout(r, 3000*attempt));
+  }
+  return res;
+}
+
 // Pure: decide what a q-commerce search page actually returned, from raw text + HTTP status.
 function classifyQcomm(md, html, status){
   md = md || ''; html = html || '';
@@ -529,6 +543,8 @@ const QCOMM = {
     locationSelector:'[class*="LocationBar"], [class*="location"], [data-test-id*="location"], header [class*="Address"]' },
   zepto:   { label:'Zepto', urlFor: q => `https://www.zeptonow.com/search?query=${encodeURIComponent(q)}`,
     locationSelector:'[data-testid*="location" i], [data-testid*="address" i], [class*="location" i], [class*="Address" i], button[aria-label*="location" i]' },
+  instamart:{ label:'Swiggy Instamart', urlFor: q => `https://www.swiggy.com/instamart/search?custom_back=true&query=${encodeURIComponent(q)}`,
+    locationSelector:'[data-testid*="location" i], [data-testid*="address" i], [class*="location" i], [class*="Address" i], [aria-label*="location" i]' },
 };
 
 // Honest free-scrape probe for ONE q-commerce platform (same method that worked for Blinkit):
@@ -560,12 +576,12 @@ async function probeQcomm(platform, key){
         { type:'screenshot' },
       ],
     };
-    let res = await firecrawlScrape(url, key, withActions);
+    let res = await firecrawlScrapeRetry(url, key, withActions, platform);
     let usedActions = true;
     // If the actions request failed (e.g. selector not found), fall back to a plain JS render so we still get a dump.
     if (!(res.json && res.json.success)){
       console.log(`  [${platform}] "${q}" actions attempt failed (status ${res.status}${res.json && res.json.error ? ': '+res.json.error : ''}) — retrying plain JS render`);
-      res = await firecrawlScrape(url, key, { formats:['markdown','html'], onlyMainContent:false, waitFor:9000, timeout:120000, location:{ country:'IN', languages:['en-IN'] } });
+      res = await firecrawlScrapeRetry(url, key, { formats:['markdown','html'], onlyMainContent:false, waitFor:9000, timeout:120000, location:{ country:'IN', languages:['en-IN'] } }, platform);
       usedActions = false;
     }
 
@@ -606,6 +622,11 @@ async function main(){
   if (/^(1|true|yes|zepto)$/i.test(process.env.DEBUG_ZEPTO || '')){
     console.log('DEBUG_ZEPTO set — running Zepto probe ONLY (no Amazon scrape this run).');
     await probeQcomm('zepto', key);
+    return;
+  }
+  if (/^(1|true|yes|instamart|swiggy)$/i.test(process.env.DEBUG_INSTAMART || '')){
+    console.log('DEBUG_INSTAMART set — running Swiggy Instamart probe ONLY (no Amazon scrape this run).');
+    await probeQcomm('instamart', key);
     return;
   }
 
