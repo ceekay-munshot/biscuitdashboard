@@ -848,7 +848,7 @@ function topBrands(skus, n){
 
 // Grouped sub-nav (themed tabs): Prices = category/pack/channel · Competition = market-share/emerging.
 function subNav(active){
-  const PRICES = [['category','By category'],['packsize','By pack'],['compare','By channel']];
+  const PRICES = [['category','By category'],['packsize','By pack']];
   const COMP   = [['share','Market share'],['radar','Emerging brands']];
   const inComp = active==='share' || active==='radar';
   const items = inComp ? COMP : PRICES, group = inComp ? 'Competition' : 'Prices';
@@ -1973,7 +1973,7 @@ function compareRows(groupKey){
 }
 
 function renderCompare(){
-  const backBar = subNav('compare');
+  const backBar = `<div class="back-bar"><button onclick="navigate('dashboard')">← Overview</button><strong>Compare · ₹/g across apps</strong></div>`;
   const hasQ = STATE.skus.some(s=>s.channel==='blinkit'||s.channel==='zepto');
   if (!STATE.skus.length || !hasQ){
     $app().innerHTML = backBar + `<div class="notice info">No quick-commerce data yet — once the Scrape workflow has populated Blinkit/Zepto, revisit this page.</div>`;
