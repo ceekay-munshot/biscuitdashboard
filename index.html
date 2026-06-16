@@ -45,6 +45,7 @@ td{padding:8px 10px;border-bottom:0.5px solid rgba(26,26,24,0.07)}
 .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:16px}
 .grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-bottom:16px}
 .back-bar{display:flex;align-items:center;gap:12px;margin-bottom:22px;padding-bottom:16px}
+.subnav{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}
 .step-row{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:12px}
 .step-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 input[type=text]{font-family:'Inter',sans-serif;font-size:13px;padding:8px 12px;border:0.5px solid rgba(26,26,24,0.22);border-radius:8px;width:100%;outline:none;background:#fafaf8}
@@ -827,6 +828,16 @@ function topBrands(skus, n){
     .sort((a,b)=> b.n - a.n || b.ppgMedian - a.ppgMedian).slice(0,n);
 }
 
+// Grouped sub-nav (themed tabs): Prices = category/pack/channel · Competition = market-share/emerging.
+function subNav(active){
+  const PRICES = [['category','By category'],['packsize','By pack'],['compare','By channel']];
+  const COMP   = [['share','Market share'],['radar','Emerging brands']];
+  const inComp = active==='share' || active==='radar';
+  const items = inComp ? COMP : PRICES, group = inComp ? 'Competition' : 'Prices';
+  const tabs = items.map(([k,l])=>`<button class="seg${k===active?' active':''}" onclick="navigate({type:'${k}'})">${l}</button>`).join('');
+  return `<div class="back-bar"><button onclick="navigate('dashboard')">← Overview</button><strong>${group}</strong><span class="subnav">${tabs}</span></div>`;
+}
+
 function renderDashboard(){
   if (!(STATE.curr && STATE.skus.length)){ $app().innerHTML = emptyStateHTML(); return; }
   const view = buildStats(currentFilterSkus());   // filtered stats for cards/tables/charts
@@ -950,13 +961,10 @@ function overviewHTML(view){
       <div class="ov-sub"><span class="live-dot"></span>Data as of ${asOf} · ${subNote}</div>
     </div>
     <div class="ov-actions">
-      <button onclick="navigate({type:'category'})">Categories</button>
-      <button onclick="navigate({type:'packsize'})">Pack Sizes</button>
-      <button onclick="navigate({type:'compare'})">Compare</button>
+      <button onclick="navigate({type:'category'})">Prices</button>
+      <button onclick="navigate({type:'trends'})">Demand</button>
+      <button onclick="navigate({type:'share'})">Competition</button>
       <button onclick="navigate({type:'history'})">History</button>
-      <button onclick="navigate({type:'trends'})">Google Trends</button>
-      <button onclick="navigate({type:'share'})">Market Share</button>
-      <button onclick="navigate({type:'radar'})">Emerging Brands</button>
       <button class="btn-accent" onclick="downloadExcel()">⤓ Export Excel</button>
     </div>
   </div>
@@ -1094,7 +1102,7 @@ function heatmapHTML(){
 /* Categories view — one card per category (DESC by median ₹/g) + a category ₹/g bar. */
 function renderCategory(){
   if (!STATE.skus.length){
-    $app().innerHTML = `<div class="back-bar"><button onclick="navigate('dashboard')">← Back</button><strong>Category Breakdown</strong></div><div class="notice info">No data yet — run the Scrape workflow.</div>`;
+    $app().innerHTML = subNav('category') + `<div class="notice info">No data yet — run the Scrape workflow.</div>`;
     return;
   }
   const stats = buildStats(STATE.skus).categoryStats.slice().sort((a,b)=>b.ppg.median - a.ppg.median);
@@ -1122,10 +1130,7 @@ function renderCategory(){
   }).join('');
 
   $app().innerHTML = `
-  <div class="back-bar">
-    <button onclick="navigate('dashboard')">← Back</button>
-    <strong>Category Breakdown</strong>
-  </div>
+  ${subNav('category')}
   <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
     <div class="sec-title">Median price-per-gram by category</div>
     <div class="chart-box" style="height:300px"><canvas id="chartCat"></canvas></div>
@@ -1188,7 +1193,7 @@ const kReviews = n => n>=1000 ? (n/1000).toFixed(n>=100000?0:1).replace(/\.0$/,'
 
 function renderPackSize(){
   if (!STATE.skus.length){
-    $app().innerHTML = `<div class="back-bar"><button onclick="navigate('dashboard')">← Back</button><strong>Pack-Size Intelligence</strong></div><div class="notice info">No data yet — run the Scrape workflow.</div>`;
+    $app().innerHTML = subNav('packsize') + `<div class="notice info">No data yet — run the Scrape workflow.</div>`;
     return;
   }
   const bands = packBandStats(STATE.skus);
@@ -1219,10 +1224,7 @@ function renderPackSize(){
     </div>`).join('');
 
   $app().innerHTML = `
-  <div class="back-bar">
-    <button onclick="navigate('dashboard')">← Back</button>
-    <strong>Pack-Size Intelligence</strong>
-  </div>
+  ${subNav('packsize')}
   <div class="notice info" style="margin-bottom:18px">Interest is proxied by <strong>total review volume</strong> — no public sales data exists.</div>
 
   <div class="grid2">
@@ -1723,7 +1725,7 @@ function drawTrendsChart(){
 
 /* ---- Emerging-brands radar (brands outside the tracked roster) ---- */
 function renderRadar(){
-  const backBar = `<div class="back-bar"><button onclick="navigate('dashboard')">← Back</button><strong>Emerging Brands Radar</strong></div>`;
+  const backBar = subNav('radar');
   const emg = STATE.skus.filter(s=>s.company==='Emerging / D2C');
   if (!emg.length){
     $app().innerHTML = backBar + `<div class="notice info">No emerging brands in the current data — run the Scrape workflow.</div>`;
@@ -1809,7 +1811,7 @@ const yoyHtml = g => g==null ? '<span class="muted">n/a</span>'
 
 function renderShare(){
   const s = STATE.share;
-  const backBar = `<div class="back-bar"><button onclick="navigate('dashboard')">← Back</button><strong>Market Share &amp; Sales</strong></div>`;
+  const backBar = subNav('share');
   if (!s || !Array.isArray(s.companies) || !s.companies.length){
     $app().innerHTML = backBar + `<div class="notice info">No market-share data — <code>data/marketshare.json</code> not found.</div>`;
     return;
@@ -1940,7 +1942,7 @@ function compareRows(groupKey){
 }
 
 function renderCompare(){
-  const backBar = `<div class="back-bar"><button onclick="navigate('dashboard')">← Back</button><strong>Channel Compare — Amazon vs Blinkit vs Zepto</strong></div>`;
+  const backBar = subNav('compare');
   const hasQ = STATE.skus.some(s=>s.channel==='blinkit'||s.channel==='zepto');
   if (!STATE.skus.length || !hasQ){
     $app().innerHTML = backBar + `<div class="notice info">No quick-commerce data yet — once the Scrape workflow has populated Blinkit/Zepto, revisit this page.</div>`;
