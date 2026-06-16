@@ -49,7 +49,20 @@ td{padding:8px 10px;border-bottom:0.5px solid rgba(26,26,24,0.07)}
 .step-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 input[type=text]{font-family:'Inter',sans-serif;font-size:13px;padding:8px 12px;border:0.5px solid rgba(26,26,24,0.22);border-radius:8px;width:100%;outline:none;background:#fafaf8}
 input:focus{border-color:#B6772E;box-shadow:0 0 0 3px rgba(182,119,46,.12)}
-@media(max-width:640px){.grid3{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}}
+@media(max-width:640px){
+  .grid3{grid-template-columns:1fr}
+  .grid2{grid-template-columns:1fr}
+  .ov-head{flex-direction:column;align-items:flex-start;gap:10px}
+  .ov-actions{width:100%;flex-wrap:wrap}
+  .ov-actions button{flex:1 1 auto;font-size:12px}
+  .ov-title,.hero-title{font-size:20px}
+  .exec-h{font-size:15px}
+  .chart-box{height:240px!important}
+  .card-pad{padding:14px}
+  table{font-size:12px}
+  .chips{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}
+  .back-bar{flex-wrap:wrap}
+}
 
 /* ============================================================
    DESIGN SYSTEM — dashboard-specific extensions
@@ -205,6 +218,17 @@ td a:hover{color:#B6772E;text-decoration:underline}
 .exec-take{margin-top:12px;padding:12px 14px;background:#FAF7F1;border:0.5px solid rgba(182,119,46,.18);border-radius:8px;font-size:13px;line-height:1.65;color:#3f3e3b}
 .mr-para{border-left:3px solid #ccc;padding:6px 0 8px 13px;margin-bottom:13px;font-size:13px;line-height:1.6;color:#3f3e3b}
 .mr-co{font-weight:700;font-size:12px;margin-bottom:3px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+/* ₹/g box-plot strip (KPI cards) */
+.box-strip{position:relative;height:14px;margin-top:10px;border-radius:3px;background:linear-gradient(90deg,#f1eee8,#f8f6f2)}
+.box-strip .box-w{position:absolute;top:50%;height:2px;transform:translateY(-50%);background:rgba(26,26,24,.3)}
+.box-strip .box-iqr{position:absolute;top:2px;bottom:2px;border-radius:2px;opacity:.55}
+.box-strip .box-med{position:absolute;top:0;bottom:0;width:2px;background:#1a1a18}
+/* Provenance footer */
+.pf-h{font-size:12px;font-weight:700;margin-bottom:7px}
+.pf-list{font-size:12px;line-height:1.6;color:#3f3e3b;margin:0 0 4px 16px;padding:0}
+.pf-list li{margin-bottom:5px}
+.pf-caveat{font-size:12px;line-height:1.6;color:#5A4300;background:#FBF3E3;border:0.5px solid rgba(182,119,46,.3);border-radius:8px;padding:10px 12px;margin:10px 0}
+.pf-legend{font-size:11.5px;color:#6b6a66;line-height:1.8}
 
 /* Emerging-brands radar */
 .roster-ref{display:flex;flex-wrap:wrap;gap:8px;line-height:1.6}
@@ -228,7 +252,7 @@ td a:hover{color:#B6772E;text-decoration:underline}
 <script>
 /* ============================================================
    BISCUIT MARKET INTELLIGENCE DASHBOARD
-   Build Step 12 / 14 — Market Share & Sales tab (audited financials + labelled estimates)
+   Build Step 14 / 14 (FINALE) — Excel export, ₹/g distribution + box plots, provenance, polish
    Single-file, zero-build. Vanilla ES6.
 
    Scraping runs in GitHub Actions (scripts/scrape.mjs) and commits
@@ -732,6 +756,46 @@ function deltaBadge(cur, prv, fmtMag){
   return `<span class="delta-badge" style="background:${up?'#FBE7EA':'#DFF1EB'};color:${up?'#7A0A1C':'#0A4A3A'}">${up?'▲':'▼'} ${fmtMag(Math.abs(d))}</span>`;
 }
 
+// Mini ₹/g box plot (min · p25 · median · p75 · max), scaled to a shared market range so cards compare.
+function boxStripHTML(ppg, gMin, gMax, col){
+  if (!ppg || !ppg.count) return '';
+  const span = (gMax - gMin) || 1;
+  const pc = v => +(Math.max(0, Math.min(100, ((v - gMin) / span) * 100))).toFixed(1);
+  const lo=pc(ppg.min), q1=pc(ppg.p25), me=pc(ppg.median), q3=pc(ppg.p75), hi=pc(ppg.max);
+  return `<div class="box-strip" title="₹/g spread — min ${rs2(ppg.min)} · p25 ${rs2(ppg.p25)} · median ${rs2(ppg.median)} · p75 ${rs2(ppg.p75)} · max ${rs2(ppg.max)}">
+    <span class="box-w" style="left:${lo}%;right:${100-hi}%"></span>
+    <span class="box-iqr" style="left:${q1}%;right:${100-q3}%;background:${col}"></span>
+    <span class="box-med" style="left:${me}%"></span>
+  </div>`;
+}
+
+// Honest data-provenance / methodology footer (client credibility).
+function provenanceFooterHTML(){
+  return `<div class="card fadein" style="margin-top:18px"><div class="card-pad">
+    <div class="sec-title">Data provenance &amp; methodology</div>
+    <div class="grid2" style="margin:0 0 4px;gap:20px">
+      <div>
+        <div class="pf-h" style="color:#0A4A3A">✓ What's real (live)</div>
+        <ul class="pf-list">
+          <li><strong>Pricing &amp; SKUs</strong> — scraped from <strong>Amazon India</strong> via Firecrawl in GitHub Actions, committed as static JSON.</li>
+          <li><strong>Google Trends</strong> — real relative search interest + related/breakout queries via <strong>SerpApi</strong> in CI (free tier).</li>
+          <li><strong>Listed financials</strong> — Britannia &amp; ITC from audited annual results, with source links.</li>
+        </ul>
+      </div>
+      <div>
+        <div class="pf-h" style="color:#8A3B00">≈ What's estimated (flagged)</div>
+        <ul class="pf-list">
+          <li><strong>Shelf-life</strong> — a category-level estimate, not per-SKU — and never used as a signal driver.</li>
+          <li><strong>Private / D2C revenue</strong> — Parle, Mondelez India, Unibic, D2C from RoC filings / press; biscuit-only splits estimated.</li>
+          <li><strong>Market-share %</strong> — industry-report-sourced (Statista / Nielsen / Euromonitor); an ESTIMATE for every company, listed ones included.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="pf-caveat">⚠ <strong>BigBasket is bot-walled</strong> — its search needs a pincode/session and blocks datacenter scrapers, so quick-commerce yields 0 (logged honestly, never faked). Pricing is therefore <strong>Amazon-only</strong>. <strong>₹/g = selling price ÷ pack weight (g)</strong>. Cadence: <strong>scrape daily</strong>, <strong>trends weekly</strong>.</div>
+    <div class="pf-legend"><span class="badge prov-audited">AUDITED</span> from audited financials · <span class="badge prov-est">ESTIMATED</span> derived / industry-sourced, clearly labelled · download the full dataset via <strong>Export Excel</strong>.</div>
+  </div></div>`;
+}
+
 /* Category filter + small helpers */
 function setCategoryFilter(cat){ STATE.categoryFilter = cat; render(); }
 function currentFilterSkus(){
@@ -800,6 +864,8 @@ function overviewHTML(view){
     ...st.companyStats,
     ...Object.keys(COL).filter(co=>!present.has(co)).map(co=>({ company:co, empty:true }))
   ];
+  const gMin = st.companyStats.length ? Math.min(...st.companyStats.map(c=>c.ppg.min)) : 0;
+  const gMax = st.companyStats.length ? Math.max(...st.companyStats.map(c=>c.ppg.max)) : 1;
   const cards = ordered.map(c=>{
     const col = COL[c.company] || '#555';
     if (c.empty){
@@ -823,6 +889,7 @@ function overviewHTML(view){
         ${Math.round(c.disc.avg)}% off · ${rs2(c.ppg.min)}–${(+c.ppg.max).toFixed(2)}/g<br>
         ${c.skus.length} SKUs · ${c.ratingAvg!=null?'★ '+c.ratingAvg.toFixed(1):'—'}
       </div>
+      ${boxStripHTML(c.ppg, gMin, gMax, col)}
     </div></div>`;
   }).join('');
 
@@ -865,6 +932,7 @@ function overviewHTML(view){
       <button onclick="navigate({type:'trends'})">Google Trends</button>
       <button onclick="navigate({type:'share'})">Market Share</button>
       <button onclick="navigate({type:'radar'})">Emerging Brands</button>
+      <button class="btn-accent" onclick="downloadExcel()">⤓ Export Excel</button>
       <button onclick="reload()"${STATE.loading?' disabled':''}>↻ Reload</button>
     </div>
   </div>
@@ -898,13 +966,21 @@ function overviewHTML(view){
     <div class="chart-box"><canvas id="chartDisc"></canvas></div>
   </div></div>
 
+  <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
+    <div class="sec-title">₹/g distribution <span class="muted" style="text-transform:none;letter-spacing:0">· SKU counts across price-per-gram buckets, one line per company</span></div>
+    <div class="chart-box" style="height:300px"><canvas id="chartDist"></canvas></div>
+    <div class="hm-cap">Each line is a company's SKU count in each ₹/g band — where each player concentrates on the value↔premium axis.</div>
+  </div></div>
+
   <div class="card fadein"><div class="card-pad">
     <div class="sec-title">By brand</div>
     <div class="tbl-scroll"><table style="min-width:560px">
       <thead><tr><th>Brand</th><th>Group</th><th>Median ₹/g</th><th>Avg Disc%</th><th>Avg ★</th><th>SKUs</th></tr></thead>
       <tbody>${brandRows}</tbody>
     </table></div>
-  </div></div>`;
+  </div></div>
+
+  ${provenanceFooterHTML()}`;
 }
 
 /* Hero + secondary horizontal bar charts (Chart.js loads async → waitForChart). */
@@ -932,6 +1008,25 @@ function drawOverviewCharts(view){
     mkChart('chartDisc', { type:'bar',
       data:{ labels, datasets:[{ data:bs.map(b=>b.disc.avg), backgroundColor:colors, borderRadius:4, barPercentage:.82 }] },
       options: opts('disc') });
+
+    // ₹/g distribution — SKU counts per bucket, one line per company.
+    const cs = view.companyStats || [];
+    const hiPpg = Math.max(0.6, ...cs.flatMap(c=>c.skus.map(s=>s.pricePerGram||0)));
+    const BIN = 0.1, nb = Math.min(16, Math.max(6, Math.ceil(hiPpg/BIN)));
+    const distLabels = Array.from({length:nb}, (_,i)=>'₹'+(i*BIN).toFixed(1));
+    const distSets = cs.map(c=>{
+      const counts = new Array(nb).fill(0);
+      c.skus.forEach(s=>{ const v=s.pricePerGram||0; if (v>0) counts[Math.min(nb-1, Math.floor(v/BIN))]++; });
+      const col = COL[c.company] || '#999';
+      return { label:c.company, data:counts, borderColor:col, backgroundColor:col, borderWidth:2, tension:.35, pointRadius:0 };
+    });
+    mkChart('chartDist', { type:'line', data:{ labels:distLabels, datasets:distSets },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{position:'bottom', labels:{boxWidth:10, font:{size:10}, padding:8}},
+          tooltip:{ callbacks:{ label:c=>`${c.dataset.label}: ${c.raw} SKUs @ ${c.label}/g` } } },
+        scales:{ x:{ grid:{display:false}, ticks:{font:{size:9}}, title:{display:true, text:'₹/g bucket', font:{size:10}} },
+                 y:{ beginAtZero:true, grid:{color:'rgba(26,26,24,.06)'}, ticks:{font:{size:10}, precision:0}, title:{display:true, text:'SKUs', font:{size:10}} } } }
+    });
   });
 }
 
@@ -1834,19 +1929,104 @@ function renderAdmin(){
           browser, no runtime scraping, no Cloudflare secret.</li>
         <li><strong>Coverage searches</strong> — extra Amazon queries (rusk, wafer, D2C cookies) classify discovered products to a brand/company so thin categories &amp; emerging brands populate.</li>
         <li><strong>Quick-commerce (BigBasket)</strong> — attempted live on every run, but its search needs a pincode/session and blocks datacenter scrapers, so it yields <strong>0</strong> (logged honestly, never faked). Amazon is the live source.</li>
-        <li><strong>Google Trends</strong> — seeded snapshot (Step 8). <strong>Market share</strong> — seeded (later step).</li>
+        <li><strong>Google Trends</strong> — real relative search interest + related/breakout queries fetched live via <strong>SerpApi</strong> in CI (weekly, free tier, last-good fallback).</li>
+        <li><strong>Market share</strong> — <strong>audited</strong> financials for listed cos (Britannia, ITC) + clearly-labelled <strong>estimates</strong> for private/D2C; share % is industry-sourced.</li>
+        <li><strong>Export</strong> — <em>Export Excel</em> downloads an 8-sheet workbook whose numbers reconcile with every tab.</li>
       </ul>
 
       <h3 class="admin-h sub">Status</h3>
       <p class="admin-p">
         Loaded ${TODAY}. ${histLine} Build progress:
-        <strong>Step 11 of 14</strong> — real Google Trends fetched live in CI (best-effort, last-good fallback).
+        <strong>Step 14 of 14 (finale)</strong> — Excel export, ₹/g distribution + box plots, provenance footer, mobile polish.
       </p>
+      <p class="admin-p"><strong>Legend:</strong> <span class="badge prov-audited">AUDITED</span> from audited financials · <span class="badge prov-est">ESTIMATED</span> derived / industry-sourced (shelf-life, private-co revenue, all market-share %). Hero metric <strong>₹/g = selling ÷ pack-weight</strong>.</p>
 
       <h3 class="admin-h sub">Tracked roster</h3>
       ${roster}
     </div>
   </div>`;
+}
+
+/* ===========================================================
+   EXCEL EXPORT (Step 14) — multi-sheet .xlsx from the live data.
+   buildExcelData() is the (testable) data layer; downloadExcel()
+   feeds it to SheetJS and triggers a dated blob download. Every
+   sheet reconciles with the on-screen tabs.
+   =========================================================== */
+function buildExcelData(){
+  const skus  = STATE.skus || [];
+  const stats = STATE.curr || buildStats(skus);
+  const intel = buildIntel(stats.companyStats);
+  const r1 = n => n==null?'':+(+n).toFixed(1);
+  const r3 = n => n==null?'':+(+n).toFixed(3);
+  const topCat = cc => Object.entries(cc||{}).sort((a,b)=>b[1]-a[1]).map(([k])=>k)[0] || '';
+  const top3Brands = gs => { const m={}; gs.forEach(s=>m[s.brand]=(m[s.brand]||0)+1); return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([b])=>b).join(', '); };
+  const archForShare = m => { const k = Object.keys(intel).find(co=>{ const rx={'Britannia':/^Britannia/,'Parle':/^Parle/,'ITC Sunfeast':/ITC|Sunfeast/i,'Mondelez':/Mondelez/i,'Unibic':/Unibic/i,'Emerging / D2C':/Whole Truth|D2C/i}[co]; return rx&&rx.test(m.company); }); return k?intel[k].archetype.label:''; };
+  const sheets = [];
+
+  sheets.push({ name:'Company Summary', note:'share % is an industry-report estimate for all',
+    header:['Company','Archetype','Sentiment','Median ₹/g','Avg ₹/g','Min ₹/g','Max ₹/g','Avg Discount %','Market Share % (est.)','Revenue ₹Cr','Revenue basis','SKUs','Avg Rating'],
+    rows: stats.companyStats.map(c=>{ const I=intel[c.company], sh=shareForCompany(c.company); return [
+      c.company, I.archetype.label, I.sentiment.word, r3(c.ppg.median), r3(c.ppg.avg), r3(c.ppg.min), r3(c.ppg.max), r1(c.disc.avg),
+      sh?sh.marketSharePct:'', sh?(sh.biscuitRevenueCr??''):'', sh?(sh.isEstimated?'ESTIMATED':'AUDITED'):'', c.skus.length, c.ratingAvg!=null?c.ratingAvg:'' ]; }) });
+
+  sheets.push({ name:'Brand Summary',
+    header:['Brand','Company','Median ₹/g','Avg Discount %','Avg Rating','Total Reviews','Dominant Category','SKUs'],
+    rows: stats.brandStats.map(b=>[ b.brand, b.company, r3(b.ppg.median), r1(b.disc.avg), b.ratingAvg!=null?b.ratingAvg:'', b.reviewSum, topCat(b.categoryCounts), b.skus.length ]) });
+
+  sheets.push({ name:'All SKUs', note:'shelf-life is a category-level ESTIMATE, not per-SKU',
+    header:['Name','Brand','Company','Category','Pack','Weight (g)','MRP','Selling','Discount %','₹/g','Rating','Reviews','Shelf-life mo (est.)','Platform','URL'],
+    rows: skus.map(s=>[ s.name, s.brand, s.company, s.category, s.packLabel||'', s.weightGrams, s.mrp, s.selling, s.discount, s.pricePerGram, s.rating??'', s.reviewCount??0, shelfLifeFor(s.category), s.platform||'', s.url||'' ]) });
+
+  sheets.push({ name:'Categories',
+    header:['Category','Median ₹/g','Avg Discount %','SKUs','Top Brands'],
+    rows: stats.categoryStats.map(cs=>[ cs.category, r3(cs.ppg.median), r1(cs.disc.avg), cs.skus.length, top3Brands(cs.skus) ]) });
+
+  sheets.push({ name:'Pack Sizes', note:'reviews = interest proxy, not sales',
+    header:['Band','Range','SKUs','Median ₹/g','Total Reviews','Avg Rating','Top Brand','Top Category'],
+    rows: packBandStats(skus).map(b=>[ b.band, b.range, b.count, b.count?r3(b.ppg.median):'', b.reviews, b.ratingAvg!=null?b.ratingAvg:'', b.topBrand||'', b.domCat||'' ]) });
+
+  const T = STATE.trends;
+  if (T){
+    const rows=[];
+    Object.entries(T.brands||{}).forEach(([n,v])=>rows.push(['Brand', n, v.latest, v.direction, v.stale?'stale':'']));
+    Object.entries(T.categories||{}).forEach(([n,v])=>rows.push(['Category', n, v.latest, v.direction, v.stale?'stale':'']));
+    Object.entries(T.related||{}).forEach(([seed,r])=>{
+      (r.top||[]).forEach(x=>rows.push([`Top search (${seed})`, x.query, x.extracted??'', '', '']));
+      (r.rising||[]).forEach(x=>rows.push([`Rising (${seed})`, x.query, '', x.value||'', '']));
+    });
+    sheets.push({ name:'Google Trends', note:'relative search interest 0–100, not sales',
+      header:['Type','Name / Query','Latest Interest','Direction / Growth','Flag'], rows });
+  }
+
+  const M = STATE.share;
+  if (M && M.companies){
+    sheets.push({ name:'Market Share', note:'share % estimated for all; revenue audited only where flagged',
+      header:['Company','Revenue ₹Cr','Market Share % (est.)','YoY Growth %','Archetype','Revenue basis','Period','Source'],
+      rows: M.companies.map(m=>[ m.company, m.biscuitRevenueCr??'', m.marketSharePct??'', m.yoyGrowthPct??'', archForShare(m), m.isEstimated?'ESTIMATED':'AUDITED', m.revenuePeriod||m.period||'', m.source||'' ]) });
+  }
+
+  const H = STATE.history||[];
+  if (H.length){
+    sheets.push({ name:'Trend History',
+      header:['Run (UTC)','SKUs','Brands OK','Median ₹/g','Avg Discount %','Total Reviews','Avg Rating'],
+      rows: H.map(h=>[ h.ts, h.skuCount, h.brandsOk, h.overall?h.overall.medianPpg:'', h.overall?h.overall.avgDiscount:'', h.overall?h.overall.totalReviews:'', h.overall?h.overall.avgRating:'' ]) });
+  }
+  return sheets;
+}
+
+function downloadExcel(){
+  if (!window.XLSX){ alert('Excel library is still loading — please try again in a moment.'); return; }
+  if (!(STATE.skus && STATE.skus.length)){ alert('No data to export yet — load or scrape first.'); return; }
+  const now = new Date();
+  const wb = XLSX.utils.book_new();
+  buildExcelData().forEach(s=>{
+    const title = `Biscuit Market Intelligence · ${s.name} · generated ${now.toLocaleString('en-IN')}${s.note?' · '+s.note:''}`;
+    const ws = XLSX.utils.aoa_to_sheet([[title], [], s.header, ...s.rows]);
+    ws['!cols'] = s.header.map((h,i)=>{ let w=String(h).length; s.rows.forEach(rw=>{ const v=rw[i]==null?'':String(rw[i]); if (v.length>w) w=v.length; }); return { wch: Math.min(Math.max(w+2,9),60) }; });
+    XLSX.utils.book_append_sheet(wb, ws, s.name);
+  });
+  XLSX.writeFile(wb, `biscuit-intelligence-${now.toISOString().slice(0,10)}.xlsx`);
 }
 
 /* ------------------------------------------------------------
