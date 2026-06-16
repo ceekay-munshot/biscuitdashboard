@@ -1,0 +1,15 @@
+{
+  "platform": "instamart",
+  "url": "https://www.swiggy.com/instamart/search?custom_back=true&query=Parle-G",
+  "query": "Parle-G",
+  "httpStatus": 200,
+  "firecrawlSuccess": true,
+  "firecrawlError": null,
+  "usedActions": false,
+  "outcome": "NO PRODUCTS (no ₹, not an obvious shell — inspect dump)",
+  "markdownBytes": 359,
+  "htmlBytes": 4164,
+  "rupeePriceHits": 0,
+  "screenshots": [],
+  "sampleMarkdown": "![](https://instamart-media-assets.swiggy.com/swiggy/image/upload/fl_lossy,f_auto,q_auto,h_720,w_720/InstamartAssets/ErrorStates/IM_error_api_failure)\n\nSomething went wrong!\n\nOur best minds are on this, please refresh or come back later\n\nTry Again\n\nInstamart\n\nOops\n\nSomething's not right. Our best minds are on it. You may retry or check back soon.\n\nTry Again"
+}

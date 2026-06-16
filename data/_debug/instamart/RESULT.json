@@ -1,0 +1,19 @@
+{
+  "platform": "Swiggy Instamart",
+  "testedAt": "2026-06-16T06:43:59.495Z",
+  "pincodeTried": "110001",
+  "results": [
+    {
+      "query": "Parle-G",
+      "outcome": "NO PRODUCTS (no ₹, not an obvious shell — inspect dump)",
+      "status": 200,
+      "priceHits": 0
+    },
+    {
+      "query": "Good Day biscuit",
+      "outcome": "NO PRODUCTS (no ₹, not an obvious shell — inspect dump)",
+      "status": 200,
+      "priceHits": 0
+    }
+  ]
+}
