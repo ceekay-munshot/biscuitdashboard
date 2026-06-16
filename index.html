@@ -13,7 +13,7 @@
 <!-- Charting engine (async) — wired into the data views from a later build step. -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" async></script>
 <!-- Excel export (defer) — used by the export feature in a later build step. -->
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js" defer></script>
 
 <style>
 /* ============================================================
@@ -2015,17 +2015,64 @@ function buildExcelData(){
   return sheets;
 }
 
+// Per-sheet accent colours (vivid + distinct) for the banner + header band.
+const XL_ACCENT = { 'Company Summary':'1F4E5F','Brand Summary':'6E4300','All SKUs':'2C3E50','Categories':'5B2A86','Pack Sizes':'1D4E9C','Google Trends':'0A6E4E','Market Share':'8A3B00','Trend History':'7A0A1C' };
+
+// Apply colour/typography/layout styling to one worksheet (needs xlsx-js-style).
+function styleWorksheet(ws, header, rows, accent, title){
+  const ncol = header.length, nrow = rows.length;
+  const cellAt = (r,c)=>{ const a=XLSX.utils.encode_cell({r,c}); if(!ws[a]) ws[a]={t:'s',v:''}; return ws[a]; };
+  const thin = { style:'thin', color:{ rgb:'E2DED7' } };
+  const border = { top:thin, bottom:thin, left:thin, right:thin };
+  const fmtFor = h => /₹\/g/.test(h)?'0.000' : /%/.test(h)?'0.0' : /Reviews|Revenue|Interest|MRP|Selling|SKUs|Weight|Brands OK/.test(h)?'#,##0' : null;
+  const wrapCol = h => /Name|Source|URL|Top Brand|Query|Range/i.test(h);
+
+  // Row 0 — merged title banner
+  ws['!merges'] = [{ s:{r:0,c:0}, e:{r:0,c:Math.max(0,ncol-1)} }];
+  const tc = cellAt(0,0); tc.v = title; tc.t='s';
+  tc.s = { font:{ bold:true, sz:12, color:{rgb:'FFFFFF'} }, fill:{ patternType:'solid', fgColor:{rgb:accent} }, alignment:{ horizontal:'left', vertical:'center', wrapText:false } };
+
+  // Row 1 — header band
+  for (let c=0;c<ncol;c++){
+    const hc = cellAt(1,c); hc.v = header[c]; hc.t='s';
+    hc.s = { font:{ bold:true, sz:11, color:{rgb:'FFFFFF'} }, fill:{ patternType:'solid', fgColor:{rgb:accent} },
+      alignment:{ horizontal:'center', vertical:'center', wrapText:true }, border };
+  }
+
+  // Rows 2+ — data (zebra stripes, borders, number formats, conditional AUDITED/ESTIMATED)
+  for (let r=0;r<nrow;r++){
+    const zebra = r%2 ? 'F6F3EE' : 'FFFFFF';
+    for (let c=0;c<ncol;c++){
+      const cc = cellAt(r+2,c), h = header[c], isNum = typeof cc.v === 'number';
+      let fill = zebra, font = { sz:10, color:{rgb:'2B2B28'} };
+      if (cc.v==='AUDITED'){ fill='D6F0E0'; font={ bold:true, sz:10, color:{rgb:'0A4A3A'} }; }
+      else if (cc.v==='ESTIMATED'){ fill='FCE6D2'; font={ bold:true, sz:10, color:{rgb:'8A3B00'} }; }
+      cc.s = { font, fill:{ patternType:'solid', fgColor:{rgb:fill} },
+        alignment:{ horizontal: isNum?'right':'left', vertical:'center', wrapText: wrapCol(h) }, border };
+      const z = isNum ? fmtFor(h) : null; if (z) cc.z = z;
+    }
+  }
+
+  // Column widths (wrap-friendly caps), title/header row heights, and an auto-filter on the header.
+  ws['!cols'] = header.map((h,i)=>{ let w=String(h).length; rows.forEach(rw=>{ const v=rw[i]==null?'':String(rw[i]); if(v.length>w) w=v.length; });
+    return wrapCol(h) ? { wch: Math.min(Math.max(w,18),46) } : { wch: Math.min(Math.max(w+2,9),28) }; });
+  ws['!rows'] = [{ hpt:26 }, { hpt:30 }];
+  ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s:{r:1,c:0}, e:{r:1+nrow, c:ncol-1} }) };
+}
+
 function downloadExcel(){
   if (!window.XLSX){ alert('Excel library is still loading — please try again in a moment.'); return; }
   if (!(STATE.skus && STATE.skus.length)){ alert('No data to export yet — load or scrape first.'); return; }
   const now = new Date();
   const wb = XLSX.utils.book_new();
   buildExcelData().forEach(s=>{
-    const title = `Biscuit Market Intelligence · ${s.name} · generated ${now.toLocaleString('en-IN')}${s.note?' · '+s.note:''}`;
-    const ws = XLSX.utils.aoa_to_sheet([[title], [], s.header, ...s.rows]);
-    ws['!cols'] = s.header.map((h,i)=>{ let w=String(h).length; s.rows.forEach(rw=>{ const v=rw[i]==null?'':String(rw[i]); if (v.length>w) w=v.length; }); return { wch: Math.min(Math.max(w+2,9),60) }; });
+    const accent = XL_ACCENT[s.name] || '1A1A18';
+    const title = `Biscuit Market Intelligence    ·    ${s.name}    ·    generated ${now.toLocaleString('en-IN')}${s.note?'    ·    '+s.note:''}`;
+    const ws = XLSX.utils.aoa_to_sheet([[title], s.header, ...s.rows]);
+    styleWorksheet(ws, s.header, s.rows, accent, title);
     XLSX.utils.book_append_sheet(wb, ws, s.name);
   });
+  wb.Workbook = { Views:[{ RTL:false }] };
   XLSX.writeFile(wb, `biscuit-intelligence-${now.toISOString().slice(0,10)}.xlsx`);
 }
 
