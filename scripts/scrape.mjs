@@ -334,8 +334,17 @@ function categoryFor(name, brand){
   return c !== 'Other' ? c : (BRAND_CAT[brand] || 'Other');
 }
 
+// Drop items that aren't biscuits even if the brand matched (e.g. The Whole Truth
+// PROTEIN BARS / peanut butter). Keeps anything with a clear biscuit word.
+function isNonBiscuit(name){
+  const n = String(name||'').toLowerCase();
+  if (/biscuit|cookie|cracker|rusk|wafer|khari|cream|digestive|marie|glucose|nankhatai|puff/.test(n)) return false;
+  return /\bbars?\b|peanut butter|\bmuesli\b|\bgranola\b|energy bar|protein bar|milk ?shake|\bshake\b|\bspread\b|\bdrink\b|\bjuice\b|\bnamkeen\b|dry fruit/.test(n);
+}
+
 function extractSKU(link, block, brand, company, platform){
   const name = repairText(cleanName(link.text));   // fix UTF-8 mojibake at the source
+  if (isNonBiscuit(name)) return null;              // not a biscuit (protein bar / spread / etc.)
   // Read prices/reviews/weight from a URL-FREE view of the block. Link targets
   // (Amazon's base64 "dib=" tokens) can contain substrings like "rs6" that the
   // ₹/Rs price regex would otherwise misread as a price.
@@ -355,6 +364,7 @@ function extractSKU(link, block, brand, company, platform){
   const discount = mrp > selling ? +(((mrp-selling)/mrp)*100).toFixed(1) : 0;
 
   if (selling < 3 || selling > 3000) return null;
+  if (mrp > selling * 6) return null;              // >83% off ⇒ price mis-parse, drop
   const pricePerGram = +(selling/weightGrams).toFixed(3);
   const mrpPerGram    = +(mrp/weightGrams).toFixed(3);
   if (pricePerGram < 0.05 || pricePerGram > 6) return null;
@@ -478,10 +488,12 @@ const parseKNum = s => { const x=String(s||'').toLowerCase().replace(/,/g,''); c
 // Shared builder → same SKU shape as Amazon's extractSKU, plus channel tags + inStock.
 function qcommSku({ name, selling, mrp, weightInfo, rating, reviewCount, url, inStock, brand, company, platform, channel }){
   if (!weightInfo || !selling) return null;
+  if (isNonBiscuit(name)) return null;              // protein bar / spread / etc. — not a biscuit
   const weightGrams = weightInfo.grams, packLabel = weightInfo.label;
   mrp = (mrp && mrp >= selling) ? mrp : selling;
   const discount = mrp > selling ? +(((mrp-selling)/mrp)*100).toFixed(1) : 0;
   if (selling < 3 || selling > 3000) return null;
+  if (mrp > selling * 6) return null;               // >83% off ⇒ price mis-parse, drop
   const pricePerGram = +(selling/weightGrams).toFixed(3);
   const mrpPerGram    = +(mrp/weightGrams).toFixed(3);
   if (pricePerGram < 0.05 || pricePerGram > 6) return null;       // same sanity band as Amazon
@@ -841,5 +853,5 @@ export {
   parseWeightGrams, detectCategory, parseRating, parseReviewCount,
   extractPrices, cleanName, repairText, detectPlatform, parseSKUsFromPage, dedupeKey,
   parseSKUsDiscover, classifyBrand, looksBlocked, deriveBrand, classifyQcomm,
-  parseZeptoPage, parseBlinkitPage, qcommSku,
+  parseZeptoPage, parseBlinkitPage, qcommSku, isNonBiscuit,
 };

@@ -76,7 +76,7 @@ input:focus{border-color:#B6772E;box-shadow:0 0 0 3px rgba(182,119,46,.12)}
 .hero-title{font-size:34px;font-weight:700;line-height:1.15;letter-spacing:-.02em;margin-bottom:16px}
 .hero-sub{font-size:15px;line-height:1.62;color:#5c5b57;margin:0 auto 24px;max-width:560px}
 .btn-accent{background:#B6772E;color:#fff;border:0;border-radius:10px;padding:13px 26px;font-size:15px;font-weight:600;cursor:pointer;transition:background .12s,transform .1s}
-.btn-accent:hover{background:#a3691f}
+.btn-accent:hover:not(:disabled){background:#9a6019;color:#fff}
 .btn-accent:active{transform:scale(.98)}
 .notice{display:inline-block;font-size:13px;font-weight:500;border-radius:8px;padding:11px 16px;max-width:560px;line-height:1.55;margin-bottom:22px}
 .notice.info{color:#5c5b57;background:#fff;border:0.5px solid rgba(26,26,24,.12)}
@@ -86,10 +86,11 @@ input:focus{border-color:#B6772E;box-shadow:0 0 0 3px rgba(182,119,46,.12)}
 /* Tables (shared) */
 .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:middle}
-td.num{font-variant-numeric:tabular-nums}
+th.num,td.num{text-align:center;font-variant-numeric:tabular-nums}
 
 /* Overview — header, KPI cards, charts */
-.ov-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px}
+.ov-head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px 16px;margin-bottom:6px}
+.ov-head>div:first-child{flex:1 1 260px;min-width:240px}
 .ov-title{font-size:23px;font-weight:700;letter-spacing:-.02em}
 .ov-sub{font-size:12.5px;color:#5c5b57;margin-top:4px}
 .live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#138A6E;margin-right:6px;vertical-align:middle;box-shadow:0 0 0 3px rgba(19,138,110,.16)}
@@ -211,7 +212,7 @@ td a:hover{color:#B6772E;text-decoration:underline}
 .exec-tbl th{text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:#9b9a96;font-weight:700;padding:7px 8px;border-bottom:0.5px solid rgba(26,26,24,.1)}
 .exec-tbl td{padding:8px;border-bottom:0.5px solid rgba(26,26,24,.06);vertical-align:top}
 .exec-tbl tr:last-child td{border-bottom:0}
-.exec-tbl td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.exec-tbl th.num,.exec-tbl td.num{text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
 .exec-tbl .dot{margin-right:6px}
 .exec-tbl a{color:#1a1a18;font-weight:600;text-decoration:none;border-bottom:1px solid rgba(26,26,24,.2)}
 .exec-sub2{font-size:10px;color:#9b9a96;margin-top:1px}
@@ -350,6 +351,9 @@ function mkChart(id, cfg){
   const cv = document.getElementById(id);
   if (!cv || !window.Chart) return null;
   if (charts[id]){ try{ charts[id].destroy(); }catch(e){} }
+  cfg.options = cfg.options || {};
+  // Hover tooltips appear anywhere near the data (vital for thin, point-less lines).
+  if (!cfg.options.interaction) cfg.options.interaction = { mode: cfg.type==='line' ? 'index' : 'nearest', intersect:false };
   charts[id] = new Chart(cv.getContext('2d'), cfg);
   return charts[id];
 }
@@ -424,22 +428,22 @@ function buildStats(skus, scrapedAt = STATE.scrapedAt){
 const PPG_LOW=0.25, PPG_HIGH=0.55, SHARE_HIGH=25, SHARE_MID=8, DISC_HEAVY=25, YOY_EMERGING=20;  // editable thresholds
 
 const ARCH = {
-  value:     { key:'value',     label:'Value Leader',      descriptor:'owns mass-market value' },
-  premium:   { key:'premium',   label:'Premium Hold',      descriptor:'pricing power per gram' },
-  scale:     { key:'scale',     label:'Scale Premiumizer', descriptor:'scale + premiumization' },
-  challenger:{ key:'challenger',label:'Growth Challenger',  descriptor:'buying share' },
-  insurgent: { key:'insurgent', label:'Insurgent (D2C)',   descriptor:'disruptor to watch' },
-  discount:  { key:'discount',  label:'Discount-Led',      descriptor:'promo-driven volume' },
+  value:     { key:'value',     label:'Value Leader',    descriptor:'cheap, sells the most' },
+  premium:   { key:'premium',   label:'Premium Player',  descriptor:'priciest per gram' },
+  scale:     { key:'scale',     label:'Big & Premium',   descriptor:'huge reach, going upmarket' },
+  challenger:{ key:'challenger',label:'Fast Grower',     descriptor:'gaining share quickly' },
+  insurgent: { key:'insurgent', label:'Newcomer',        descriptor:'small, new — worth watching' },
+  discount:  { key:'discount',  label:'Discount-Driven', descriptor:'wins on big discounts' },
 };
-const ARCH_PHRASE = { value:'the mass-market value engine', scale:'the scale player', premium:'a premium holder',
-  challenger:'a growth challenger', insurgent:'an insurgent disruptor', discount:'a promo-led player' };
+const ARCH_PHRASE = { value:'the cheap, high-volume leader', scale:'a big seller moving upmarket', premium:'a high-priced premium player',
+  challenger:'a fast-growing challenger', insurgent:'a small, fast-rising newcomer', discount:'a discount-driven player' };
 const ARCH_TAKE = {
-  value:'the volume engine; defend ₹/g and guard against premium leakage',
-  scale:'a dominant premiumizer holding the centre of the market',
-  premium:'pricing power intact — protect the premium',
-  challenger:'spending demand and promo to take share; momentum to track',
-  insurgent:'tiny but fast — the disruptor to watch',
-  discount:'leaning on promotions for volume, with margin risk' };
+  value:'the volume engine — keeps prices low and defends its base',
+  scale:'big and moving upmarket — defend the core, grow the premium range',
+  premium:'charges the most per gram — protect that premium',
+  challenger:'spending on demand and discounts to win share — momentum to watch',
+  insurgent:'tiny but rising fast — one to watch',
+  discount:'leans on heavy discounts to move volume — watch margins' };
 const SENT = {
   strong:    { key:'strong',    icon:'🟢', word:'Strong',    cls:'sent-strong' },
   steady:    { key:'steady',    icon:'🟡', word:'Steady',    cls:'sent-steady' },
@@ -597,11 +601,11 @@ function execSummaryHTML(companyStats, intel){
 
   return `<div class="sec-title" style="margin-top:4px">Executive summary</div>`
     + slide('exec-g1', 1, 'Who’s playing what game?', 'market archetypes',
-        '<th>Company</th><th>Archetype</th><th>Median ₹/g</th><th>Avg disc</th><th>Share</th><th>Demand</th>', c1)
+        '<th>Company</th><th>Archetype</th><th class="num">Median ₹/g</th><th class="num">Avg disc</th><th class="num">Share</th><th class="num">Demand</th>', c1)
     + slide('exec-g2', 2, 'Cheapest vs premium per gram', 'the value spectrum',
         '<th>Company</th><th>Best value (₹/g)</th><th>Most premium</th><th>Deepest discount</th><th>Demand hero</th>', c2)
     + slide('exec-g3', 3, 'Demand &amp; momentum scorecard', 'sentiment × search × ₹/g',
-        '<th>Company</th><th>Sentiment</th><th>Search</th><th>Median ₹/g</th><th>Share</th><th>Avg disc</th>', c3);
+        '<th>Company</th><th>Sentiment</th><th class="num">Search</th><th class="num">Median ₹/g</th><th class="num">Share</th><th class="num">Avg disc</th>', c3);
 }
 
 // Card-3 synthesis paragraph — who leads value/premium, who's rising, a real breakout query, the ₹/g spread.
@@ -972,7 +976,7 @@ function overviewHTML(view){
   <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
     <div class="sec-title">By company · price-per-gram</div>
     <div class="tbl-scroll"><table style="min-width:720px">
-      <thead><tr><th>Company</th><th>Median ₹/g</th><th>Avg ₹/g</th><th>₹/g Min</th><th>₹/g Max</th><th>Avg Disc%</th><th>Avg ★</th><th>SKUs</th></tr></thead>
+      <thead><tr><th>Company</th><th class="num">Median ₹/g</th><th class="num">Avg ₹/g</th><th class="num">₹/g Min</th><th class="num">₹/g Max</th><th class="num">Avg Disc%</th><th class="num">Avg ★</th><th class="num">SKUs</th></tr></thead>
       <tbody>${compRows}</tbody>
     </table></div>
   </div></div>
@@ -996,7 +1000,7 @@ function overviewHTML(view){
   <div class="card fadein"><div class="card-pad">
     <div class="sec-title">By brand</div>
     <div class="tbl-scroll"><table style="min-width:560px">
-      <thead><tr><th>Brand</th><th>Group</th><th>Median ₹/g</th><th>Avg Disc%</th><th>Avg ★</th><th>SKUs</th></tr></thead>
+      <thead><tr><th>Brand</th><th>Group</th><th class="num">Median ₹/g</th><th class="num">Avg Disc%</th><th class="num">Avg ★</th><th class="num">SKUs</th></tr></thead>
       <tbody>${brandRows}</tbody>
     </table></div>
   </div></div>
@@ -1235,7 +1239,7 @@ function renderPackSize(){
   <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
     <div class="sec-title">Pack-size bands</div>
     <div class="tbl-scroll"><table style="min-width:780px">
-      <thead><tr><th>Band</th><th>SKUs</th><th>Median ₹/g</th><th>Avg Disc%</th><th>Reviews</th><th>Avg ★</th><th>Top Category</th><th>Top Brand</th></tr></thead>
+      <thead><tr><th>Band</th><th class="num">SKUs</th><th class="num">Median ₹/g</th><th class="num">Avg Disc%</th><th class="num">Reviews</th><th class="num">Avg ★</th><th>Top Category</th><th>Top Brand</th></tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
     <div class="hm-cap">“Reviews” = total review volume in the band — an interest proxy, not sales.</div>
@@ -1337,7 +1341,7 @@ function renderCompany(company){
   <div class="card fadein"><div class="card-pad">
     <div class="sec-title">Top SKUs by review volume (interest)</div>
     <div class="tbl-scroll"><table style="min-width:560px">
-      <thead><tr><th>Name</th><th>Brand</th><th>₹/g</th><th>★</th><th>#reviews</th></tr></thead>
+      <thead><tr><th>Name</th><th>Brand</th><th class="num">₹/g</th><th class="num">★</th><th class="num">#reviews</th></tr></thead>
       <tbody>${topRows}</tbody>
     </table></div>
   </div></div>`;
@@ -1414,7 +1418,7 @@ function renderBrand(brand){
   <div class="card fadein"><div class="card-pad">
     <div class="sec-title">All SKUs <span class="muted" style="text-transform:none;letter-spacing:0">· sorted by review volume (interest first)</span></div>
     <div class="tbl-scroll"><table style="min-width:940px">
-      <thead><tr><th>Name</th><th>Category</th><th>Pack</th><th>₹/g</th><th>MRP</th><th>Selling</th><th>Disc%</th><th>★</th><th>#reviews</th><th>Shelf life</th><th>Platform</th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>Category</th><th>Pack</th><th class="num">₹/g</th><th class="num">MRP</th><th class="num">Selling</th><th class="num">Disc%</th><th class="num">★</th><th class="num">#reviews</th><th class="num">Shelf life</th><th>Platform</th><th></th></tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
   </div></div>`;
@@ -1509,7 +1513,7 @@ function renderHistory(){
   <div class="card fadein"><div class="card-pad">
     <div class="sec-title">Run log <span class="muted" style="text-transform:none;letter-spacing:0">· newest first</span></div>
     <div class="tbl-scroll"><table style="min-width:520px">
-      <thead><tr><th>Time</th><th>Overall ₹/g</th><th>Avg Disc%</th><th>Reviews</th><th>SKUs</th></tr></thead>
+      <thead><tr><th>Time</th><th class="num">Overall ₹/g</th><th class="num">Avg Disc%</th><th class="num">Reviews</th><th class="num">SKUs</th></tr></thead>
       <tbody>${logRows}</tbody>
     </table></div>
   </div></div>`;
@@ -1761,7 +1765,7 @@ function renderRadar(){
   <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
     <div class="results-meta"><strong>${rows.length}</strong> emerging brands · <strong>${realCount}</strong> look like real brands · ${emg.length} SKUs</div>
     <div class="tbl-scroll"><table style="min-width:700px">
-      <thead><tr><th>Brand</th><th>SKUs</th><th>Median ₹/g</th><th>Reviews</th><th>Traction</th><th>Top Category</th><th>Confidence</th><th></th></tr></thead>
+      <thead><tr><th>Brand</th><th class="num">SKUs</th><th class="num">Median ₹/g</th><th class="num">Reviews</th><th class="num">Traction</th><th>Top Category</th><th>Confidence</th><th></th></tr></thead>
       <tbody>${tableRows}</tbody>
     </table></div>
     <div class="hm-cap">Traction = SKUs × total reviews (interest proxy, not sales). "Real brand" = ≥2 SKUs and ≥50 reviews.</div>
@@ -1975,7 +1979,7 @@ function renderCompare(){
     : '<span class="muted">none</span>';
 
   $app().innerHTML = `${backBar}
-  <div class="notice trends-banner">📦 ₹/g here is the <strong>brand-median per channel</strong> (in-stock only), <strong>not exact-SKU matching</strong>. Quick-commerce (Blinkit/Zepto) is <strong>"representative metro"</strong> — the delivery pincode didn't reliably apply, so treat q-comm prices as indicative of a metro store.</div>
+  <div class="notice trends-banner">📦 Prices are the <strong>typical (median) ₹ per gram</strong> for each brand on each app — <strong>not the exact same pack matched across apps</strong>. Blinkit/Zepto prices come from a <strong>typical metro location</strong> (we couldn't lock one pincode), so read them as a city-level guide.</div>
 
   <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
     <div class="sec-title">The gap · quick-commerce vs e-commerce</div>
@@ -1996,7 +2000,7 @@ function renderCompare(){
   <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
     <div class="sec-title">${mode==='brand'?'Brands':'Categories'} in ≥2 channels <span class="muted" style="text-transform:none;letter-spacing:0">· median ₹/g · % off · cheapest flagged</span></div>
     <div class="tbl-scroll"><table style="min-width:520px">
-      <thead><tr><th>${mode==='brand'?'Brand':'Category'}</th><th>Amazon</th><th>Blinkit</th><th>Zepto</th></tr></thead>
+      <thead><tr><th>${mode==='brand'?'Brand':'Category'}</th><th class="num">Amazon</th><th class="num">Blinkit</th><th class="num">Zepto</th></tr></thead>
       <tbody>${multi.map(rowHtml).join('') || '<tr><td colspan="4" class="muted">No multi-channel overlap yet.</td></tr>'}</tbody>
     </table></div>
     <div class="hm-cap">Cheapest channel per ${mode} is badged. Only ${mode}s present in ≥2 channels are compared.</div>
