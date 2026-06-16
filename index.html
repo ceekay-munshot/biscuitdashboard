@@ -640,7 +640,7 @@ function marketReadHTML(companyStats, intel){
    5. DATA LOADING  (reads the CI-committed static JSON)
    ------------------------------------------------------------ */
 async function loadData(){
-  const bust = '?_=' + Date.now();   // cache-bust so ↻ Reload sees fresh data
+  const bust = '?_=' + Date.now();   // cache-bust so each page visit fetches the freshest static data
 
   STATE.skus = []; STATE.scrapedAt = null; STATE.curr = null;
   try {
