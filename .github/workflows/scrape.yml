@@ -11,6 +11,10 @@ on:
         description: 'FREE TEST: set to "1" to probe Blinkit only (Parle-G + Good Day) and dump raw to data/_debug/blinkit/. Skips the normal scrape.'
         required: false
         default: ''
+      debug_zepto:
+        description: 'FREE TEST: set to "1" to probe Zepto only (Parle-G + Good Day) and dump raw to data/_debug/zepto/. Skips the normal scrape.'
+        required: false
+        default: ''
   schedule:
     - cron: '0 2 * * *'      # daily; adjust later
 
@@ -30,6 +34,7 @@ jobs:
           FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
           DEBUG_DUMP_BRANDS: ${{ github.event.inputs.debug_brands }}
           DEBUG_BLINKIT: ${{ github.event.inputs.debug_blinkit }}
+          DEBUG_ZEPTO: ${{ github.event.inputs.debug_zepto }}
       - name: Commit refreshed data
         run: |
           git config user.name  "github-actions[bot]"

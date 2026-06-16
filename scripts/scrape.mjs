@@ -505,15 +505,15 @@ async function firecrawlScrape(url, key, body){
   return { status, json };
 }
 
-// Pure: decide what Blinkit actually returned, from the raw text + HTTP status.
-function classifyBlinkit(md, html, status){
+// Pure: decide what a q-commerce search page actually returned, from raw text + HTTP status.
+function classifyQcomm(md, html, status){
   md = md || ''; html = html || '';
   const lc = (md + ' ' + html).toLowerCase();
   const priceHits = ((md + ' ' + html).match(/₹\s?\d|Rs\.?\s?\d/gi) || []).length;
   const blocked = status===403 || status===429 ||
     /captcha|access denied|forbidden|just a moment|attention required|cloudflare|unusual traffic/i.test(lc);
   const shell = !priceHits &&
-    /(detecting your location|select.*location|enter.*(pincode|location|address)|set your location|not serviceable|choose.*location|download.*app)/i.test(lc);
+    /(detecting your location|select.*location|enter.*(pincode|location|address)|set your location|not serviceable|choose.*location|provide your delivery location|download.*app)/i.test(lc);
   let outcome;
   if (blocked)             outcome = 'BLOCK (403/429/captcha/cloudflare)';
   else if (priceHits > 0)  outcome = `PRODUCTS (~${priceHits} ₹-price hits)`;
@@ -523,14 +523,27 @@ function classifyBlinkit(md, html, status){
   return { outcome, priceHits, blocked, shell };
 }
 
-async function probeBlinkit(key){
+// Per-platform config for the free q-commerce scrape probe.
+const QCOMM = {
+  blinkit: { label:'Blinkit', urlFor: q => `https://blinkit.com/s/?q=${encodeURIComponent(q)}`,
+    locationSelector:'[class*="LocationBar"], [class*="location"], [data-test-id*="location"], header [class*="Address"]' },
+  zepto:   { label:'Zepto', urlFor: q => `https://www.zeptonow.com/search?query=${encodeURIComponent(q)}`,
+    locationSelector:'[data-testid*="location" i], [data-testid*="address" i], [class*="location" i], [class*="Address" i], button[aria-label*="location" i]' },
+};
+
+// Honest free-scrape probe for ONE q-commerce platform (same method that worked for Blinkit):
+// JS render + a pincode actions attempt, fall back to plain render, dump raw to data/_debug/<platform>/.
+async function probeQcomm(platform, key){
+  const cfg = QCOMM[platform];
+  if (!cfg){ console.error('unknown q-comm platform: '+platform); return; }
   const PINCODE = '110001';                                   // New Delhi metro
   const queries = ['Parle-G', 'Good Day biscuit'];
-  mkdirSync('data/_debug/blinkit', { recursive:true });
+  const dir = `data/_debug/${platform}`;
+  mkdirSync(dir, { recursive:true });
   const summary = [];
 
   for (const q of queries){
-    const url = `https://blinkit.com/s/?q=${encodeURIComponent(q)}`;
+    const url = cfg.urlFor(q);
     // Attempt WITH actions: JS render, try to set a delivery pincode, screenshot, then capture.
     const withActions = {
       formats:['markdown','html'], onlyMainContent:false, waitFor:6000, timeout:120000,
@@ -538,7 +551,7 @@ async function probeBlinkit(key){
       actions:[
         { type:'wait', milliseconds:4000 },
         { type:'screenshot' },
-        { type:'click', selector:'[class*="LocationBar"], [class*="location"], [data-test-id*="location"], header [class*="Address"]' },
+        { type:'click', selector: cfg.locationSelector },
         { type:'wait', milliseconds:1200 },
         { type:'write', text: PINCODE },
         { type:'wait', milliseconds:1800 },
@@ -551,7 +564,7 @@ async function probeBlinkit(key){
     let usedActions = true;
     // If the actions request failed (e.g. selector not found), fall back to a plain JS render so we still get a dump.
     if (!(res.json && res.json.success)){
-      console.log(`  [blinkit] "${q}" actions attempt failed (status ${res.status}${res.json && res.json.error ? ': '+res.json.error : ''}) — retrying plain JS render`);
+      console.log(`  [${platform}] "${q}" actions attempt failed (status ${res.status}${res.json && res.json.error ? ': '+res.json.error : ''}) — retrying plain JS render`);
       res = await firecrawlScrape(url, key, { formats:['markdown','html'], onlyMainContent:false, waitFor:9000, timeout:120000, location:{ country:'IN', languages:['en-IN'] } });
       usedActions = false;
     }
@@ -559,35 +572,40 @@ async function probeBlinkit(key){
     const data = (res.json && res.json.data) || {};
     const md = data.markdown || '', html = data.html || '';
     const shots = (data.actions && data.actions.screenshots) || [];
-    const cls = classifyBlinkit(md, html, res.status);
+    const cls = classifyQcomm(md, html, res.status);
 
     const slug = q.replace(/[^a-z0-9]+/gi,'_');
-    writeFileSync(`data/_debug/blinkit/${slug}.summary.json`, JSON.stringify({
-      url, query:q, httpStatus:res.status, firecrawlSuccess: !!(res.json && res.json.success),
+    writeFileSync(`${dir}/${slug}.summary.json`, JSON.stringify({
+      platform, url, query:q, httpStatus:res.status, firecrawlSuccess: !!(res.json && res.json.success),
       firecrawlError: (res.json && res.json.error) || null, usedActions, outcome: cls.outcome,
       markdownBytes: md.length, htmlBytes: html.length, rupeePriceHits: cls.priceHits,
       screenshots: shots, sampleMarkdown: md.slice(0, 3000),
     }, null, 2));
-    writeFileSync(`data/_debug/blinkit/${slug}.md`, md || '(empty markdown)');
-    if (html) writeFileSync(`data/_debug/blinkit/${slug}.html`, html.slice(0, 200000));
+    writeFileSync(`${dir}/${slug}.md`, md || '(empty markdown)');
+    if (html) writeFileSync(`${dir}/${slug}.html`, html.slice(0, 200000));
 
-    console.log(`  [blinkit] "${q}" → ${cls.outcome} | status ${res.status} | md ${md.length}b | html ${html.length}b | ₹hits ${cls.priceHits} | actions ${usedActions} | shots ${shots.length}`);
+    console.log(`  [${platform}] "${q}" → ${cls.outcome} | status ${res.status} | md ${md.length}b | html ${html.length}b | ₹hits ${cls.priceHits} | actions ${usedActions} | shots ${shots.length}`);
     summary.push({ query:q, outcome:cls.outcome, status:res.status, priceHits:cls.priceHits });
   }
 
-  writeFileSync('data/_debug/blinkit/RESULT.json', JSON.stringify(
-    { platform:'Blinkit', testedAt:new Date().toISOString(), pincodeTried:PINCODE, results:summary }, null, 2));
-  console.log('  [blinkit] RESULT:', JSON.stringify(summary));
+  writeFileSync(`${dir}/RESULT.json`, JSON.stringify(
+    { platform:cfg.label, testedAt:new Date().toISOString(), pincodeTried:PINCODE, results:summary }, null, 2));
+  console.log(`  [${platform}] RESULT:`, JSON.stringify(summary));
 }
 
 async function main(){
   const key = process.env.FIRECRAWL_API_KEY;
   if (!key){ console.error('FIRECRAWL_API_KEY not set'); process.exit(1); }
 
-  // FREE TEST (gated): probe Blinkit only, then stop — no Amazon scrape, latest.json untouched.
+  // FREE TESTS (gated): probe one q-commerce platform only, then stop — no Amazon scrape, latest.json untouched.
   if (/^(1|true|yes|blinkit)$/i.test(process.env.DEBUG_BLINKIT || '')){
     console.log('DEBUG_BLINKIT set — running Blinkit probe ONLY (no Amazon scrape this run).');
-    await probeBlinkit(key);
+    await probeQcomm('blinkit', key);
+    return;
+  }
+  if (/^(1|true|yes|zepto)$/i.test(process.env.DEBUG_ZEPTO || '')){
+    console.log('DEBUG_ZEPTO set — running Zepto probe ONLY (no Amazon scrape this run).');
+    await probeQcomm('zepto', key);
     return;
   }
 
@@ -684,5 +702,5 @@ export {
   BRANDS, SEARCH, COVERAGE, ALIASES, EMERGING_BRANDS,
   parseWeightGrams, detectCategory, parseRating, parseReviewCount,
   extractPrices, cleanName, repairText, detectPlatform, parseSKUsFromPage, dedupeKey,
-  parseSKUsDiscover, classifyBrand, looksBlocked, deriveBrand, classifyBlinkit,
+  parseSKUsDiscover, classifyBrand, looksBlocked, deriveBrand, classifyQcomm,
 };
