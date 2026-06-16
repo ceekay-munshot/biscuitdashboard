@@ -199,5 +199,38 @@
       "blinkit": 125,
       "zepto": 101
     }
+  },
+  {
+    "ts": "2026-06-16T07:45:19.908Z",
+    "skuCount": 596,
+    "brandsOk": 14,
+    "overall": {
+      "medianPpg": 0.321,
+      "avgDiscount": 19.5,
+      "totalReviews": 7687381,
+      "avgRating": 4.2
+    },
+    "byCompany": {
+      "Britannia": 0.25,
+      "Parle": 0.222,
+      "ITC Sunfeast": 0.394,
+      "Mondelez": 0.295,
+      "Unibic": 0.4,
+      "Emerging / D2C": 0.644
+    },
+    "byCategory": {
+      "Cookies": 0.375,
+      "Cream": 0.3,
+      "Other": 0.178,
+      "Digestive": 0.375,
+      "Crackers": 0.219,
+      "Wafer": 0.625,
+      "Rusk": 0.321
+    },
+    "channels": {
+      "amazon": 393,
+      "blinkit": 125,
+      "zepto": 78
+    }
   }
 ]
