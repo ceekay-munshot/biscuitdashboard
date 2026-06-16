@@ -191,6 +191,24 @@ td a:hover{color:#B6772E;text-decoration:underline}
 .cls-declining{background:#F7E0E3;color:#7A0A1C}
 .share-src{font-size:10px;margin-top:8px;color:#9b9a96}
 .share-src a{color:#6E4300}
+/* Revenue ranking — aligned grid (name · bar · revenue · YoY), nothing wraps */
+.rev-row{display:grid;grid-template-columns:minmax(116px,1.4fr) 1fr 92px 58px;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid rgba(26,26,24,.06)}
+.rev-row:last-child{border-bottom:0}
+.rev-name{display:flex;align-items:center;gap:6px;min-width:0;font-size:12px}
+.rev-co{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.rev-tag{font-size:9px;padding:1px 5px;flex-shrink:0}
+.rev-bar{height:8px;background:#f0ede8;border-radius:4px;overflow:hidden}
+.rev-bar>span{display:block;height:100%;border-radius:4px}
+.rev-val{text-align:right;font-weight:700;font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.rev-yoy{text-align:right;font-size:11px;white-space:nowrap}
+/* Compare "gap" insight — headline + chips, not a paragraph */
+.gap-head{font-size:16px;font-weight:600;color:#1a1a18;line-height:1.4}
+.gap-sub{font-size:12px;color:#9b9a96;margin-top:3px}
+.gap-chips{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}
+.gap-lbl{font-size:11px;color:#9b9a96;text-transform:uppercase;letter-spacing:.04em}
+.gap-chip{display:inline-flex;gap:6px;align-items:center;font-size:12px;background:#FBF3E3;border:0.5px solid rgba(182,119,46,.25);color:#5A4300;padding:3px 10px;border-radius:14px}
+.gap-chip strong{color:#8A3B00}
+.mr-grid{gap:14px}
 /* Executive intelligence (Step 13) */
 .kpi-signal{font-size:10.5px;color:#6b6a66;margin:6px 0 2px;line-height:1.35}
 .arch-badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap}
@@ -636,8 +654,8 @@ function marketReadHTML(companyStats, intel){
   }).join('');
   return `<div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
     <div class="sec-title">Market Read <span class="muted" style="text-transform:none;letter-spacing:0">· data-driven, per company</span></div>
-    ${paras}
-    <div class="hm-cap">Generated <strong>deterministically</strong> from the three live datasets (₹/g × market share × search demand) — <strong>not AI</strong>. Estimated shares are stated as estimates; shelf-life is not used as a signal. <em>Future upgrade (not built): render these as prose via a Claude call in CI.</em></div>
+    <div class="grid2 mr-grid">${paras}</div>
+    <div class="hm-cap">Generated <strong>deterministically</strong> from the three live datasets (₹/g × market share × search demand) — <strong>not AI</strong>. Estimated shares are stated as estimates; shelf-life is not used as a signal.</div>
   </div></div>`;
 }
 
@@ -1699,7 +1717,14 @@ function renderTrends(){
 
   <div class="card fadein" style="margin-top:16px"><div class="card-pad">
     <div class="sec-title">Methodology</div>
-    <p class="admin-p">Google Trends reports <strong>relative search interest</strong> (0–100 within the set &amp; timeframe), <strong>not sales</strong>. Values are <strong>fetched live from Google Trends via SerpApi in CI</strong> (the weekly <em>Trends</em> workflow, geo India, last 12 months) — Queries are <strong>disambiguated to the biscuit context</strong> (e.g. "Monaco biscuit", "Bourbon biscuit") so they don't measure the F1 race or the whiskey, batched in groups of ≤5 with a shared "biscuit" anchor, and normalized for comparability. It's best-effort: any value that can't refresh keeps its <strong>last-good</strong> and is flagged <em>stale</em> — never fabricated. The <strong>related &amp; rising/breakout</strong> queries are the real Google Trends "Explore" panels for the seed terms (one call each) — <em>Breakout</em> flags &gt;5000% growth, i.e. genuinely emerging demand. Off-topic <strong>homonyms are filtered</strong> (a "biscuit" in Indian search is often a <em>gold bar</em>; "cookies" often means <em>browser cookies</em>) so only food-biscuit queries are shown — every query shown is still a real Google query, none fabricated. The signal marries this demand proxy with our live median ₹/g from <code>data/latest.json</code> (high interest + premium ₹/g = pricing power; high + value = volume pull; rising = momentum; low/falling = fading).</p>
+    <ul class="admin-list">
+      <li><strong>Relative search interest</strong> (0–100), <strong>not sales</strong>.</li>
+      <li>Fetched <strong>live via SerpApi</strong> in weekly CI — geo India, last 12 months.</li>
+      <li>Queries <strong>disambiguated to biscuits</strong> ("Monaco biscuit", not the F1 race), normalized against a shared anchor.</li>
+      <li><strong>Best-effort:</strong> anything that can't refresh keeps its last-good, flagged <em>stale</em> — never fabricated.</li>
+      <li><strong>Related / Rising</strong> = real "Explore" panels; <em>Breakout</em> = &gt;5000% growth. Off-topic homonyms (gold bars, browser cookies) filtered out.</li>
+      <li>The <strong>signal</strong> pairs demand with live ₹/g: high interest + premium ₹/g = pricing power; rising = momentum.</li>
+    </ul>
   </div></div>`;
 
   drawTrendsChart();
@@ -1827,15 +1852,17 @@ function renderShare(){
   const banner = `🧾 <strong>Provenance — read before trusting a number.</strong> ${esc(s.disclaimer||'')} `
     + `<strong>${auditedN}</strong> group(s) AUDITED, <strong>${estN}</strong> ESTIMATED.`;
 
-  // Revenue ranking + YoY.
+  // Revenue ranking + YoY — aligned grid so figures never wrap or float.
   const maxRev = Math.max(...ranked.map(c=>c.biscuitRevenueCr), 1);
-  const revRows = ranked.map(c=>`
-    <div class="catbar-row">
-      <span class="catbar-label"><span class="dot" style="background:${shareColor(c.company)}"></span>${esc(c.company)}
-        <span class="badge ${c.isEstimated?'prov-est':'prov-audited'}" style="font-size:9px;padding:1px 6px;margin-left:4px">${c.isEstimated?'EST':'AUD'}</span></span>
-      <span class="bar-wrap"><span class="bar-fill" style="width:${Math.round(c.biscuitRevenueCr/maxRev*100)}%;background:${shareColor(c.company)}"></span></span>
-      <span class="catbar-val">${fmtCr(c.biscuitRevenueCr)} &nbsp; ${yoyHtml(c.yoyGrowthPct)}</span>
-    </div>`).join('');
+  const revRows = ranked.map(c=>{
+    const col = shareColor(c.company);
+    return `<div class="rev-row">
+      <span class="rev-name"><span class="dot" style="background:${col}"></span><span class="rev-co" title="${esc(c.company)}">${esc(c.company)}</span><span class="badge ${c.isEstimated?'prov-est':'prov-audited'} rev-tag">${c.isEstimated?'EST':'AUD'}</span></span>
+      <span class="rev-bar"><span style="width:${Math.round(c.biscuitRevenueCr/maxRev*100)}%;background:${col}"></span></span>
+      <span class="rev-val">${fmtCr(c.biscuitRevenueCr)}</span>
+      <span class="rev-yoy">${yoyHtml(c.yoyGrowthPct)}</span>
+    </div>`;
+  }).join('');
 
   // Classification cards (share × growth) with AUDITED/ESTIMATED badge, numbers, source, read.
   const cards = ranked.map(c=>{
@@ -1880,9 +1907,12 @@ function renderShare(){
 
   <div class="card fadein" style="margin-top:16px"><div class="card-pad">
     <div class="sec-title">Methodology &amp; caveats</div>
-    <p class="admin-p"><strong>Real vs estimated.</strong> Listed companies (<strong>Britannia, ITC</strong>) show <strong>AUDITED</strong> figures from their annual reports/results, with source links. <strong>ITC's biscuit (Sunfeast) split is an ESTIMATE</strong> — its audited number is the combined Branded Packaged Foods segment, not biscuits alone. Private &amp; D2C groups (<strong>Parle, Mondelez India, Unibic, The Whole Truth</strong>) use public RoC filings / press where available, but their <strong>biscuit-only revenue is ESTIMATED</strong> (these file blended or partial numbers). Nothing estimated is presented as audited — every card carries an AUDITED/ESTIMATED badge.</p>
-    <p class="admin-p"><strong>Market share %</strong> is <strong>industry-report-sourced</strong> (Statista/Nielsen/Euromonitor) and is treated as an <strong>ESTIMATE for every company, including the listed ones</strong> — exact share is not audited. Britannia leads by <em>value</em>; Parle leads by <em>volume</em> (Parle-G is the world's largest-selling biscuit).</p>
-    <p class="admin-p"><strong>Period-alignment & scope caveat.</strong> Figures are each company's <em>latest available</em> full year — Britannia &amp; ITC <strong>FY26</strong> (audited, to Mar 2026); Parle, Unibic &amp; The Whole Truth <strong>FY25</strong> (private filings lag a year). Bases also differ: Britannia is a near-whole bakery segment and Parle's total includes confectionery (both mostly biscuits), while ITC/Mondelez/D2C show biscuit-only estimates — so cross-company comparisons are indicative, not exact. <strong>Update this file when new results publish.</strong> This is competitive-finance context — it is <em>not</em> the live ₹/g pricing data, which comes from the daily scrape.</p>
+    <ul class="admin-list">
+      <li><strong>Listed (Britannia, ITC)</strong> — AUDITED from annual results, sourced. <strong>ITC's biscuit split is ESTIMATED</strong> (its segment isn't biscuit-only).</li>
+      <li><strong>Private / D2C (Parle, Mondelez India, Unibic, The Whole Truth)</strong> — RoC filings / press; <strong>biscuit-only revenue ESTIMATED</strong>. Nothing estimated is shown as audited — every card is badged.</li>
+      <li><strong>Market-share %</strong> — industry-report estimate (Statista / Nielsen / Euromonitor) for <em>every</em> company, listed ones included. Britannia leads by value; Parle by volume.</li>
+      <li><strong>Period-alignment & scope:</strong> latest full year each — Britannia &amp; ITC <strong>FY26</strong>, Parle / Unibic / The Whole Truth <strong>FY25</strong> (private filings lag). Bases differ (Britannia ≈ whole bakery; ITC/Mondelez/D2C are biscuit-only estimates), so comparisons are indicative. Update when new results publish.</li>
+    </ul>
   </div></div>`;
 
   drawShareCharts();
@@ -1964,11 +1994,12 @@ function renderCompare(){
     const q = Math.min(...[r.ppg.blinkit, r.ppg.zepto].filter(v=>v!=null));
     return { name:r.name, diffPct: Math.round((r.ppg.amazon-q)/r.ppg.amazon*100) };
   }).sort((a,b)=>Math.abs(b.diffPct)-Math.abs(a.diffPct)).slice(0,3);
-  const gapLine = gapPct!=null
-    ? `On median ₹/g, <strong>quick-commerce runs ${Math.abs(gapPct)}% ${gapPct>=0?'cheaper':'dearer'}</strong> than Amazon (q-comm ${rs2(qMed)} vs Amazon ${rs2(eMed)} per gram).`
-    : 'Not enough overlapping data for a q-comm vs e-comm gap yet.';
-  const gapBrands = gaps.length
-    ? ` Biggest ${mode} gaps: ` + gaps.map(g=>`<strong>${esc(g.name)}</strong> (${g.diffPct>=0?'−':'+'}${Math.abs(g.diffPct)}% on q-comm)`).join(' · ') + '.'
+  const gapHead = gapPct!=null
+    ? `Quick-commerce is <strong>${Math.abs(gapPct)}% ${gapPct>=0?'cheaper':'dearer'}</strong> per gram than Amazon`
+    : 'Not enough overlapping data for a gap yet';
+  const gapSub = (eMed && qMed) ? `median ₹/g — q-comm ${rs2(qMed)} vs Amazon ${rs2(eMed)}` : '';
+  const gapChips = gaps.length
+    ? gaps.map(g=>`<span class="gap-chip">${esc(g.name)}<strong>${g.diffPct>=0?'−':'+'}${Math.abs(g.diffPct)}%</strong></span>`).join('')
     : '';
 
   const cell = (r,c) => r.ppg[c]==null ? '<span class="muted">—</span>'
@@ -1986,7 +2017,9 @@ function renderCompare(){
 
   <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
     <div class="sec-title">The gap · quick-commerce vs e-commerce</div>
-    <p class="admin-p" style="margin:0">${gapLine}${gapBrands}</p>
+    <div class="gap-head">${gapHead}</div>
+    ${gapSub?`<div class="gap-sub">${gapSub}</div>`:''}
+    ${gapChips?`<div class="gap-chips"><span class="gap-lbl">Biggest ${mode} gaps</span>${gapChips}</div>`:''}
   </div></div>
 
   <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
