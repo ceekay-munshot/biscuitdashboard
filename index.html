@@ -1961,6 +1961,7 @@ function buildExcelData(){
   const r3 = n => n==null?'':+(+n).toFixed(3);
   const topCat = cc => Object.entries(cc||{}).sort((a,b)=>b[1]-a[1]).map(([k])=>k)[0] || '';
   const top3Brands = gs => { const m={}; gs.forEach(s=>m[s.brand]=(m[s.brand]||0)+1); return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([b])=>b).join(', '); };
+  const cleanUrl = u => { if(!u) return ''; const m=String(u).match(/\/(?:dp|gp\/product|gp\/aw\/d)\/([A-Z0-9]{10})/i); return m ? 'https://www.amazon.in/dp/'+m[1] : String(u).split('?')[0].split('/ref=')[0]; };
   const archForShare = m => { const k = Object.keys(intel).find(co=>{ const rx={'Britannia':/^Britannia/,'Parle':/^Parle/,'ITC Sunfeast':/ITC|Sunfeast/i,'Mondelez':/Mondelez/i,'Unibic':/Unibic/i,'Emerging / D2C':/Whole Truth|D2C/i}[co]; return rx&&rx.test(m.company); }); return k?intel[k].archetype.label:''; };
   const sheets = [];
 
@@ -1976,7 +1977,7 @@ function buildExcelData(){
 
   sheets.push({ name:'All SKUs', note:'shelf-life is a category-level ESTIMATE, not per-SKU',
     header:['Name','Brand','Company','Category','Pack','Weight (g)','MRP','Selling','Discount %','₹/g','Rating','Reviews','Shelf-life mo (est.)','Platform','URL'],
-    rows: skus.map(s=>[ s.name, s.brand, s.company, s.category, s.packLabel||'', s.weightGrams, s.mrp, s.selling, s.discount, s.pricePerGram, s.rating??'', s.reviewCount??0, shelfLifeFor(s.category), s.platform||'', s.url||'' ]) });
+    rows: skus.map(s=>[ s.name, s.brand, s.company, s.category, s.packLabel||'', s.weightGrams, s.mrp, s.selling, s.discount, s.pricePerGram, s.rating??'', s.reviewCount??0, shelfLifeFor(s.category), s.platform||'', cleanUrl(s.url) ]) });
 
   sheets.push({ name:'Categories',
     header:['Category','Median ₹/g','Avg Discount %','SKUs','Top Brands'],
@@ -2021,25 +2022,30 @@ const XL_ACCENT = { 'Company Summary':'1F4E5F','Brand Summary':'6E4300','All SKU
 // Apply colour/typography/layout styling to one worksheet (needs xlsx-js-style).
 function styleWorksheet(ws, header, rows, accent, title){
   const ncol = header.length, nrow = rows.length;
+  const firstR = 0, lastR = 1 + nrow, lastC = ncol - 1;   // row 0 title · row 1 header · rows 2.. data
   const cellAt = (r,c)=>{ const a=XLSX.utils.encode_cell({r,c}); if(!ws[a]) ws[a]={t:'s',v:''}; return ws[a]; };
-  const thin = { style:'thin', color:{ rgb:'E2DED7' } };
-  const border = { top:thin, bottom:thin, left:thin, right:thin };
+  // Framed borders: solid near-black around the whole block, light hairlines inside.
+  const dark = { style:'medium', color:{ rgb:'1A1A18' } };
+  const light = { style:'thin', color:{ rgb:'E0DCD4' } };
+  const bord = (r,c)=>({ top: r===firstR?dark:light, bottom: r===lastR?dark:light, left: c===0?dark:light, right: c===lastC?dark:light });
   const fmtFor = h => /₹\/g/.test(h)?'0.000' : /%/.test(h)?'0.0' : /Reviews|Revenue|Interest|MRP|Selling|SKUs|Weight|Brands OK/.test(h)?'#,##0' : null;
-  const wrapCol = h => /Name|Source|URL|Top Brand|Query|Range/i.test(h);
+  const wrapCol = h => /Name|Source|Top Brand|Query|Range/i.test(h);   // long text wraps
+  const urlCol  = h => /^URL$/i.test(h);                                // links: short + clickable, no wrap
 
-  // Row 0 — merged title banner
-  ws['!merges'] = [{ s:{r:0,c:0}, e:{r:0,c:Math.max(0,ncol-1)} }];
-  const tc = cellAt(0,0); tc.v = title; tc.t='s';
-  tc.s = { font:{ bold:true, sz:12, color:{rgb:'FFFFFF'} }, fill:{ patternType:'solid', fgColor:{rgb:accent} }, alignment:{ horizontal:'left', vertical:'center', wrapText:false } };
-
+  // Row 0 — merged title banner (style every cell so the merge's right edge gets the dark frame too)
+  ws['!merges'] = [{ s:{r:0,c:0}, e:{r:0,c:lastC} }];
+  for (let c=0;c<ncol;c++){
+    const tc = cellAt(0,c); if (c===0){ tc.v = title; tc.t='s'; }
+    tc.s = { font:{ bold:true, sz:12, color:{rgb:'FFFFFF'} }, fill:{ patternType:'solid', fgColor:{rgb:accent} },
+      alignment:{ horizontal:'left', vertical:'center' }, border:bord(0,c) };
+  }
   // Row 1 — header band
   for (let c=0;c<ncol;c++){
     const hc = cellAt(1,c); hc.v = header[c]; hc.t='s';
     hc.s = { font:{ bold:true, sz:11, color:{rgb:'FFFFFF'} }, fill:{ patternType:'solid', fgColor:{rgb:accent} },
-      alignment:{ horizontal:'center', vertical:'center', wrapText:true }, border };
+      alignment:{ horizontal:'center', vertical:'center', wrapText:true }, border:bord(1,c) };
   }
-
-  // Rows 2+ — data (zebra stripes, borders, number formats, conditional AUDITED/ESTIMATED)
+  // Rows 2+ — data
   for (let r=0;r<nrow;r++){
     const zebra = r%2 ? 'F6F3EE' : 'FFFFFF';
     for (let c=0;c<ncol;c++){
@@ -2047,17 +2053,17 @@ function styleWorksheet(ws, header, rows, accent, title){
       let fill = zebra, font = { sz:10, color:{rgb:'2B2B28'} };
       if (cc.v==='AUDITED'){ fill='D6F0E0'; font={ bold:true, sz:10, color:{rgb:'0A4A3A'} }; }
       else if (cc.v==='ESTIMATED'){ fill='FCE6D2'; font={ bold:true, sz:10, color:{rgb:'8A3B00'} }; }
+      if (urlCol(h) && typeof cc.v==='string' && /^https?:\/\//.test(cc.v)){ cc.l = { Target:cc.v, Tooltip:'Open product page' }; font = { sz:10, underline:true, color:{rgb:'1D4E9C'} }; }
       cc.s = { font, fill:{ patternType:'solid', fgColor:{rgb:fill} },
-        alignment:{ horizontal: isNum?'right':'left', vertical:'center', wrapText: wrapCol(h) }, border };
+        alignment:{ horizontal: isNum?'right':(urlCol(h)?'left':'left'), vertical:'center', wrapText: wrapCol(h) }, border:bord(r+2,c) };
       const z = isNum ? fmtFor(h) : null; if (z) cc.z = z;
     }
   }
-
-  // Column widths (wrap-friendly caps), title/header row heights, and an auto-filter on the header.
   ws['!cols'] = header.map((h,i)=>{ let w=String(h).length; rows.forEach(rw=>{ const v=rw[i]==null?'':String(rw[i]); if(v.length>w) w=v.length; });
+    if (urlCol(h)) return { wch: 38 };
     return wrapCol(h) ? { wch: Math.min(Math.max(w,18),46) } : { wch: Math.min(Math.max(w+2,9),28) }; });
   ws['!rows'] = [{ hpt:26 }, { hpt:30 }];
-  ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s:{r:1,c:0}, e:{r:1+nrow, c:ncol-1} }) };
+  ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s:{r:1,c:0}, e:{r:lastR, c:lastC} }) };
 }
 
 function downloadExcel(){
