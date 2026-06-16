@@ -32,7 +32,8 @@ const BRANDS = [
 // Search URL builders take a RAW query string.
 const SEARCH = {
   Amazon:    q => `https://www.amazon.in/s?k=${encodeURIComponent(q)}`,
-  BigBasket: q => `https://www.bigbasket.com/ps/?q=${encodeURIComponent(q)}`,
+  // BigBasket dropped — bot-walled (pincode/session), yielded 0. Quick-commerce is
+  // now Blinkit + Zepto (see QCOMM), which scrape free with JS render + actions.
 };
 
 // Coverage queries (discover mode) so thin/empty categories + D2C brands populate.
@@ -468,6 +469,105 @@ function parseSKUsDiscover(markdown, pageUrl){
 const dedupeKey = s => (s.name||'').slice(0,30)+'|'+s.weightGrams+'|'+s.selling;
 
 /* ============================================================
+   QUICK-COMMERCE PARSERS (Blinkit + Zepto) — markdown-first,
+   built from the committed debug dumps as ground truth.
+   ============================================================ */
+const QCOMM_PINCODE = '110001';                 // New Delhi metro (representative)
+const parseKNum = s => { const x=String(s||'').toLowerCase().replace(/,/g,''); const n=parseFloat(x)||0; return /k/.test(x)?Math.round(n*1000):Math.round(n); };
+
+// Shared builder → same SKU shape as Amazon's extractSKU, plus channel tags + inStock.
+function qcommSku({ name, selling, mrp, weightInfo, rating, reviewCount, url, inStock, brand, company, platform, channel }){
+  if (!weightInfo || !selling) return null;
+  const weightGrams = weightInfo.grams, packLabel = weightInfo.label;
+  mrp = (mrp && mrp >= selling) ? mrp : selling;
+  const discount = mrp > selling ? +(((mrp-selling)/mrp)*100).toFixed(1) : 0;
+  if (selling < 3 || selling > 3000) return null;
+  const pricePerGram = +(selling/weightGrams).toFixed(3);
+  const mrpPerGram    = +(mrp/weightGrams).toFixed(3);
+  if (pricePerGram < 0.05 || pricePerGram > 6) return null;       // same sanity band as Amazon
+  const nm = repairText(cleanName(name)).slice(0,130);
+  if (nm.length < 3) return null;
+  return {
+    brand, company, name: nm,
+    mrp, selling, discount,
+    weightGrams, packLabel, pricePerGram, mrpPerGram,
+    category: categoryFor(nm, brand),
+    platform, channel, channelType:'qcomm',
+    rating: rating!=null ? rating : null,
+    reviewCount: reviewCount||0,
+    url,
+    inStock: inStock !== false,
+    note: 'representative metro (delivery location not pinned)',
+    isProductPage: /\/pn\/|\/prn\//i.test(url||''),
+    isLive: true,
+  };
+}
+
+// ZEPTO — each product is a markdown link to /pn/<slug>/pvid/<id> with everything inline:
+//   ![alt](img)ADD  ₹selling[₹mrp]  [₹NOFF]  Name  pack(weight)  rating(reviews)
+function parseZeptoPage(markdown, pageUrl, brand, company){
+  const out = [];
+  if (!markdown) return out;
+  const body = markdown.split(/Showing results for/i)[1] || markdown;
+  const re = /\[(!\[[\s\S]*?)\]\((https:\/\/www\.zepto\.com\/pn\/[^)]+)\)/g;
+  const seen = new Set(); let m;
+  while ((m = re.exec(body))){
+    const url = m[2];
+    if (seen.has(url)) continue; seen.add(url);
+    const segs = m[1].replace(/!\[[^\]]*\]\([^)]*\)/g, ' ').split(/[\\\n]+/).map(s=>s.trim()).filter(Boolean);
+    const isJunk = s => /^add$/i.test(s) || /^₹/.test(s) || /off$/i.test(s) ||
+      /^[0-5](?:\.\d)?\(\d/.test(s) || /\bpack\b/i.test(s) || /^[\d.]+\s*(?:g|kg|gm)\b/i.test(s);
+    const nameSegs = segs.filter(s => /[a-z]{3}/i.test(s) && !isJunk(s));
+    const name = nameSegs.sort((a,b)=>b.length-a.length)[0] || '';
+    const priceSeg = segs.find(s=>/^₹/.test(s)) || '';
+    const pm = priceSeg.match(/₹\s?([\d,]+)(?:\s*₹\s?([\d,]+))?/);
+    const selling = pm ? +pm[1].replace(/,/g,'') : null;
+    const mrp = pm && pm[2] ? +pm[2].replace(/,/g,'') : null;
+    const packSeg = segs.find(s=>/\d\s*(?:g|kg|gm)\b/i.test(s)) || '';
+    const weightInfo = parseWeightGrams(packSeg) || parseWeightGrams(name);
+    const rr = segs.join(' ').match(/([0-5](?:\.\d)?)\((\d[\d.]*[kK]?)\)/);
+    if (!selling || !weightInfo || !name) continue;             // OOS image-only blocks have no price/weight → skip
+    if (!brandMatches(brand, name, '')) continue;                // name-only (search URL always holds the brand)
+    const sku = qcommSku({ name, selling, mrp, weightInfo, rating: rr?parseFloat(rr[1]):null, reviewCount: rr?parseKNum(rr[2]):0,
+      url, inStock:true, brand, company, platform:'Zepto', channel:'zepto' });
+    if (sku) out.push(sku);
+  }
+  return out;
+}
+
+// BLINKIT — after "Showing results", each card (delimited by the w-270 product image) is:
+//   [Out of Stock]  ETA "N mins"  Name  weight  ₹selling [₹mrp]  [ADD]  [N% OFF]
+function parseBlinkitPage(markdown, pageUrl, brand, company){
+  const out = [];
+  if (!markdown) return out;
+  const body = markdown.split(/Showing results for/i)[1] || markdown;
+  const chunks = body.split(/!\[\]\(https:\/\/cdn\.grofers\.com\/[^)]*w=270\/[^)]*\)/g).slice(1);
+  for (const chunkRaw of chunks){
+    const chunk = chunkRaw.replace(/!\[[^\]]*\]\([^)]*\)/g, '\n');
+    const lines = chunk.split('\n').map(s=>s.trim()).filter(Boolean);
+    const inStock = !/out of stock/i.test(chunk);
+    let name = null;
+    const mins = lines.findIndex(l=>/^\d+\s*mins?$/i.test(l));
+    if (mins>=0 && lines[mins+1]) name = lines[mins+1];
+    if (!name) name = lines.find(l=>/[a-z]{3}/i.test(l) &&
+      !/^(out of stock|add|off|\d+\s*mins?|my cart|or)$/i.test(l) && !/^₹/.test(l) && !/^\d+%/.test(l) && !/^[\d.]+\s*(?:g|kg|gm)\b/i.test(l));
+    if (!name) continue;
+    const prices = (chunk.match(/₹\s?[\d,]+/g)||[]).map(x=>+x.replace(/[₹,\s]/g,''));
+    const selling = prices[0]; let mrp = prices[1];
+    const pct = chunk.match(/(\d+)\s*%/);
+    const wLine = lines.find(l=>/^[\d.]+\s*(?:g|kg|gm)\b/i.test(l));
+    const weightInfo = parseWeightGrams(wLine||'') || parseWeightGrams(name);
+    if (!selling || !weightInfo) continue;
+    if (!mrp && pct){ const p=+pct[1]; if (p>0 && p<90) mrp = Math.round(selling/(1-p/100)); }
+    if (!brandMatches(brand, name, '')) continue;
+    const sku = qcommSku({ name, selling, mrp, weightInfo, rating:null, reviewCount:0,
+      url: pageUrl, inStock, brand, company, platform:'Blinkit', channel:'blinkit' });
+    if (sku) out.push(sku);
+  }
+  return out;
+}
+
+/* ============================================================
    FIRECRAWL + MAIN
    ============================================================ */
 async function firecrawl(url, key){
@@ -643,37 +743,53 @@ async function main(){
     ...COVERAGE.map(c => ({ label:c.label, q:c.q, mode:'discover' })),
   ];
 
-  const allSkus = [], globalSeen = new Set();
-  const channel = { Amazon:0, BigBasket:0 };
+  const allSkus = [], seen = new Set();
+  const channelCount = { amazon:0, blinkit:0, zepto:0 };
   const brandTrackedOk = new Set();
+  const addSku = s => {                                   // dedupe WITHIN channel; KEEP cross-channel dupes (that's the comparison data)
+    const k = s.channel + '|' + dedupeKey(s);
+    if (seen.has(k)) return false;
+    seen.add(k); allSkus.push(s); channelCount[s.channel] = (channelCount[s.channel]||0)+1; return true;
+  };
 
+  // 1) AMAZON (e-commerce) — brand + coverage searches, markdown parse.
   for (const task of tasks){
-    for (const [platform, build] of Object.entries(SEARCH)){
-      const url = build(task.q);
-      let md = '';
-      try { md = await firecrawl(url, key); }
-      catch(e){ console.log(`  ! ${task.label} / ${task.q} [${platform}]: ${e.message}`); continue; }
+    const url = SEARCH.Amazon(task.q);
+    let md = '';
+    try { md = await firecrawl(url, key); }
+    catch(e){ console.log(`  ! ${task.label} / ${task.q} [amazon]: ${e.message}`); continue; }
+    if (DUMP_BRANDS.includes(task.label) || DUMP_BRANDS.includes(task.q)){
+      mkdirSync('data/_debug', { recursive:true });
+      writeFileSync(`data/_debug/${task.label.replace(/[^a-z0-9]+/gi,'_')}_${task.q.replace(/[^a-z0-9]+/gi,'_')}.amazon.md`, md);
+    }
+    const parsed = task.mode==='brand' ? parseSKUsFromPage(md, url, task.brand, task.company) : parseSKUsDiscover(md, url);
+    let added = 0;
+    for (const s of parsed){ s.channel='amazon'; s.channelType='ecomm'; s.inStock=true; if (addSku(s)){ added++; if (task.mode==='brand') brandTrackedOk.add(task.brand); } }
+    console.log(`  ${task.label.padEnd(16)} ${task.q.padEnd(26)} [amazon   ] ${added} SKUs`);
+  }
 
-      if (DUMP_BRANDS.includes(task.label) || DUMP_BRANDS.includes(task.q)){
-        mkdirSync('data/_debug', { recursive:true });
-        writeFileSync(`data/_debug/${task.label.replace(/[^a-z0-9]+/gi,'_')}_${task.q.replace(/[^a-z0-9]+/gi,'_')}.${platform}.md`, md);
-      }
-
-      const parsed = task.mode==='brand'
-        ? parseSKUsFromPage(md, url, task.brand, task.company)
-        : parseSKUsDiscover(md, url);
-
-      let added = 0;
-      for (const s of parsed){
-        const k = dedupeKey(s);
-        if (globalSeen.has(k)) continue;
-        globalSeen.add(k); allSkus.push(s); added++;
-        channel[s.platform] = (channel[s.platform]||0) + 1;
-        if (task.mode==='brand') brandTrackedOk.add(task.brand);
-      }
-      // honest per-channel logging — never fabricate a 0
-      const note = (platform==='BigBasket' && added===0) ? (looksBlocked(md) ? ' (no products — pincode/bot wall)' : ' (no products parsed)') : '';
-      console.log(`  ${task.label.padEnd(16)} ${task.q.padEnd(26)} [${platform.padEnd(9)}] ${added} SKUs${note}`);
+  // 2) QUICK-COMMERCE (Blinkit + Zepto) — 14 brand searches each: JS render + pincode actions + retry-on-500.
+  for (const platform of ['blinkit','zepto']){
+    const cfg = QCOMM[platform], parseFn = platform==='zepto' ? parseZeptoPage : parseBlinkitPage;
+    for (const b of BRANDS){
+      const q = `${b.brand} biscuits`, url = cfg.urlFor(q);
+      const actions = [
+        { type:'wait', milliseconds:4000 },
+        { type:'click', selector: cfg.locationSelector },
+        { type:'wait', milliseconds:1200 },
+        { type:'write', text: QCOMM_PINCODE },
+        { type:'wait', milliseconds:1800 },
+        { type:'press', key:'ENTER' },
+        { type:'wait', milliseconds:4500 },
+      ];
+      const base = { formats:['markdown','html'], onlyMainContent:false, timeout:120000, location:{ country:'IN', languages:['en-IN'] } };
+      let res = await firecrawlScrapeRetry(url, key, { ...base, waitFor:6000, actions }, platform);
+      if (!(res.json && res.json.success))                  // actions selector miss → plain JS render (worked in recon)
+        res = await firecrawlScrapeRetry(url, key, { ...base, waitFor:9000 }, platform);
+      const parsed = parseFn(((res.json && res.json.data) || {}).markdown || '', url, b.brand, b.company);
+      let added = 0, oos = 0;
+      for (const s of parsed){ if (addSku(s)){ added++; if (!s.inStock) oos++; if (s.inStock) brandTrackedOk.add(b.brand); } }
+      console.log(`  ${b.brand.padEnd(16)} ${q.padEnd(26)} [${platform.padEnd(9)}] ${added} SKUs${oos?` (${oos} OOS)`:''} | status ${res.status}`);
     }
   }
   const brandsOk = brandTrackedOk.size;
@@ -702,6 +818,7 @@ async function main(){
     },
     byCompany,
     byCategory,
+    channels: channelCount,
   };
 
   let history = [];
@@ -711,7 +828,7 @@ async function main(){
   history = history.slice(-50);
   writeFileSync('data/history.json', JSON.stringify(history, null, 2));
 
-  console.log(`\nTOTAL: ${allSkus.length} SKUs · ${brandsOk}/${BRANDS.length} tracked brands OK · channels: Amazon ${channel.Amazon||0}, BigBasket ${channel.BigBasket||0} · ${scrapedAt}`);
+  console.log(`\nTOTAL: ${allSkus.length} SKUs · ${brandsOk}/${BRANDS.length} tracked brands OK · channels: amazon ${channelCount.amazon||0}, blinkit ${channelCount.blinkit||0}, zepto ${channelCount.zepto||0} · ${scrapedAt}`);
 }
 
 /* Run only when invoked directly (so tests can import the parser). */
@@ -724,4 +841,5 @@ export {
   parseWeightGrams, detectCategory, parseRating, parseReviewCount,
   extractPrices, cleanName, repairText, detectPlatform, parseSKUsFromPage, dedupeKey,
   parseSKUsDiscover, classifyBrand, looksBlocked, deriveBrand, classifyQcomm,
+  parseZeptoPage, parseBlinkitPage, qcommSku,
 };

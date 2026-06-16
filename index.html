@@ -383,12 +383,13 @@ function buildStats(skus, scrapedAt = STATE.scrapedAt){
   };
   const statFor = (gs, label, extra) => {
     const ratings = gs.map(s=>s.rating).filter(v=>v!=null);
+    const priced = gs.filter(s=>s.inStock!==false);    // exclude out-of-stock from PRICE stats (kept elsewhere)
     const categoryCounts = {};
     for (const s of gs) categoryCounts[s.category] = (categoryCounts[s.category]||0)+1;
     return Object.assign({
       name: label,
-      ppg:  calcStats(gs.map(s=>s.pricePerGram), 3),   // hero metric
-      disc: calcStats(gs.map(s=>s.discount), 1),       // secondary metric
+      ppg:  calcStats(priced.map(s=>s.pricePerGram), 3),   // hero metric (in-stock only)
+      disc: calcStats(priced.map(s=>s.discount), 1),       // secondary metric (in-stock only)
       ratingAvg: ratings.length ? +(ratings.reduce((a,b)=>a+b,0)/ratings.length).toFixed(1) : null,
       reviewSum: gs.reduce((a,s)=>a+(s.reviewCount||0),0),
       categoryCounts,
