@@ -1,0 +1,15 @@
+{
+  "platform": "zepto",
+  "url": "https://www.zeptonow.com/search?query=Good%20Day%20biscuit",
+  "query": "Good Day biscuit",
+  "httpStatus": 500,
+  "firecrawlSuccess": false,
+  "firecrawlError": "The URL failed to load in the browser with error code \"ERR_TUNNEL_CONNECTION_FAILED\". Firecrawl encountered an internal proxy error while establishing the tunnel. This is an internal Firecrawl proxy error. Please retry or contact support.",
+  "usedActions": false,
+  "outcome": "EMPTY / near-blank",
+  "markdownBytes": 0,
+  "htmlBytes": 0,
+  "rupeePriceHits": 0,
+  "screenshots": [],
+  "sampleMarkdown": ""
+}
