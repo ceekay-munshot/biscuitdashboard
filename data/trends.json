@@ -3,7 +3,7 @@
   "geo": "IN",
   "updated": "2026-06-17",
   "timeframe": "last 12 months",
-  "fetchedAt": "2026-06-17T10:21:36.311Z",
+  "fetchedAt": "2026-06-17T10:30:57.943Z",
   "note": "Relative search interest (0–100), NOT sales. Fetched live from Google Trends via SerpApi in CI; any value that could not refresh keeps its last-good and is flagged stale.",
   "brands": {
     "Parle-G": {
@@ -24,7 +24,7 @@
       "latest": 56,
       "direction": "falling",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     },
     "Good Day": {
@@ -45,7 +45,7 @@
       "latest": 37,
       "direction": "falling",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     },
     "Bourbon": {
@@ -66,7 +66,7 @@
       "latest": 41,
       "direction": "falling",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     },
     "Marie Gold": {
@@ -87,7 +87,7 @@
       "latest": 26,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     },
     "NutriChoice": {
@@ -108,7 +108,7 @@
       "latest": 10,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     },
     "Monaco": {
@@ -129,7 +129,7 @@
       "latest": 16,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     },
     "Hide & Seek": {
@@ -150,7 +150,7 @@
       "latest": 21,
       "direction": "falling",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     },
     "KrackJack": {
@@ -171,7 +171,7 @@
       "latest": 5,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     },
     "Dark Fantasy": {
@@ -192,7 +192,7 @@
       "latest": 20,
       "direction": "falling",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     },
     "Mom's Magic": {
@@ -213,7 +213,7 @@
       "latest": 3,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     },
     "Sunfeast Marie Light": {
@@ -234,7 +234,7 @@
       "latest": 1,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     },
     "Oreo": {
@@ -255,7 +255,7 @@
       "latest": 100,
       "direction": "rising",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     },
     "Unibic": {
@@ -276,7 +276,7 @@
       "latest": 14,
       "direction": "falling",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     },
     "The Whole Truth": {
@@ -297,7 +297,7 @@
       "latest": 0,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     }
   },
@@ -320,7 +320,7 @@
       "latest": 78,
       "direction": "rising",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     },
     "Digestive": {
@@ -341,7 +341,7 @@
       "latest": 2,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     },
     "Cream": {
@@ -362,7 +362,7 @@
       "latest": 5,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     },
     "Crackers": {
@@ -383,7 +383,7 @@
       "latest": 0,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     },
     "Rusk": {
@@ -404,7 +404,7 @@
       "latest": 10,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     },
     "Wafer": {
@@ -425,7 +425,7 @@
       "latest": 0,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     }
   },
@@ -433,64 +433,64 @@
     "protein": {
       "interest": [
         100,
-        50,
-        50,
-        50,
-        0,
-        50,
-        50,
-        50,
-        50,
-        50,
-        50,
-        50
+        65,
+        62,
+        43,
+        34,
+        44,
+        39,
+        38,
+        40,
+        49,
+        40,
+        45
       ],
-      "latest": 50,
+      "latest": 45,
       "direction": "falling",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     },
     "no maida": {
       "interest": [
-        0,
-        50,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        50,
-        50,
-        50
+        30,
+        31,
+        24,
+        27,
+        19,
+        21,
+        28,
+        27,
+        26,
+        33,
+        39,
+        40
       ],
-      "latest": 50,
+      "latest": 40,
       "direction": "rising",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     },
     "non-refined sugar": {
       "interest": [
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0
+        46,
+        54,
+        48,
+        43,
+        39,
+        43,
+        39,
+        42,
+        45,
+        48,
+        63,
+        53
       ],
-      "latest": 0,
-      "direction": "flat",
+      "latest": 53,
+      "direction": "rising",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     },
     "no palm oil": {
@@ -506,12 +506,12 @@
         0,
         0,
         0,
-        0
+        1
       ],
-      "latest": 0,
+      "latest": 1,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     }
   },
@@ -632,7 +632,7 @@
         }
       ],
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     },
     "cream biscuit": {
@@ -726,7 +726,7 @@
         }
       ],
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-17T10:21:36.311Z",
+      "fetchedAt": "2026-06-17T10:30:57.943Z",
       "stale": false
     }
   }
