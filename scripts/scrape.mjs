@@ -336,6 +336,18 @@ function categoryFor(name, brand){
 
 // Drop items that aren't biscuits even if the brand matched (e.g. The Whole Truth
 // PROTEIN BARS / peanut butter). Keeps anything with a clear biscuit word.
+// CLAIMED clean-label attributes detected from the listing title (never fabricated —
+// these are claims in the name, not verified). 4 booleans + a 0–4 score.
+function attrTags(name){
+  const t = String(name||'');
+  const isProtein       = /\bprotein\b/i.test(t);
+  const noMaida         = /no\s*(?:added\s*)?maida|maida[-\s]?free|without\s*maida|\b0%?\s*maida|zero\s*maida|\batta\b|whole[-\s]?wheat|100%?\s*wheat|multigrain|millet|ragi|jowar|bajra/i.test(t);
+  const nonRefinedSugar = /jaggery|\bgur\b|unrefined\s*sugar|no\s*refined\s*sugar|coconut\s*sugar|date[-\s]?sugar|palm\s*sugar/i.test(t);
+  const noPalmOil       = /no\s*palm\s*oil|palm[-\s]?oil[-\s]?free|without\s*palm\s*oil|palm[-\s]?free/i.test(t);
+  const cleanLabelScore = [isProtein,noMaida,nonRefinedSugar,noPalmOil].filter(Boolean).length;
+  return { isProtein, noMaida, nonRefinedSugar, noPalmOil, cleanLabelScore, cleanLabel: cleanLabelScore>=1, attrSource:'claimed (listing title)' };
+}
+
 function isNonBiscuit(name){
   const n = String(name||'').toLowerCase();
   if (/biscuit|cookie|cracker|rusk|wafer|khari|cream|digestive|marie|glucose|nankhatai|puff/.test(n)) return false;
@@ -382,6 +394,7 @@ function extractSKU(link, block, brand, company, platform){
     url,
     isProductPage: /\/dp\/|\/p\/|\/pd\/|pid=/i.test(url),
     isLive: true,
+    ...attrTags(name),
   };
 }
 
@@ -512,6 +525,7 @@ function qcommSku({ name, selling, mrp, weightInfo, rating, reviewCount, url, in
     note: 'representative metro (delivery location not pinned)',
     isProductPage: /\/pn\/|\/prn\//i.test(url||''),
     isLive: true,
+    ...attrTags(nm),
   };
 }
 
@@ -853,5 +867,5 @@ export {
   parseWeightGrams, detectCategory, parseRating, parseReviewCount,
   extractPrices, cleanName, repairText, detectPlatform, parseSKUsFromPage, dedupeKey,
   parseSKUsDiscover, classifyBrand, looksBlocked, deriveBrand, classifyQcomm,
-  parseZeptoPage, parseBlinkitPage, qcommSku, isNonBiscuit,
+  parseZeptoPage, parseBlinkitPage, qcommSku, isNonBiscuit, attrTags,
 };

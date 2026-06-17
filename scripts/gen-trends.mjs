@@ -16,6 +16,10 @@ import { fileURLToPath } from 'node:url';
 const BRANDS = ['Parle-G','Good Day','Bourbon','Marie Gold','NutriChoice','Monaco','Hide & Seek',
   'KrackJack','Dark Fantasy',"Mom's Magic",'Sunfeast Marie Light','Oreo','Unibic','The Whole Truth'];
 const CATEGORIES = ['Cookies','Digestive','Cream','Crackers','Rusk','Wafer'];
+// Clean-label / health attributes — 4 demand keywords. Primary query below; if one
+// proves too sparse/noisy, swap to its ATTR_ALT and re-run.
+const ATTRIBUTES = ['protein','no maida','non-refined sugar','no palm oil'];
+const ATTR_ALT = { 'protein':'protein cookies', 'no maida':'no maida biscuit', 'non-refined sugar':'sugar free biscuit', 'no palm oil':'palm oil free' };
 
 // Google Trends queries are DISAMBIGUATED to the biscuit context — raw brand
 // names measure the wrong thing ("Monaco"=F1, "Bourbon"=whiskey, "Good Day"=
@@ -29,6 +33,7 @@ const QUERY = {
   Cookies:'cookies', Digestive:'digestive biscuit', Cream:'cream biscuit',
   Crackers:'cracker biscuit', Rusk:'rusk', Wafer:'wafer biscuit',
   biscuit:'biscuit',
+  'protein':'protein biscuit', 'no maida':'atta biscuit', 'non-refined sugar':'jaggery biscuit', 'no palm oil':'no palm oil biscuit',
 };
 const queryOf = name => QUERY[name] || name;
 const BRAND_ANCHOR = 'Parle-G';   // brand-scale anchor (query "Parle G biscuit") — keeps brand resolution
@@ -188,7 +193,7 @@ async function fetchSet(items, anchor, key){
 async function main(){
   let prev = {};
   try { if (existsSync('data/trends.json')) prev = JSON.parse(readFileSync('data/trends.json','utf8')); } catch(_){}
-  const prevBrands = prev.brands || {}, prevCats = prev.categories || {};
+  const prevBrands = prev.brands || {}, prevCats = prev.categories || {}, prevAttrs = prev.attributes || {};
 
   const key = process.env.SERPAPI_KEY;
   const fetchedAt = new Date().toISOString();
@@ -196,6 +201,7 @@ async function main(){
 
   const brandRaw = key ? await fetchSet(BRANDS, BRAND_ANCHOR, key) : {};
   const catRaw   = (key && !HALT) ? await fetchSet(CATEGORIES, CAT_ANCHOR, key) : {};
+  const attrRaw  = (key && !HALT) ? await fetchSet(ATTRIBUTES, CAT_ANCHOR, key) : {};   // 4 clean-label/health keywords
 
   // Related & rising/breakout queries — the real Google Trends "Explore" panels (one call per seed).
   const prevRelated = prev.related || {};
@@ -214,6 +220,7 @@ async function main(){
 
   const B = buildOutput(BRANDS, brandRaw, prevBrands, fetchedAt);
   const C = buildOutput(CATEGORIES, catRaw, prevCats, fetchedAt);
+  const A = buildOutput(ATTRIBUTES, attrRaw, prevAttrs, fetchedAt);
 
   if (!Object.keys(B.out).length && !Object.keys(C.out).length){
     console.error('No data fetched and no last-good to keep — not writing (no fabrication).');
@@ -225,13 +232,13 @@ async function main(){
     geo: GEO, updated: fetchedAt.slice(0,10), timeframe:'last 12 months', fetchedAt,
     note: 'Relative search interest (0–100), NOT sales. Fetched live from Google Trends via SerpApi in CI; '
         + 'any value that could not refresh keeps its last-good and is flagged stale.',
-    brands: B.out, categories: C.out, related,
+    brands: B.out, categories: C.out, attributes: A.out, related,
   };
   writeFileSync('data/trends.json', JSON.stringify(out, null, 2));
   const staleB = Object.values(B.out).filter(x=>x.stale).length;
   const staleC = Object.values(C.out).filter(x=>x.stale).length;
   const relLive = Object.values(related).filter(x=>!x.stale).length;
-  console.log(`trends.json written — brands ${B.fetchedCount}/${BRANDS.length} live (${staleB} stale), categories ${C.fetchedCount}/${CATEGORIES.length} live (${staleC} stale), related ${relLive}/${SEEDS.length} live · ${CALLS} SerpApi call(s) · ${fetchedAt}`);
+  console.log(`trends.json written — brands ${B.fetchedCount}/${BRANDS.length} live (${staleB} stale), categories ${C.fetchedCount}/${CATEGORIES.length} live (${staleC} stale), attributes ${A.fetchedCount}/${ATTRIBUTES.length} live, related ${relLive}/${SEEDS.length} live · ${CALLS} SerpApi call(s) · ${fetchedAt}`);
 }
 
 if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
