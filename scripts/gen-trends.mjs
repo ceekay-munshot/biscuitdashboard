@@ -19,7 +19,7 @@ const CATEGORIES = ['Cookies','Digestive','Cream','Crackers','Rusk','Wafer'];
 // Clean-label / health attributes — 4 demand keywords. Primary query below; if one
 // proves too sparse/noisy, swap to its ATTR_ALT and re-run.
 const ATTRIBUTES = ['protein','no maida','non-refined sugar','no palm oil'];
-const ATTR_ALT = { 'protein':'protein cookies', 'no maida':'no maida biscuit', 'non-refined sugar':'sugar free biscuit', 'no palm oil':'palm oil free' };
+const ATTR_ALT = { 'protein':'protein cookies', 'no maida':'no maida biscuit', 'non-refined sugar':'jaggery biscuit', 'no palm oil':'palm oil free' };
 
 // Google Trends queries are DISAMBIGUATED to the biscuit context — raw brand
 // names measure the wrong thing ("Monaco"=F1, "Bourbon"=whiskey, "Good Day"=
@@ -33,12 +33,13 @@ const QUERY = {
   Cookies:'cookies', Digestive:'digestive biscuit', Cream:'cream biscuit',
   Crackers:'cracker biscuit', Rusk:'rusk', Wafer:'wafer biscuit',
   biscuit:'biscuit',
-  'protein':'protein biscuit', 'no maida':'atta biscuit', 'non-refined sugar':'jaggery biscuit', 'no palm oil':'no palm oil biscuit',
+  'protein':'protein biscuit', 'no maida':'atta biscuit', 'non-refined sugar':'sugar free biscuit', 'no palm oil':'no palm oil biscuit',
 };
 const queryOf = name => QUERY[name] || name;
 const BRAND_ANCHOR = 'Parle-G';   // brand-scale anchor (query "Parle G biscuit") — keeps brand resolution
 const CAT_ANCHOR   = 'biscuit';   // generic anchor for the (higher-volume) category terms
 const SEEDS        = ['biscuit','cream biscuit'];  // related/rising "Explore" seeds (food-only) — one SerpApi call each
+const ATTR_ANCHOR  = 'protein';   // anchor the 4 health terms to each other (NOT "biscuit", which would crush them to 0/50/100)
 
 const GEO='IN', TIME='today 12-m';
 const sleep = ms => new Promise(r=>setTimeout(r, ms));
@@ -201,7 +202,7 @@ async function main(){
 
   const brandRaw = key ? await fetchSet(BRANDS, BRAND_ANCHOR, key) : {};
   const catRaw   = (key && !HALT) ? await fetchSet(CATEGORIES, CAT_ANCHOR, key) : {};
-  const attrRaw  = (key && !HALT) ? await fetchSet(ATTRIBUTES, CAT_ANCHOR, key) : {};   // 4 clean-label/health keywords
+  const attrRaw  = (key && !HALT) ? await fetchSet(ATTRIBUTES, ATTR_ANCHOR, key) : {};   // 4 clean-label/health keywords (anchored to 'protein')
 
   // Related & rising/breakout queries — the real Google Trends "Explore" panels (one call per seed).
   const prevRelated = prev.related || {};
