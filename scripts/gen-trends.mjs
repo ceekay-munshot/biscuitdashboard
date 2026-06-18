@@ -18,8 +18,8 @@ const BRANDS = ['Parle-G','Good Day','Bourbon','Marie Gold','NutriChoice','Monac
 const CATEGORIES = ['Cookies','Digestive','Cream','Crackers','Rusk','Wafer'];
 // Clean-label / health attributes — 4 demand keywords. Primary query below; if one
 // proves too sparse/noisy, swap to its ATTR_ALT and re-run.
-const ATTRIBUTES = ['protein','no maida','non-refined sugar','no palm oil'];
-const ATTR_ALT = { 'protein':'protein cookies', 'no maida':'no maida biscuit', 'non-refined sugar':'jaggery biscuit', 'no palm oil':'palm oil free' };
+const ATTRIBUTES = ['protein','no maida','non-refined sugar','sugar-free','no palm oil'];
+const ATTR_ALT = { 'protein':'protein cookies', 'no maida':'no maida biscuit', 'non-refined sugar':'unrefined sugar biscuit', 'sugar-free':'no added sugar biscuit', 'no palm oil':'palm oil free' };
 
 // Google Trends queries are DISAMBIGUATED to the biscuit context — raw brand
 // names measure the wrong thing ("Monaco"=F1, "Bourbon"=whiskey, "Good Day"=
@@ -33,7 +33,7 @@ const QUERY = {
   Cookies:'cookies', Digestive:'digestive biscuit', Cream:'cream biscuit',
   Crackers:'cracker biscuit', Rusk:'rusk', Wafer:'wafer biscuit',
   biscuit:'biscuit',
-  'protein':'protein biscuit', 'no maida':'atta biscuit', 'non-refined sugar':'sugar free biscuit', 'no palm oil':'no palm oil biscuit',
+  'protein':'protein biscuit', 'no maida':'atta biscuit', 'non-refined sugar':'jaggery biscuit', 'sugar-free':'sugar free biscuit', 'no palm oil':'no palm oil biscuit',
 };
 const queryOf = name => QUERY[name] || name;
 const BRAND_ANCHOR = 'Parle-G';   // brand-scale anchor (query "Parle G biscuit") — keeps brand resolution

@@ -344,8 +344,9 @@ function attrTags(name){
   const noMaida         = /no\s*(?:added\s*)?maida|maida[-\s]?free|without\s*maida|\b0%?\s*maida|zero\s*maida|\batta\b|whole[-\s]?wheat|100%?\s*wheat|multigrain|millet|ragi|jowar|bajra/i.test(t);
   const nonRefinedSugar = /jaggery|\bgur\b|unrefined\s*sugar|no\s*refined\s*sugar|coconut\s*sugar|date[-\s]?sugar|palm\s*sugar/i.test(t);
   const noPalmOil       = /no\s*palm\s*oil|palm[-\s]?oil[-\s]?free|without\s*palm\s*oil|palm[-\s]?free/i.test(t);
-  const cleanLabelScore = [isProtein,noMaida,nonRefinedSugar,noPalmOil].filter(Boolean).length;
-  return { isProtein, noMaida, nonRefinedSugar, noPalmOil, cleanLabelScore, cleanLabel: cleanLabelScore>=1, attrSource:'claimed (listing title)' };
+  const sugarFree       = /sugar[-\s]?free|no\s*added\s*sugar|zero\s*sugar|sugarless/i.test(t);   // distinct claim from non-refined (jaggery)
+  const cleanLabelScore = [isProtein,noMaida,nonRefinedSugar,noPalmOil].filter(Boolean).length;  // client's original 4 (sugarFree tracked alongside, not scored)
+  return { isProtein, noMaida, nonRefinedSugar, noPalmOil, sugarFree, cleanLabelScore, cleanLabel: cleanLabelScore>=1, attrSource:'claimed (listing title)' };
 }
 
 function isNonBiscuit(name){
