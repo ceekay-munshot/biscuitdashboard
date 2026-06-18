@@ -387,9 +387,32 @@ function mkChart(id, cfg){
   cfg.options = cfg.options || {};
   // Hover tooltips appear anywhere near the data (vital for thin, point-less lines).
   if (!cfg.options.interaction) cfg.options.interaction = { mode: cfg.type==='line' ? 'index' : 'nearest', intersect:false };
+  if (cfg.type === 'line' && (cfg.data.datasets||[]).length > 1) enableLineHover(cfg);   // hover a line → highlight it, dim the rest
   charts[id] = new Chart(cv.getContext('2d'), cfg);
   return charts[id];
 }
+// Hover-to-highlight for multi-line charts: the nearest line goes solid+thick, others dim.
+const withA = (c, a) => (typeof c==='string' && c[0]==='#') ? hexToRgba(c, a) : c;
+function enableLineHover(cfg){
+  cfg.data.datasets.forEach(ds=>{ if (ds._base==null) ds._base = ds.borderColor; });
+  const prev = cfg.options.onHover;
+  cfg.options.onHover = (evt, active, chart)=>{
+    if (prev) { try { prev(evt, active, chart); } catch(e){} }
+    const els = chart.getElementsAtEventForMode(evt, 'nearest', { intersect:false }, true);
+    const hi = els.length ? els[0].datasetIndex : -1;
+    let changed = false;
+    chart.data.datasets.forEach((ds,i)=>{
+      const a = (hi<0 || i===hi) ? 1 : 0.12;
+      if (ds._a !== a){ ds._a = a; ds.borderColor = withA(ds._base, a); ds.borderWidth = (hi>=0 && i===hi) ? 3 : 2; changed = true; }
+    });
+    if (changed) chart.update('none');
+  };
+}
+// Index-to-100 toggle for time-series comparison charts (rebase each line to 100 at the start).
+const rebase100 = arr => { if (!arr || !arr.length) return arr; const base = arr.find(v=>v>0) || arr[0] || 1; return arr.map(v=> Math.round(v/base*100)); };
+function setChartIndex(id){ STATE.chartIndex = STATE.chartIndex || {}; STATE.chartIndex[id] = !STATE.chartIndex[id]; render(); }
+function chartIndexed(id){ return !!(STATE.chartIndex && STATE.chartIndex[id]); }
+function indexBtn(id){ return `<button class="seg${chartIndexed(id)?' active':''}" onclick="setChartIndex('${id}')" title="Rebase each line to 100 at the start — compare relative growth, not absolute levels">Index 100</button>`; }
 
 /* ------------------------------------------------------------
    4. STATS ENGINE  (price-per-gram aggregations — hero metric)
@@ -1727,6 +1750,7 @@ function renderTrends(){
       <div class="ov-actions">
         <button class="seg${mode==='brands'?' active':''}" onclick="setTrendsMode('brands')">Top brands</button>
         <button class="seg${mode==='categories'?' active':''}" onclick="setTrendsMode('categories')">Categories</button>
+        ${indexBtn('trendsLine')}
       </div>
     </div>
     <div class="chart-box" style="height:320px"><canvas id="trendsLine"></canvas></div>
@@ -1758,12 +1782,13 @@ function drawTrendsChart(){
   if (mode === 'brands') entries = entries.sort((a,b)=>b.latest-a.latest).slice(0,8);   // cap to avoid clutter
   const months = (()=>{ const o=[]; const d=new Date(); for(let i=11;i>=0;i--) o.push(new Date(d.getFullYear(),d.getMonth()-i,1).toLocaleDateString('en-IN',{month:'short'})); return o; })();
   const colorFor = name => mode==='categories' ? (CAT_COL[name]||'#B6772E') : (COL[brandCompany(name)]||'#999');
+  const idxT = chartIndexed('trendsLine');
   waitForChart(()=>{
     mkChart('trendsLine', { type:'line',
-      data:{ labels: months, datasets: entries.map(e=>({ label:e.name, data:e.interest, borderColor:colorFor(e.name), backgroundColor:colorFor(e.name), borderWidth:2, tension:.3, pointRadius:0 })) },
+      data:{ labels: months, datasets: entries.map(e=>({ label:e.name, data: idxT?rebase100(e.interest):e.interest, borderColor:colorFor(e.name), backgroundColor:colorFor(e.name), borderWidth:2, tension:.3, pointRadius:0 })) },
       options:{ responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, font:{size:10}, padding:8 } }, tooltip:{ callbacks:{ label:c=>c.dataset.label+': '+c.raw } } },
-        scales:{ y:{ beginAtZero:true, max:100, grid:{color:'rgba(26,26,24,.06)'}, ticks:{font:{size:10}} },
+        plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, font:{size:10}, padding:8 } }, tooltip:{ callbacks:{ label:c=>c.dataset.label+': '+c.raw+(idxT?' (start=100)':'') } } },
+        scales:{ y:{ beginAtZero:true, max: idxT?undefined:100, grid:{color:'rgba(26,26,24,.06)'}, ticks:{font:{size:10}}, title:{display:idxT, text:'Indexed · start = 100', font:{size:10}} },
                  x:{ grid:{display:false}, ticks:{font:{size:9}} } } }
     });
   });
@@ -2202,7 +2227,7 @@ function renderHealth(){
   </div></div>
 
   <div class="card fadein" style="margin-bottom:16px"><div class="card-pad">
-    <div class="sec-title">12-month demand · the 5 attributes</div>
+    <div class="ov-head" style="margin-bottom:12px"><div class="sec-title" style="margin:0">12-month demand · the 5 attributes</div><div class="ov-actions">${indexBtn('healthTrends')}</div></div>
     <div class="chart-box" style="height:300px"><canvas id="healthTrends"></canvas></div>
   </div></div>
 
@@ -2248,11 +2273,12 @@ function drawHealthCharts(data){
         scales:{ x:{ title:{display:true,text:'Supply — % of SKUs claiming',font:{size:10}}, beginAtZero:true, grid:{color:'rgba(26,26,24,.06)'}, ticks:{font:{size:10}} },
                  y:{ title:{display:true,text:'Demand — Trends interest',font:{size:10}}, beginAtZero:true, max:100, grid:{color:'rgba(26,26,24,.06)'}, ticks:{font:{size:10}} } } }
     });
+    const idxH = chartIndexed('healthTrends');
     mkChart('healthTrends', { type:'line',
-      data:{ labels:months, datasets: data.filter(a=>a.interest).map(a=>({ label:a.label, data:a.interest, borderColor:a.color, backgroundColor:a.color, borderWidth:2, tension:.3, pointRadius:0 })) },
+      data:{ labels:months, datasets: data.filter(a=>a.interest).map(a=>({ label:a.label, data: idxH?rebase100(a.interest):a.interest, borderColor:a.color, backgroundColor:a.color, borderWidth:2, tension:.3, pointRadius:0 })) },
       options:{ responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{position:'bottom', labels:{boxWidth:10, font:{size:10}, padding:8}}, tooltip:{ callbacks:{ label:c=>c.dataset.label+': '+c.raw } } },
-        scales:{ y:{ beginAtZero:true, max:100, grid:{color:'rgba(26,26,24,.06)'}, ticks:{font:{size:10}} }, x:{ grid:{display:false}, ticks:{font:{size:9}} } } }
+        plugins:{ legend:{position:'bottom', labels:{boxWidth:10, font:{size:10}, padding:8}}, tooltip:{ callbacks:{ label:c=>c.dataset.label+': '+c.raw+(idxH?' (start=100)':'') } } },
+        scales:{ y:{ beginAtZero:true, max: idxH?undefined:100, grid:{color:'rgba(26,26,24,.06)'}, ticks:{font:{size:10}}, title:{display:idxH, text:'Indexed · start = 100', font:{size:10}} }, x:{ grid:{display:false}, ticks:{font:{size:9}} } } }
     });
   });
 }
