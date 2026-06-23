@@ -313,7 +313,7 @@ td a:hover{color:#B6772E;text-decoration:underline}
 .kv-tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:5px;background:#f0ede8;color:#5c5b57}
 
 /* ============================================================
-   MUNSHOT NEWSPAPER — one-click editorial PDF (Get Insight).
+   BISCUIT INSIGHTS — one-click editorial PDF (Get Insight).
    Fixed A4 pages (794×1123 @96dpi) rendered off-screen, each
    captured to a full-bleed PDF page. Colourful newsprint look.
    ============================================================ */
@@ -1191,7 +1191,7 @@ function overviewHTML(view){
       <button onclick="navigate({type:'health'})">Health</button>
       <button onclick="navigate({type:'share'})">Competition</button>
       <button onclick="navigate({type:'history'})">History</button>
-      <button id="npBtn" class="btn-insight" onclick="getInsight()" title="Download the Munshot Newspaper — a full insight digest of this dashboard as a PDF">📰 Get Insight</button>
+      <button id="npBtn" class="btn-insight" onclick="getInsight()" title="Download Biscuit Insights — a full insight digest of this dashboard as a PDF">📰 Get Insight</button>
       <button class="btn-accent" onclick="downloadExcel()">⤓ Export Excel</button>
       <button onclick="exportPDF()">⤓ PDF</button>
     </div>
@@ -2721,7 +2721,7 @@ function exportPDF(){
 }
 
 /* ===========================================================
-   MUNSHOT NEWSPAPER — one-click "Get Insight" editorial PDF.
+   BISCUIT INSIGHTS — one-click "Get Insight" editorial PDF.
    Composes the ENTIRE dashboard into a colourful, fixed-size
    (A4 794×1123) newspaper, one section per page, then renders
    each page to a full-bleed PDF page (html2canvas + jsPDF).
@@ -2869,7 +2869,7 @@ function npBand(kick, color, right){
   return `<div class="np-band"><div class="np-band-k" style="color:${color}"><span class="np-pip" style="background:${color}"></span>${esc(kick)}</div><div class="np-band-r">${right||''}</div></div>`;
 }
 function npFolio(asOf, n, total, section){
-  return `<div class="np-folio"><span>Munshot Newspaper · <b>${esc(asOf)}</b></span><span>${esc(section)}</span><span>Page <b>${n}</b> of <b>${total}</b></span></div>`;
+  return `<div class="np-folio"><span>Biscuit Insights · <b>${esc(asOf)}</b></span><span>${esc(section)}</span><span>Page <b>${n}</b> of <b>${total}</b></span></div>`;
 }
 const npDotCo = co => `<span class="np-dot" style="background:${COL[co]||'#9b9a96'}"></span>`;
 
@@ -2896,7 +2896,7 @@ function npFront(D){
   return { section:'Front Page', html:
   `<div class="np-nameplate">
      <div class="np-eye">Market-Intelligence Edition · Vol. 1, No. 1</div>
-     <div class="np-title">MUNSHOT NEWSPAPER</div>
+     <div class="np-title">BISCUIT INSIGHTS</div>
      <div class="np-tag">The Price-per-Gram Chronicle of India’s Biscuit Aisle</div>
    </div>
    <div class="np-dateline"><span>Mumbai · India</span><span class="np-dl-c">As of ${esc(D.asOf)} · ₹/g is the hero metric</span><span>${npInt(k.skus)} SKUs · ${k.brands} Brands</span></div>
@@ -2904,7 +2904,7 @@ function npFront(D){
    <div class="np-kick-font" style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#B6772E;margin-bottom:5px">The Big Story · Price-per-Gram</div>
    <div class="np-headline np-h-xl">${esc(lead)}</div>
    <div class="np-deck">India’s biscuit shelf is not one market but a ladder — from glucose value packs that sell by the coin to D2C cookies that charge like confectionery.</div>
-   <div class="np-byline">By the Munshot Data Desk · Sourced from live retail &amp; Google Trends</div>
+   <div class="np-byline">By the Biscuit Insights Data Desk · Sourced from live retail &amp; Google Trends</div>
    <div class="np-rule"></div>
    <div class="np-rowfill" style="gap:16px">
      <div class="np-grow np-cols np-cols-2">
@@ -2999,7 +2999,7 @@ function npCategory(D){
        </div></div>
      </div></div>
    </div>
-   <div class="np-pull">“Cookies are the only category with rising search interest — and the deepest, most premium shelf in the store.”<span class="np-cite">Munshot Category Desk</span></div>` };
+   <div class="np-pull">“Cookies are the only category with rising search interest — and the deepest, most premium shelf in the store.”<span class="np-cite">Biscuit Insights · Category Desk</span></div>` };
 }
 
 /* ---- PAGE 4 — COMPETITION ---- */
@@ -3190,7 +3190,7 @@ function npLastWord(D){
      </div>
      <div>
        <div style="border-top:1px solid rgba(250,246,238,.3);padding-top:10px;display:flex;justify-content:space-between;align-items:flex-end">
-         <div><div class="np-title" style="font-size:33px;color:#FAF6EE;line-height:.85">MUNSHOT</div><div class="np-kick-font" style="font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#C9C3B5;margin-top:3px">The Price-per-Gram Chronicle</div></div>
+         <div><div class="np-title" style="font-size:27px;color:#FAF6EE;line-height:.9">BISCUIT INSIGHTS</div><div class="np-kick-font" style="font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#C9C3B5;margin-top:3px">The Price-per-Gram Chronicle · Published by Munshot</div></div>
          <div style="text-align:right">
            <div class="np-mono" style="font-size:13px;font-weight:700;color:#fff">${npInt(D.kpi.skus)} SKUs · ${D.kpi.brands} brands · ${D.kpi.companies} groups</div>
            <div class="np-kick-font" style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#C9C3B5;margin-top:3px">Generated by Biscuit Market Intelligence · ${esc(D.asOf)}</div>
@@ -3257,7 +3257,7 @@ async function npExport(stage, asOf){
     if (i>0) pdf.addPage([794,1123],'portrait');
     pdf.addImage(img, 'JPEG', 0, 0, 794, 1123, undefined, 'FAST');
   }
-  pdf.save(`Munshot-Newspaper-${asOf||new Date().toISOString().slice(0,10)}.pdf`);
+  pdf.save(`Biscuit-Insights-${asOf||new Date().toISOString().slice(0,10)}.pdf`);
 }
 let _npBusy = false;
 async function getInsight(){
