@@ -16,9 +16,9 @@ Three one-click exports from the header:
 - **⤓ Export Excel** — a styled, multi-sheet `.xlsx` (xlsx-js-style).
 - **⤓ PDF** — the entire current dashboard view, captured to a paginated A4 PDF
   (html2pdf.js; cards never split across a page).
-- **📰 Get Insight → the *Munshot Newspaper*** — the marquee report. One click
+- **📰 Get Insight → *Biscuit Insights*** — the marquee report. One click
   composes the **whole dashboard into a colourful editorial newspaper PDF**
-  (`Munshot-Newspaper-<date>.pdf`) and downloads it — no print dialog. It is
+  (`Biscuit-Insights-<date>.pdf`) and downloads it — no print dialog. It is
   built as fixed-size **A4 pages (794×1123 px @96dpi)**, one section per page,
   each rendered to a full-bleed PDF page with **html2canvas + jsPDF**.
   Page count is **dynamic** — only sections backed by data are emitted (today:
