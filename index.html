@@ -14,8 +14,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" async></script>
 <!-- Excel export (defer) — used by the export feature in a later build step. -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js" defer></script>
-<!-- PDF export — capture the whole dashboard view to a paginated PDF. -->
-<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js" defer></script>
 
 <style>
 /* ============================================================
@@ -225,33 +223,6 @@ td a:hover{color:#B6772E;text-decoration:underline}
 .hbar-row{display:grid;grid-template-columns:minmax(80px,110px) 1fr 92px;align-items:center;gap:10px;padding:6px 0;font-size:12px}
 .hbar-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hbar-val{text-align:right;font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
-/* PDF / print report — designed, paginates clean (nothing splits), colours print */
-#print-report{display:none}
-.pr-page{font-family:'Inter',sans-serif;color:#1a1a18}
-.pr-cover{background:linear-gradient(135deg,#7A2D10,#C77800);color:#fff;padding:26px 28px;border-radius:14px;margin-bottom:18px;break-inside:avoid}
-.pr-kicker{font-size:11px;letter-spacing:.18em;text-transform:uppercase;opacity:.85;font-weight:700}
-.pr-title{font-size:30px;font-weight:800;margin:4px 0 8px;letter-spacing:-.02em}
-.pr-cover .pr-sub{font-size:13px;opacity:.96}
-.pr-date{font-size:12px;opacity:.8;margin-top:8px}
-.pr-section{break-inside:avoid;margin-bottom:16px;border:0.5px solid #e6e2da;border-radius:12px;padding:15px 18px}
-.pr-h{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#7A2D10;border-left:4px solid #C77800;padding-left:10px;margin-bottom:12px}
-.pr-table{width:100%;border-collapse:collapse;font-size:12px}
-.pr-table th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#9b9a96;padding:6px 8px;border-bottom:1px solid #ece8e1}
-.pr-table td{padding:7px 8px;border-bottom:0.5px solid #f1ede6;vertical-align:middle}
-.pr-table tr{break-inside:avoid}
-.pr-num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.pr-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:middle}
-.pr-tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px}
-.pr-big{font-size:19px;font-weight:700;line-height:1.35}
-.pr-big b{color:#0A4A3A}
-.pr-sub2{font-size:12px;color:#7a7975;margin-top:4px}
-.pr-callout{background:#FBF3E3;border:0.5px solid rgba(182,119,46,.3);border-radius:8px;padding:11px 13px;font-size:12.5px;line-height:1.55;margin-bottom:12px}
-.pr-note{font-size:10.5px;color:#9b9a96;margin-top:10px;line-height:1.5}
-.pr-foot{font-size:10px;color:#9b9a96;border-top:0.5px solid #e6e2da;padding-top:10px;line-height:1.5}
-/* PDF export (html2pdf) — hide interactive chrome while capturing the dashboard */
-.pdf-export .ov-actions,.pdf-export .chips,.pdf-export .chips-ch,.pdf-export .subnav,.pdf-export .seg,.pdf-export .back-bar>button{display:none!important}
-.pdf-export .tbl-scroll{overflow:visible!important}
-.pdf-export .card,.pdf-export .kpi,.pdf-export .exec-card,.pdf-export .hw-card,.pdf-export .sig-card,.pdf-export .mr-para,.pdf-export .rev-row,.pdf-export tr{break-inside:avoid;page-break-inside:avoid}
 /* Executive intelligence (Step 13) */
 .kpi-signal{font-size:10.5px;color:#6b6a66;margin:6px 0 2px;line-height:1.35}
 .arch-badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap}
@@ -1193,7 +1164,6 @@ function overviewHTML(view){
       <button onclick="navigate({type:'history'})">History</button>
       <button id="npBtn" class="btn-insight" onclick="getInsight()" title="Download Biscuit Insights — a full insight digest of this dashboard as a PDF">📰 Get Insight</button>
       <button class="btn-accent" onclick="downloadExcel()">⤓ Export Excel</button>
-      <button onclick="exportPDF()">⤓ PDF</button>
     </div>
   </div>
   <div class="ov-metricline">Hero metric: <strong>price per gram (₹/g)</strong> · secondary: discount vs MRP</div>
@@ -2644,81 +2614,7 @@ function downloadExcel(){
   XLSX.writeFile(wb, `biscuit-intelligence-${now.toISOString().slice(0,10)}.xlsx`);
 }
 
-/* ===========================================================
-   PDF EXPORT.  The live ⤓ PDF button uses exportPDF() (further below) to
-   capture the WHOLE dashboard view via html2pdf. buildReportHTML() is an
-   optional one-page "executive summary" generator kept for a future summary export.
-   =========================================================== */
-function buildReportHTML(){
-  const skus = STATE.skus || [];
-  const stats = STATE.curr || buildStats(skus);
-  const intel = buildIntel(stats.companyStats);
-  const asOf = STATE.scrapedAt ? new Date(STATE.scrapedAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '—';
-  const brands = new Set(skus.map(s=>s.brand)).size;
-  const med = a => { a=a.filter(x=>x>0).sort((x,y)=>x-y); if(!a.length) return null; const n=a.length; return n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2; };
 
-  const co = stats.companyStats.slice().sort((a,b)=>{ const sa=shareForCompany(a.company), sb=shareForCompany(b.company); return (sb?sb.marketSharePct:0)-(sa?sa.marketSharePct:0); });
-  const coRows = co.map(c=>{ const I=intel[c.company], sh=shareForCompany(c.company), col=COL[c.company]||'#999';
-    return `<tr><td><span class="pr-dot" style="background:${col}"></span>${esc(c.company)}</td>
-      <td class="pr-num">${rs2(c.ppg.median)}</td>
-      <td><span class="pr-tag" style="background:${hexToRgba(col,.14)};color:${col}">${esc(I.archetype.label)}</span></td>
-      <td class="pr-num">${sh?'~'+sh.marketSharePct+'%':'—'}</td>
-      <td class="pr-num">${sh&&sh.biscuitRevenueCr!=null?fmtCr(sh.biscuitRevenueCr):'—'}</td></tr>`;
-  }).join('');
-
-  const inStock = skus.filter(s=>s.inStock!==false);
-  const eMed=med(inStock.filter(s=>s.channelType==='ecomm').map(s=>s.pricePerGram));
-  const qMed=med(inStock.filter(s=>s.channelType==='qcomm').map(s=>s.pricePerGram));
-  const gap=(eMed&&qMed)?Math.round((eMed-qMed)/eMed*100):null;
-
-  const H = STATE.skus.some(s=>'isProtein' in s) ? healthData() : [];
-  const hRows = H.map(a=>`<tr><td>${a.badge} ${esc(a.label)}</td><td class="pr-num">${a.demand}</td><td class="pr-num">${a.n}</td>
-    <td><span class="pr-tag ${(READ_STYLE[a.read]||{}).cls}">${a.read}</span></td></tr>`).join('');
-  const brk = marketBreakoutQuery();
-
-  return `<div class="pr-page">
-    <div class="pr-cover">
-      <div class="pr-kicker">Biscuit Market Intelligence</div>
-      <div class="pr-title">Executive Report</div>
-      <div class="pr-sub">India · Amazon · Blinkit · Zepto — <b>${skus.length}</b> products · <b>${brands}</b> brands · 6 company groups</div>
-      <div class="pr-date">Data as of ${esc(asOf)}</div>
-    </div>
-    <div class="pr-section">
-      <div class="pr-h">Market snapshot · price per gram</div>
-      <table class="pr-table"><thead><tr><th>Company</th><th class="pr-num">₹/g</th><th>Position</th><th class="pr-num">Share</th><th class="pr-num">Revenue</th></tr></thead><tbody>${coRows}</tbody></table>
-      <div class="pr-note">Share % is an industry estimate (all companies); revenue is audited for listed cos, estimated for private / D2C.</div>
-    </div>
-    <div class="pr-section">
-      <div class="pr-h">Where it's cheaper · quick-commerce vs Amazon</div>
-      ${gap!=null?`<div class="pr-big">Quick-commerce runs <b>${Math.abs(gap)}% ${gap>=0?'cheaper':'dearer'}</b> per gram than Amazon</div><div class="pr-sub2">q-comm ${rs2(qMed)} vs Amazon ${rs2(eMed)} per gram · median, in-stock</div>`:'<div class="pr-sub2">Not enough overlapping data yet.</div>'}
-    </div>
-    <div class="pr-section">
-      <div class="pr-h">Health &amp; clean-label · the opportunity</div>
-      <div class="pr-callout"><b>Protein</b> and <b>sugar-free</b> have strong demand but very little supply — the whitespace. <b>No-maida</b> is already crowded; jaggery &amp; no-palm-oil stay niche.</div>
-      ${hRows?`<table class="pr-table"><thead><tr><th>Claim</th><th class="pr-num">Demand</th><th class="pr-num">SKUs</th><th>Read</th></tr></thead><tbody>${hRows}</tbody></table>`:''}
-      <div class="pr-note">Attributes are CLAIMED from product titles, not lab-verified. Demand = Google Trends (0–100).${brk?` Live breakout search: “${esc(brk)}”.`:''}</div>
-    </div>
-    <div class="pr-foot">Sources: Amazon India (Firecrawl) · Blinkit / Zepto (representative metro) · Google Trends via SerpApi · company filings. Hero metric: price per gram (₹/g). Nothing fabricated — estimates &amp; claims are labelled.</div>
-  </div>`;
-}
-// Capture the ENTIRE current dashboard view → one paginated PDF (fits width,
-// colours preserved, cards never split across a page).
-function exportPDF(){
-  if (!window.html2pdf){ alert('PDF library is still loading — please try again in a moment.'); return; }
-  if (!(STATE.skus && STATE.skus.length)){ alert('No data to export yet — load or scrape first.'); return; }
-  const app = $app();
-  const view = (STATE.view && (typeof STATE.view==='string' ? STATE.view : STATE.view.type)) || 'overview';
-  document.body.classList.add('pdf-export');           // hide nav / chips / toggles while capturing
-  const done = ()=> document.body.classList.remove('pdf-export');
-  html2pdf().set({
-    margin:[8,8,10,8],
-    filename:`biscuit-dashboard-${view}-${new Date().toISOString().slice(0,10)}.pdf`,
-    image:{ type:'jpeg', quality:0.95 },
-    html2canvas:{ scale:2, useCORS:true, backgroundColor:'#ffffff', scrollX:0, scrollY:0, windowWidth: app.scrollWidth },
-    jsPDF:{ unit:'mm', format:'a4', orientation:'portrait' },
-    pagebreak:{ mode:['css','legacy'], avoid:['.card','.kpi','.exec-card','.hw-card','.sig-card','.mr-para','.rev-row','tr'] },
-  }).from(app).save().then(done).catch(e=>{ console.warn('PDF export failed', e); done(); });
-}
 
 /* ===========================================================
    BISCUIT INSIGHTS — one-click "Get Insight" editorial PDF.

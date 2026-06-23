@@ -11,11 +11,9 @@ and market share are seeded and editable.
 
 ## Reports & exports
 
-Three one-click exports from the header:
+Two one-click exports from the header:
 
 - **⤓ Export Excel** — a styled, multi-sheet `.xlsx` (xlsx-js-style).
-- **⤓ PDF** — the entire current dashboard view, captured to a paginated A4 PDF
-  (html2pdf.js; cards never split across a page).
 - **📰 Get Insight → *Biscuit Insights*** — the marquee report. One click
   composes the **whole dashboard into a colourful editorial newspaper PDF**
   (`Biscuit-Insights-<date>.pdf`) and downloads it — no print dialog. It is
@@ -50,10 +48,10 @@ Three one-click exports from the header:
 ## Stack
 
 - **Frontend:** one `index.html` — inline `<style>` + `<script>`, vanilla ES6.
-  CDNs: Google Fonts, Chart.js 4.4.1 (async), xlsx-js-style 1.2.0 (defer) and
-  html2pdf.js 0.10.2 (defer) for the dashboard PDF; html2canvas 1.4.1 + jsPDF
-  2.5.1 and the newspaper fonts (Playfair Display, Fraunces, Newsreader, IBM
-  Plex Mono) are lazy-loaded the first time **Get Insight** is clicked.
+  CDNs: Google Fonts, Chart.js 4.4.1 (async) and xlsx-js-style 1.2.0 (defer);
+  html2canvas 1.4.1 + jsPDF 2.5.1 and the newspaper fonts (Playfair Display,
+  Fraunces, Newsreader, IBM Plex Mono) are lazy-loaded the first time
+  **Get Insight** is clicked.
 - **Backend:** Cloudflare Worker (`worker.js`) serving static assets via the
   `ASSETS` binding and a KV-backed `/api/history` route.
 
