@@ -9,6 +9,26 @@ no framework, no bundler), served from a Cloudflare Worker with a KV-backed
 `/api/history` route. E-commerce data is live-scraped; quick-commerce, Trends
 and market share are seeded and editable.
 
+## Reports & exports
+
+Three one-click exports from the header:
+
+- **⤓ Export Excel** — a styled, multi-sheet `.xlsx` (xlsx-js-style).
+- **⤓ PDF** — the entire current dashboard view, captured to a paginated A4 PDF
+  (html2pdf.js; cards never split across a page).
+- **📰 Get Insight → the *Munshot Newspaper*** — the marquee report. One click
+  composes the **whole dashboard into a colourful editorial newspaper PDF**
+  (`Munshot-Newspaper-<date>.pdf`) and downloads it — no print dialog. It is
+  built as fixed-size **A4 pages (794×1123 px @96dpi)**, one section per page,
+  each rendered to a full-bleed PDF page with **html2canvas + jsPDF**.
+  Page count is **dynamic** — only sections backed by data are emitted (today:
+  Front, Pricing, Category, Competition, Channels, Health, Trends, Last Word =
+  8 pages) — and every page is laid out to fill completely. All copy and tables
+  are generated from the **live data layer** (`npData()` / `npPages()` are pure
+  and unit-tested); nothing is fabricated and every estimate/claim is labelled.
+  Newsprint palette (`#FAF6EE` / `#16161D`) + brand accents; Playfair Display,
+  Fraunces, Newsreader and IBM Plex Mono load lazily on first click.
+
 ## Build roadmap (12 steps)
 
 - [x] **Step 1 — Scaffold, entities & deploy.** Single-file shell, design system,
@@ -30,7 +50,10 @@ and market share are seeded and editable.
 ## Stack
 
 - **Frontend:** one `index.html` — inline `<style>` + `<script>`, vanilla ES6.
-  CDNs: Google Fonts (Inter), Chart.js 4.4.1 (async), SheetJS xlsx 0.18.5 (defer).
+  CDNs: Google Fonts, Chart.js 4.4.1 (async), xlsx-js-style 1.2.0 (defer) and
+  html2pdf.js 0.10.2 (defer) for the dashboard PDF; html2canvas 1.4.1 + jsPDF
+  2.5.1 and the newspaper fonts (Playfair Display, Fraunces, Newsreader, IBM
+  Plex Mono) are lazy-loaded the first time **Get Insight** is clicked.
 - **Backend:** Cloudflare Worker (`worker.js`) serving static assets via the
   `ASSETS` binding and a KV-backed `/api/history` route.
 

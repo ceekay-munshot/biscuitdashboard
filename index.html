@@ -311,6 +311,141 @@ td a:hover{color:#B6772E;text-decoration:underline}
 .roster-row:last-child{border-bottom:0}
 .roster-brands{font-size:12px;color:#5c5b57;line-height:1.5}
 .kv-tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:5px;background:#f0ede8;color:#5c5b57}
+
+/* ============================================================
+   MUNSHOT NEWSPAPER — one-click editorial PDF (Get Insight).
+   Fixed A4 pages (794×1123 @96dpi) rendered off-screen, each
+   captured to a full-bleed PDF page. Colourful newsprint look.
+   ============================================================ */
+.np-stage{position:absolute;left:-12000px;top:0;width:794px;background:#FAF6EE}
+.np-page{position:relative;width:794px;height:1123px;background:#FAF6EE;color:#16161D;border:2px solid #16161D;
+  font-family:'Newsreader',Georgia,'Times New Roman',serif;padding:36px 42px 24px;
+  display:flex;flex-direction:column;overflow:hidden}
+.np-page *{box-sizing:border-box}
+.np-page::after{content:"";position:absolute;top:4px;left:4px;right:4px;bottom:4px;border:1px solid rgba(22,22,29,.32);pointer-events:none}
+.np-kick-font{font-family:'Inter',sans-serif}
+.np-serif{font-family:'Fraunces','Playfair Display',Georgia,serif}
+.np-mono{font-family:'IBM Plex Mono','Courier New',monospace;font-variant-numeric:tabular-nums}
+
+/* Nameplate (front page) */
+.np-nameplate{text-align:center;border-top:3px double #16161D;border-bottom:3px double #16161D;padding:8px 0 10px}
+.np-eye{font-family:'Inter',sans-serif;font-size:10.5px;font-weight:700;letter-spacing:.42em;text-transform:uppercase;color:#B6772E;margin-bottom:4px}
+.np-title{font-family:'Playfair Display','Fraunces',serif;font-weight:900;font-size:69px;line-height:.92;letter-spacing:-.018em;color:#16161D}
+.np-tag{font-family:'Newsreader',serif;font-style:italic;font-size:14.5px;color:#3A3A42;margin-top:5px}
+.np-dateline{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  font-family:'Inter',sans-serif;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#3A3A42;
+  border-top:1px solid #16161D;border-bottom:1px solid #16161D;padding:5px 2px;margin-top:9px}
+.np-dateline .np-dl-c{color:#B6772E}
+
+/* Section kicker band (inside pages) */
+.np-band{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:2.5px solid #16161D;padding-bottom:7px;margin-bottom:12px}
+.np-band-k{font-family:'Inter',sans-serif;font-size:13px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;display:inline-flex;align-items:center;gap:9px}
+.np-band-k .np-pip{width:13px;height:13px;border-radius:50%;display:inline-block}
+.np-band-r{font-family:'Inter',sans-serif;font-size:9.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#6E6A60;text-align:right}
+
+/* Headlines / decks / bylines */
+.np-headline{font-family:'Fraunces','Playfair Display',serif;font-weight:900;line-height:1.02;letter-spacing:-.012em;color:#16161D}
+.np-h-xl{font-size:43px}
+.np-h-l{font-size:30px}
+.np-h-m{font-size:21px}
+.np-h-s{font-size:16px}
+.np-deck{font-family:'Newsreader',serif;font-style:italic;font-size:15px;line-height:1.4;color:#3A3A42;margin-top:7px}
+.np-byline{font-family:'Inter',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#6E6A60;margin:8px 0}
+.np-rule{height:1px;background:#16161D;opacity:.16;margin:9px 0}
+.np-rule-d{border-top:3px double #16161D;opacity:.5;margin:9px 0;height:0}
+
+/* Body columns */
+.np-cols{display:grid;gap:0 17px}
+.np-cols-2{grid-template-columns:1fr 1fr}
+.np-cols-3{grid-template-columns:1fr 1fr 1fr}
+.np-col{padding-right:17px;border-right:1px solid rgba(22,22,29,.16)}
+.np-col:last-child{padding-right:0;border-right:0}
+.np-body{font-family:'Newsreader',Georgia,serif;font-size:11.7px;line-height:1.52;text-align:justify;color:#22222A;hyphens:auto}
+.np-body p{margin-bottom:7px}
+.np-body p:last-child{margin-bottom:0}
+.np-dropcap{float:left;font-family:'Playfair Display','Fraunces',serif;font-weight:900;font-size:50px;line-height:.78;padding:5px 8px 0 0;color:#B6772E}
+.np-kapital{font-family:'Inter',sans-serif;font-variant:small-caps;letter-spacing:.02em;font-weight:700;text-transform:uppercase;font-size:10.5px}
+
+/* Sidebar / boxes / pull-quote */
+.np-box{border:1.5px solid #16161D;background:#FFFDF7;padding:11px 13px}
+.np-box-t{font-family:'Inter',sans-serif;font-size:10.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#16161D;border-bottom:1.5px solid #16161D;padding-bottom:6px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:baseline}
+.np-shade{background:#F3ECDC}
+.np-pull{font-family:'Fraunces',serif;font-weight:700;font-size:18px;line-height:1.22;color:#16161D;border-top:2px solid #B6772E;border-bottom:2px solid #B6772E;padding:9px 0;margin:4px 0;text-align:center}
+.np-pull .np-cite{display:block;font-family:'Inter',sans-serif;font-style:normal;font-weight:700;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#6E6A60;margin-top:6px}
+
+/* Big-stat sidebar list (By the Numbers) */
+.np-stat{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px dotted rgba(22,22,29,.28)}
+.np-stat:last-child{border-bottom:0}
+.np-stat-l{font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;color:#3A3A42;line-height:1.2}
+.np-stat-v{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:17px;color:#16161D;white-space:nowrap}
+.np-stat-v small{font-size:10px;color:#6E6A60;font-weight:600}
+
+/* Tables — scoreboard look */
+.np-tbl{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace}
+.np-tbl th{font-family:'Inter',sans-serif;font-size:9px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#FAF6EE;background:#16161D;padding:5px 7px;text-align:left}
+.np-tbl th.r,.np-tbl td.r{text-align:right}
+.np-tbl th.c,.np-tbl td.c{text-align:center}
+.np-tbl td{font-size:11px;padding:4.5px 7px;border-bottom:1px solid rgba(22,22,29,.13);color:#22222A}
+.np-tbl tr:nth-child(even) td{background:rgba(22,22,29,.035)}
+.np-tbl tr:last-child td{border-bottom:0}
+.np-tbl .np-ent{font-family:'Newsreader',serif;font-weight:600;color:#16161D}
+.np-rk{display:inline-block;width:16px;color:#B6772E;font-weight:700}
+.np-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:baseline}
+.np-pos{color:#0A6B4F;font-weight:700}
+.np-neg{color:#B11226;font-weight:700}
+.np-flat{color:#6E6A60;font-weight:700}
+.np-tag{font-family:'Inter',sans-serif;font-size:8.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:1.5px 6px;border-radius:3px;white-space:nowrap}
+
+/* CSS bar chart */
+.np-bars{display:flex;flex-direction:column;justify-content:center;gap:8px}
+.np-bar{display:grid;grid-template-columns:108px 1fr 64px;align-items:center;gap:9px}
+.np-bar-l{font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;color:#22222A;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.np-bar-track{height:15px;background:rgba(22,22,29,.07);border:1px solid rgba(22,22,29,.14);position:relative}
+.np-bar-fill{height:100%;min-width:2px}
+.np-bar-v{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;color:#16161D;text-align:left}
+.np-bar-grp{display:flex;align-items:center;gap:5px}
+
+/* Archetype / mini cards grid */
+.np-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.np-card{border:1.25px solid #16161D;padding:8px 9px;background:#FFFDF7;display:flex;flex-direction:column;gap:3px}
+.np-card-co{font-family:'Newsreader',serif;font-weight:700;font-size:13px;color:#16161D;display:flex;align-items:center;gap:6px}
+.np-card-a{font-family:'Inter',sans-serif;font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+.np-card-n{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700}
+.np-card-x{font-family:'Newsreader',serif;font-size:10px;line-height:1.32;color:#3A3A42}
+
+/* Teasers (front page bottom) */
+.np-teasers{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:2.5px solid #16161D;border-bottom:1px solid #16161D}
+.np-teaser{padding:9px 11px;border-right:1px solid rgba(22,22,29,.22)}
+.np-teaser:last-child{border-right:0}
+.np-teaser-k{font-family:'Inter',sans-serif;font-size:8.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+.np-teaser-h{font-family:'Fraunces',serif;font-weight:700;font-size:12.5px;line-height:1.12;color:#16161D}
+.np-teaser-p{font-family:'Newsreader',serif;font-size:9.5px;line-height:1.3;color:#3A3A42;margin-top:3px}
+.np-pg{font-family:'Inter',sans-serif;font-weight:700;font-size:8.5px;color:#B6772E}
+
+/* Folio (every page footer) */
+.np-folio{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  border-top:2px solid #16161D;padding-top:6px;font-family:'Inter',sans-serif;font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#6E6A60}
+.np-folio b{color:#16161D}
+
+/* Generic helpers */
+.np-flex{display:flex;gap:13px}
+.np-grow{flex:1;min-width:0}
+.np-fill{flex:1;min-height:0;display:flex;flex-direction:column}
+.np-list{flex:1;display:flex;flex-direction:column;justify-content:space-between;min-height:0}
+.np-vcenter{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
+.np-rowfill{flex:1;min-height:0;display:flex;flex-direction:row;gap:13px}
+.np-tbl-roomy td{padding:9px 7px}
+.np-tbl-roomy th{padding:6.5px 7px}
+.np-cap{font-family:'Inter',sans-serif;font-size:8.5px;font-style:normal;letter-spacing:.04em;color:#6E6A60;margin-top:5px}
+.np-li{font-family:'Newsreader',serif;font-size:11px;line-height:1.34;color:#22222A;padding:5px 0;border-bottom:1px dotted rgba(22,22,29,.22);display:flex;gap:8px}
+.np-li:last-child{border-bottom:0}
+.np-li b{color:#16161D}
+.np-li-n{font-family:'IBM Plex Mono',monospace;font-weight:700;color:#B6772E;flex-shrink:0}
+
+/* Get-Insight button (header) */
+.btn-insight{background:#16161D;color:#FAF6EE;border:0;border-radius:8px;padding:7px 13px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.btn-insight:hover:not(:disabled){background:#000;color:#FAF6EE}
+.btn-insight:disabled{opacity:.7}
 </style>
 </head>
 <body>
@@ -1056,6 +1191,7 @@ function overviewHTML(view){
       <button onclick="navigate({type:'health'})">Health</button>
       <button onclick="navigate({type:'share'})">Competition</button>
       <button onclick="navigate({type:'history'})">History</button>
+      <button id="npBtn" class="btn-insight" onclick="getInsight()" title="Download the Munshot Newspaper — a full insight digest of this dashboard as a PDF">📰 Get Insight</button>
       <button class="btn-accent" onclick="downloadExcel()">⤓ Export Excel</button>
       <button onclick="exportPDF()">⤓ PDF</button>
     </div>
@@ -2582,6 +2718,570 @@ function exportPDF(){
     jsPDF:{ unit:'mm', format:'a4', orientation:'portrait' },
     pagebreak:{ mode:['css','legacy'], avoid:['.card','.kpi','.exec-card','.hw-card','.sig-card','.mr-para','.rev-row','tr'] },
   }).from(app).save().then(done).catch(e=>{ console.warn('PDF export failed', e); done(); });
+}
+
+/* ===========================================================
+   MUNSHOT NEWSPAPER — one-click "Get Insight" editorial PDF.
+   Composes the ENTIRE dashboard into a colourful, fixed-size
+   (A4 794×1123) newspaper, one section per page, then renders
+   each page to a full-bleed PDF page (html2canvas + jsPDF).
+   Page count scales to the data; nothing material is dropped.
+   npData()/npPages() are PURE (testable in Node).
+   =========================================================== */
+const NP_ARCH_COL = { value:'#0A6B4F', scale:'#1D4E9C', premium:'#7B2D8E', challenger:'#B6772E', insurgent:'#C8102E', discount:'#9A6019' };
+function npPg(v){ return v==null ? '—' : '₹'+(+v).toFixed(2); }
+function npInt(n){ return n==null ? '—' : Number(Math.round(n)).toLocaleString('en-IN'); }
+function npCr(n){ return n==null ? '—' : '₹'+Number(n).toLocaleString('en-IN')+' Cr'; }
+function npPct(n,dp){ return (n>=0?'+':'')+(+n).toFixed(dp==null?1:dp)+'%'; }
+function npDir(d){ return d==='rising' ? '<span class="np-pos">▲ rising</span>' : d==='falling' ? '<span class="np-neg">▼ falling</span>' : '<span class="np-flat">● flat</span>'; }
+function npDirArrow(d){ return d==='rising' ? '<span class="np-pos">▲</span>' : d==='falling' ? '<span class="np-neg">▼</span>' : '<span class="np-flat">●</span>'; }
+
+/* ---- chart primitives (return print-safe HTML / inline SVG) ---- */
+function npBars(rows, opts){
+  opts = opts || {};
+  const max = opts.max || Math.max(...rows.map(r=>r.value||0), 0.0001);
+  const fmt = opts.fmt || (v=>v);
+  return `<div class="np-bars"${opts.style?` style="${opts.style}"`:''}>` + rows.map(r=>
+    `<div class="np-bar"><div class="np-bar-l">${esc(r.label)}</div>`+
+    `<div class="np-bar-track"><div class="np-bar-fill" style="width:${Math.max(2,Math.round((r.value||0)/max*100))}%;background:${r.color||'#16161D'}"></div></div>`+
+    `<div class="np-bar-v">${r.vlabel!=null?r.vlabel:fmt(r.value)}</div></div>`).join('') + `</div>`;
+}
+function npSpark(series, opts){
+  opts = opts || {}; const w = opts.w||230, h = opts.h||46, pad = 4;
+  const data = (series||[]).filter(v=>v!=null);
+  if (data.length < 2) return '';
+  const mn = Math.min(...data), mx = Math.max(...data), rng = (mx-mn)||1;
+  const X = i => pad + i*(w-2*pad)/(data.length-1);
+  const Y = v => h-pad - (v-mn)/rng*(h-2*pad);
+  const pts = data.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`);
+  const col = opts.color||'#16161D';
+  const area = `M${X(0).toFixed(1)},${(h-pad).toFixed(1)} L`+pts.join(' L')+` L${X(data.length-1).toFixed(1)},${(h-pad).toFixed(1)} Z`;
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">`+
+    (opts.fill!==false?`<path d="${area}" fill="${col}" opacity="0.12"/>`:'')+
+    `<path d="M${pts.join(' L')}" fill="none" stroke="${col}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`+
+    `<circle cx="${X(data.length-1).toFixed(1)}" cy="${Y(data[data.length-1]).toFixed(1)}" r="3.2" fill="${col}"/></svg>`;
+}
+function npStack(items, opts){
+  opts = opts || {}; const w = opts.w||616, h = opts.h||40; let x = 0;
+  const total = items.reduce((a,b)=>a+(b.pct||0),0) || 100;
+  const segs = items.map(it=>{
+    const ww = (it.pct||0)/total*w; const mid = x+ww/2;
+    const r = `<rect x="${x.toFixed(1)}" y="0" width="${Math.max(0,ww-1).toFixed(1)}" height="${h}" fill="${it.color}"/>`+
+      (ww>30?`<text x="${mid.toFixed(1)}" y="${(h/2+4).toFixed(1)}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11.5" font-weight="700" fill="#FAF6EE">${it.pct}%</text>`:'');
+    x += ww; return r;
+  }).join('');
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">${segs}<rect x="0.5" y="0.5" width="${w-1}" height="${h-1}" fill="none" stroke="#16161D" stroke-width="1"/></svg>`;
+}
+function npScatter(points, opts){
+  opts = opts || {}; const w = opts.w||336, h = opts.h||224, pl = 30, pb = 24, pt = 12, pr = 14;
+  const xmax = opts.xmax || (Math.max(...points.map(p=>p.x), 8)*1.15);
+  const X = v => pl + v/xmax*(w-pl-pr);
+  const Y = v => h-pb - v/100*(h-pb-pt);
+  const yhi = Y(30);
+  const dots = points.map(p=>{
+    const cx=X(p.x).toFixed(1), cy=Y(p.y).toFixed(1), r=p.r||6;
+    return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${p.color}" fill-opacity="0.8" stroke="#16161D" stroke-width="1.1"/>`+
+      `<text x="${cx}" y="${(Y(p.y)-r-3).toFixed(1)}" text-anchor="middle" font-family="Inter, sans-serif" font-size="8.5" font-weight="700" fill="#16161D">${esc(p.label)}</text>`;
+  }).join('');
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">`+
+    `<line x1="${pl}" y1="${pt}" x2="${pl}" y2="${h-pb}" stroke="#16161D" stroke-width="1"/>`+
+    `<line x1="${pl}" y1="${h-pb}" x2="${w-pr}" y2="${h-pb}" stroke="#16161D" stroke-width="1"/>`+
+    `<line x1="${pl}" y1="${yhi.toFixed(1)}" x2="${w-pr}" y2="${yhi.toFixed(1)}" stroke="#B6772E" stroke-width="1" stroke-dasharray="3 3"/>`+
+    `<text x="${(w-pr).toFixed(1)}" y="${(yhi-4).toFixed(1)}" text-anchor="end" font-family="Inter, sans-serif" font-size="8" fill="#B6772E">demand 30 →</text>`+
+    dots+
+    `<text x="${pl}" y="${h-6}" font-family="Inter, sans-serif" font-size="8.5" fill="#6E6A60">low supply ·············· high supply →</text>`+
+    `<text x="2" y="${pt+6}" font-family="Inter, sans-serif" font-size="8.5" fill="#6E6A60">demand↑</text></svg>`;
+}
+
+/* ---- DATA: one pass over live STATE → every newspaper story ---- */
+function npData(){
+  const med = arr => { arr = arr.filter(x=>x>0).sort((a,b)=>a-b); const n=arr.length; return n?(n%2?arr[(n-1)/2]:+(((arr[n/2-1]+arr[n/2])/2)).toFixed(4)):null; };
+  const mean = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
+  const all = (STATE.skus||[]).filter(s=>s.inStock!==false);
+  const priced = all.filter(s=>s.pricePerGram>0);
+  const channels = {}; all.forEach(s=>channels[s.channel]=(channels[s.channel]||0)+1);
+  const brands = [...new Set(all.map(s=>s.brand))], companies = [...new Set(all.map(s=>s.company))], cats = [...new Set(all.map(s=>s.category))];
+  const ppgArr = priced.map(s=>s.pricePerGram).sort((a,b)=>a-b);
+  const kpi = { skus:all.length, brands:brands.length, companies:companies.length, cats:cats.length,
+    medPpg:med(ppgArr), minPpg:ppgArr[0], maxPpg:ppgArr[ppgArr.length-1],
+    avgDisc:mean(all.map(s=>s.discount||0)), reviews:all.reduce((a,s)=>a+(s.reviewCount||0),0),
+    avgRating:mean(all.map(s=>s.rating).filter(v=>v!=null)), channels };
+  kpi.spread = (kpi.minPpg>0) ? kpi.maxPpg/kpi.minPpg : null;
+  const cheapestSku = priced.slice().sort((a,b)=>a.pricePerGram-b.pricePerGram)[0] || null;
+  const priciestSku = priced.slice().sort((a,b)=>b.pricePerGram-a.pricePerGram)[0] || null;
+  // brand league (exclude the catch-all "Other" bucket from named-brand tables)
+  const byBrand = {}; priced.forEach(s=>{ if (s.brand && s.brand!=='Other') (byBrand[s.brand]=byBrand[s.brand]||[]).push(s); });
+  const brandRows = Object.entries(byBrand).map(([b,gs])=>({ brand:b, company:gs[0].company, n:gs.length, med:med(gs.map(s=>s.pricePerGram)), disc:mean(gs.map(s=>s.discount||0)) })).filter(r=>r.n>=3 && r.med!=null);
+  const cheapBrands = brandRows.slice().sort((a,b)=>a.med-b.med).slice(0,8);
+  const dearBrands  = brandRows.slice().sort((a,b)=>b.med-a.med).slice(0,8);
+  // category roundup
+  const byCat = {}; priced.forEach(s=>(byCat[s.category]=byCat[s.category]||[]).push(s));
+  const catRows = Object.entries(byCat).map(([c,gs])=>{
+    const ch = gs.slice().sort((a,b)=>a.pricePerGram-b.pricePerGram)[0];
+    const t = (STATE.trends&&STATE.trends.categories&&STATE.trends.categories[c])||{};
+    return { cat:c, n:gs.length, med:med(gs.map(s=>s.pricePerGram)), cheapBrand:ch.brand, cheapPpg:ch.pricePerGram, demand:(t.latest!=null?t.latest:null), dir:t.direction||'flat' };
+  }).sort((a,b)=>b.n-a.n);
+  // pack economics
+  const packOrder = ['≤50 g','51–120 g','121–250 g','251–500 g','500 g +'];
+  const packOf = g => g<60?'≤50 g':g<120?'51–120 g':g<250?'121–250 g':g<500?'251–500 g':'500 g +';
+  const byPack = {}; priced.forEach(s=>{ if(s.weightGrams>0){ const k=packOf(s.weightGrams); (byPack[k]=byPack[k]||[]).push(s); } });
+  const packRows = packOrder.filter(k=>byPack[k]).map(k=>({ pack:k, n:byPack[k].length, med:med(byPack[k].map(s=>s.pricePerGram)) }));
+  const packSorted = packRows.slice().sort((a,b)=>a.med-b.med);
+  const packRatio = (packSorted.length>=2 && packSorted[0].med>0) ? packSorted[packSorted.length-1].med/packSorted[0].med : null;
+  // channels
+  const chMed = {}; ['amazon','blinkit','zepto'].forEach(c=>{ const v=priced.filter(s=>s.channel===c).map(s=>s.pricePerGram); chMed[c]={ n:v.length, med:med(v) }; });
+  const cmp = (typeof compareRows==='function' ? compareRows('brand') : []).filter(r=>r.present.length>=2).sort((a,b)=>(a.ppg.amazon==null?9:a.ppg.amazon)-(b.ppg.amazon==null?9:b.ppg.amazon));
+  const eMed = med(all.filter(s=>s.channelType==='ecomm').map(s=>s.pricePerGram));
+  const qMed = med(all.filter(s=>s.channelType==='qcomm').map(s=>s.pricePerGram));
+  const gapPct = (eMed&&qMed)?Math.round((eMed-qMed)/eMed*100):null;
+  // market share / competition
+  const shareCos = (STATE.share&&STATE.share.companies)||[];
+  const shareRanked = shareCos.filter(c=>c.biscuitRevenueCr!=null).map(c=>({ ...c, cl:classifyShare(c.marketSharePct,c.yoyGrowthPct) })).sort((a,b)=>b.marketSharePct-a.marketSharePct);
+  const shareAll = shareCos.slice().sort((a,b)=>b.marketSharePct-a.marketSharePct);
+  // archetypes / intel
+  const stats = buildStats(priced);
+  const intel = (typeof buildIntel==='function') ? buildIntel(stats.companyStats) : {};
+  const archs = stats.companyStats.map(c=>({ company:c.company, med:c.ppg.median, it:intel[c.company] })).filter(a=>a.it&&a.it.archetype).sort((a,b)=>a.med-b.med);
+  // health / clean-label
+  const health = (typeof healthData==='function') ? healthData() : [];
+  const cleanCo = (typeof cleanLabelLeaders==='function') ? cleanLabelLeaders('company',5) : [];
+  const cleanBr = (typeof cleanLabelLeaders==='function') ? cleanLabelLeaders('brand',4).filter(r=>r.name!=='Other') : [];
+  // demand / trends
+  const T = STATE.trends||{};
+  const brandTrends = Object.entries(T.brands||{}).map(([n,v])=>({ name:n, latest:v.latest, dir:v.direction, series:v.interest||[] })).sort((a,b)=>b.latest-a.latest);
+  const catTrends = Object.entries(T.categories||{}).map(([n,v])=>({ name:n, latest:v.latest, dir:v.direction })).sort((a,b)=>b.latest-a.latest);
+  const breakouts = []; Object.entries(T.related||{}).forEach(([seed,r])=>(r.rising||[]).forEach(x=>breakouts.push({ seed, query:x.query, value:x.value, ext:x.extracted||0 })));
+  breakouts.sort((a,b)=>b.ext-a.ext);
+  // history movers
+  const hist = (STATE.history||[]).filter(h=>h.overall);
+  // discounts / ratings
+  const deepDisc = all.filter(s=>s.discount>0).sort((a,b)=>b.discount-a.discount).slice(0,6);
+  const topRated = all.filter(s=>s.rating>=4 && s.reviewCount>=500).sort((a,b)=>b.reviewCount-a.reviewCount).slice(0,6);
+  const asOf = (STATE.scrapedAt||T.fetchedAt||'').slice(0,10) || new Date().toISOString().slice(0,10);
+  return { all, priced, kpi, cheapestSku, priciestSku, cheapBrands, dearBrands, catRows, packRows, packSorted, packRatio,
+    chMed, cmp, eMed, qMed, gapPct, shareRanked, shareAll, archs, health, cleanCo, cleanBr,
+    brandTrends, catTrends, breakouts, hist, deepDisc, topRated, asOf,
+    context:(STATE.share&&STATE.share.marketContext)||'', disclaimer:(STATE.share&&STATE.share.disclaimer)||'' };
+}
+
+/* ---- page furniture ---- */
+function npBand(kick, color, right){
+  return `<div class="np-band"><div class="np-band-k" style="color:${color}"><span class="np-pip" style="background:${color}"></span>${esc(kick)}</div><div class="np-band-r">${right||''}</div></div>`;
+}
+function npFolio(asOf, n, total, section){
+  return `<div class="np-folio"><span>Munshot Newspaper · <b>${esc(asOf)}</b></span><span>${esc(section)}</span><span>Page <b>${n}</b> of <b>${total}</b></span></div>`;
+}
+const npDotCo = co => `<span class="np-dot" style="background:${COL[co]||'#9b9a96'}"></span>`;
+
+/* ---- PAGE 1 — FRONT ---- */
+function npFront(D){
+  const k = D.kpi, sp = k.spread? Math.round(k.spread) : null;
+  const cs = D.cheapestSku||{}, ps = D.priciestSku||{};
+  const val = D.archs[0], prem = D.archs[D.archs.length-1];
+  const cookies = D.catRows.find(c=>c.cat==='Cookies');
+  const oreo = D.brandTrends.find(b=>b.name==='Oreo');
+  const heroBars = D.archs.map(a=>({ label:a.company.replace(' / D2C',' / D2C'), value:a.med, color:COL[a.company]||'#16161D', vlabel:npPg(a.med) }));
+  const lead = `A ${sp?sp+'×':'Wide'} Gap, From ${npPg(k.minPpg)} to ${npPg(k.maxPpg)} a Gram`;
+  const numbers = [
+    ['Median price', npPg(k.medPpg)+'<small>/g</small>'],
+    ['Cheapest gram', npPg(k.minPpg)+'<small>/g</small>'],
+    ['Priciest gram', npPg(k.maxPpg)+'<small>/g</small>'],
+    ['Price spread', (sp||'—')+'<small>×</small>'],
+    ['Avg discount', (k.avgDisc!=null?Math.round(k.avgDisc):'—')+'<small>%</small>'],
+    ['Live SKUs', npInt(k.skus)],
+    ['Brands · groups', k.brands+'<small> · '+k.companies+'</small>'],
+    ['Reviews read', kCompact(k.reviews)],
+    ['Avg rating', (k.avgRating!=null?k.avgRating.toFixed(1):'—')+'<small>★</small>'],
+  ];
+  return { section:'Front Page', html:
+  `<div class="np-nameplate">
+     <div class="np-eye">Market-Intelligence Edition · Vol. 1, No. 1</div>
+     <div class="np-title">MUNSHOT NEWSPAPER</div>
+     <div class="np-tag">The Price-per-Gram Chronicle of India’s Biscuit Aisle</div>
+   </div>
+   <div class="np-dateline"><span>Mumbai · India</span><span class="np-dl-c">As of ${esc(D.asOf)} · ₹/g is the hero metric</span><span>${npInt(k.skus)} SKUs · ${k.brands} Brands</span></div>
+   <div style="height:11px"></div>
+   <div class="np-kick-font" style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#B6772E;margin-bottom:5px">The Big Story · Price-per-Gram</div>
+   <div class="np-headline np-h-xl">${esc(lead)}</div>
+   <div class="np-deck">India’s biscuit shelf is not one market but a ladder — from glucose value packs that sell by the coin to D2C cookies that charge like confectionery.</div>
+   <div class="np-byline">By the Munshot Data Desk · Sourced from live retail &amp; Google Trends</div>
+   <div class="np-rule"></div>
+   <div class="np-rowfill" style="gap:16px">
+     <div class="np-grow np-cols np-cols-2">
+       <div class="np-col"><div class="np-body">
+         <p><span class="np-dropcap">${esc((cs.brand||'I')[0])}</span><b>${esc(cs.brand||'—')}</b> sits on the floor of India’s biscuit aisle at just <b>${npPg(k.minPpg)}</b> a gram — a value pack built for the ₹5 coin. At the ceiling, <b>${esc(ps.brand||'—')}</b> commands <b>${npPg(k.maxPpg)}</b>, roughly <b>${sp?sp+'×':'many times'}</b> dearer. Between those poles, ${npInt(k.skus)} live SKUs from ${k.brands} brands change hands at a typical <b>${npPg(k.medPpg)}</b> per gram.</p>
+         <p>The cheapest rupee-per-gram on the board belongs to <b>${esc(val?val.company:'—')}</b> (${npPg(val?val.med:null)}/g median) — the volume engine that anchors the category. The most premium belongs to the <b>${esc(prem?prem.company:'—')}</b> camp at ${npPg(prem?prem.med:null)}/g: protein cookies and imported indulgence that treat a biscuit like a snack-bar.</p>
+         <p>Scale, though, still belongs to the giants: Britannia and Parle together hold close to 60% of a ₹50,000-crore market, and Parle-G remains the world’s largest-selling biscuit by volume — here the value floor is also the volume ceiling.</p>
+       </div></div>
+       <div class="np-col"><div class="np-body">
+         <p>Three forces are tugging the average upward. A <b>cookie boom</b> — the largest category at ${cookies?npInt(cookies.n):'—'} SKUs and the only one with rising search (${cookies&&cookies.demand!=null?cookies.demand+'/100':'—'}). A <b>clean-label surcharge</b>, where “no-maida”, protein and sugar-free claims fetch ₹/g premiums of 76–109%. And <b>quick-commerce</b>, reshaping how everyday packs are priced city by city.</p>
+         <p>Demand, meanwhile, is rotating. <b>${esc(oreo?oreo.name:'Oreo')}</b> has surged to a peak <b>${oreo?oreo.latest:'—'}/100</b> in search interest while the legacy icons — Parle-G, Good Day, Bourbon — quietly soften. The aisle is widening at both ends.</p>
+         <p>Shoppers are vocal — this edition reads ${kCompact(k.reviews)} ratings averaging ${k.avgRating!=null?k.avgRating.toFixed(1):'—'}★ — yet attention is the scarce currency, and it is rotating toward novelty and “better-for-you” claims faster than the shelf can answer.</p>
+       </div></div>
+     </div>
+     <div style="width:236px;flex-shrink:0">
+       <div class="np-box np-shade" style="height:100%;display:flex;flex-direction:column">
+         <div class="np-box-t">By the Numbers <span class="np-mono" style="font-weight:700;color:#B6772E">${esc(D.asOf)}</span></div>
+         <div style="flex:1;display:flex;flex-direction:column;justify-content:space-between">
+           ${numbers.map(([l,v])=>`<div class="np-stat"><span class="np-stat-l">${l}</span><span class="np-stat-v">${v}</span></div>`).join('')}
+         </div>
+       </div>
+     </div>
+   </div>
+   <div class="np-rule"></div>
+   <div class="np-box" style="margin-bottom:11px">
+     <div class="np-box-t">The Price Ladder · typical ₹/g by company group <span class="np-kick-font" style="font-weight:600;color:#6E6A60;letter-spacing:.04em">cheapest → priciest</span></div>
+     ${npBars(heroBars,{style:'gap:9px'})}
+   </div>
+   <div class="np-teasers">
+     <div class="np-teaser"><div class="np-teaser-k" style="color:#B6772E">Inside · Pricing</div><div class="np-teaser-h">Who’s cheapest by the gram</div><div class="np-teaser-p">League tables &amp; pack-size math.</div><div class="np-pg">▸ Page 2</div></div>
+     <div class="np-teaser"><div class="np-teaser-k" style="color:#1D4E9C">Boardroom</div><div class="np-teaser-h">A ₹50,000 Cr contest</div><div class="np-teaser-p">Britannia vs Parle, and the D2C insurgents.</div><div class="np-pg">▸ Page 4</div></div>
+     <div class="np-teaser"><div class="np-teaser-k" style="color:#138A6E">Health Beat</div><div class="np-teaser-h">The protein whitespace</div><div class="np-teaser-p">Big demand, thin shelf — and a premium.</div><div class="np-pg">▸ Page 6</div></div>
+     <div class="np-teaser"><div class="np-teaser-k" style="color:#C8102E">Trend Page</div><div class="np-teaser-h">Oreo hits 100</div><div class="np-teaser-p">Breakouts: BTS×Oreo, 50-50, mascarpone.</div><div class="np-pg">▸ Page 7</div></div>
+   </div>` };
+}
+
+/* ---- PAGE 2 — PRICING ---- */
+function npPricing(D){
+  const leagueTbl = (rows,head) => `<table class="np-tbl"><thead><tr><th>#</th><th>${head}</th><th class="r">₹/g</th><th class="r">SKUs</th></tr></thead><tbody>`+
+    rows.map((r,i)=>`<tr><td><span class="np-rk">${i+1}</span></td><td class="np-ent">${npDotCo(r.company)}${esc(r.brand)}</td><td class="r" style="font-weight:700">${npPg(r.med)}</td><td class="r">${r.n}</td></tr>`).join('')+`</tbody></table>`;
+  const packBars = D.packRows.map(p=>({ label:p.pack, value:p.med, color:'#B6772E', vlabel:npPg(p.med) }));
+  const cheapPack = D.packSorted[0], dearPack = D.packSorted[D.packSorted.length-1];
+  const disc = D.deepDisc.map(s=>`<div class="np-li"><span class="np-li-n">${Math.round(s.discount)}%</span><span><b>${esc(s.brand)}</b> · ${esc((s.name||'').slice(0,40))} <span class="np-mono" style="color:#6E6A60">${npPg(s.pricePerGram)}/g</span></span></div>`).join('');
+  return { section:'Pricing Desk', html:
+  npBand('Pricing Desk', '#B6772E', `Hero metric · ₹ per gram · ${npInt(D.kpi.skus)} SKUs`)+
+  `<div class="np-headline np-h-l">The Cheapest &amp; Dearest Grams in the Aisle</div>
+   <div class="np-deck">Ranked by median price-per-gram across every in-stock pack (brands with 3+ SKUs).</div>
+   <div class="np-rule"></div>
+   <div class="np-flex" style="gap:16px;margin-bottom:12px">
+     <div class="np-grow"><div class="np-box-t" style="color:#0A6B4F;border-color:#0A6B4F">Value · cheapest by ₹/g</div>${leagueTbl(D.cheapBrands,'Brand')}</div>
+     <div class="np-grow"><div class="np-box-t" style="color:#7B2D8E;border-color:#7B2D8E">Premium · priciest by ₹/g</div>${leagueTbl(D.dearBrands,'Brand')}</div>
+   </div>
+   <div class="np-rowfill" style="gap:16px;align-items:stretch">
+     <div class="np-grow np-box" style="display:flex;flex-direction:column">
+       <div class="np-box-t">Pack-size economics · ₹/g by weight band</div>
+       ${npBars(packBars,{style:'gap:11px;width:100%;flex:1;justify-content:space-between;padding:8px 0'})}
+       <div class="np-cap">${cheapPack&&dearPack?`Buy bigger: <b>${cheapPack.pack}</b> packs cost <b>${npPg(cheapPack.med)}/g</b> — about <b>${D.packRatio?D.packRatio.toFixed(1)+'×':'—'}</b> less per gram than <b>${dearPack.pack}</b> snack packs (${npPg(dearPack.med)}/g).`:''}</div>
+     </div>
+     <div style="width:300px;flex-shrink:0;display:flex;flex-direction:column" class="np-box">
+       <div class="np-box-t" style="color:#C8102E;border-color:#C8102E">Red-tag rack · deepest discounts</div>
+       <div class="np-list">${disc}</div>
+       <div class="np-cap">% off vs MRP on Amazon India listings. Big cuts cluster in indulgent wafer &amp; chocolate SKUs.</div>
+     </div>
+   </div>` };
+}
+
+/* ---- PAGE 3 — CATEGORY ---- */
+function npCategory(D){
+  const tbl = `<table class="np-tbl"><thead><tr><th>Category</th><th class="r">SKUs</th><th class="r">Median ₹/g</th><th>Cheapest pack</th><th class="c">Search</th></tr></thead><tbody>`+
+    D.catRows.map(c=>`<tr><td class="np-ent"><span class="np-dot" style="background:${CAT_COL[c.cat]||'#9b9a96'}"></span>${esc(c.cat)}</td><td class="r">${c.n}</td><td class="r" style="font-weight:700">${npPg(c.med)}</td><td><b>${esc(c.cheapBrand)}</b> <span class="np-mono" style="color:#6E6A60">${npPg(c.cheapPpg)}</span></td><td class="c">${c.demand!=null?c.demand+' '+npDirArrow(c.dir):'—'}</td></tr>`).join('')+`</tbody></table>`;
+  const catBars = D.catRows.map(c=>({ label:c.cat, value:c.med, color:CAT_COL[c.cat]||'#9b9a96', vlabel:npPg(c.med) }));
+  const big = D.catRows[0], dear = D.catRows.slice().sort((a,b)=>b.med-a.med)[0], cheap = D.catRows.slice().sort((a,b)=>a.med-b.med)[0];
+  return { section:'Category Report', html:
+  npBand('Category Report', '#7B2D8E', `${D.catRows.length} categories · ${npInt(D.kpi.skus)} SKUs`)+
+  `<div class="np-headline np-h-l">Cookies Rule the Shelf — and the Search Box</div>
+   <div class="np-deck">Where the volume sits, what each aisle costs per gram, and the only category whose demand is climbing.</div>
+   <div class="np-rule"></div>
+   <div style="margin-bottom:12px">${tbl}</div>
+   <div class="np-rowfill" style="gap:16px;align-items:stretch">
+     <div class="np-box" style="width:320px;flex-shrink:0;display:flex;flex-direction:column">
+       <div class="np-box-t">Median ₹/g by category</div>
+       ${npBars(catBars,{style:'gap:9px;width:100%;flex:1;justify-content:space-between;padding:8px 0'})}
+     </div>
+     <div class="np-grow" style="display:flex;align-items:center"><div class="np-cols np-cols-2" style="width:100%">
+       <div class="np-col"><div class="np-body">
+         <p><span class="np-kapital">Cookies, the colossus.</span> At <b>${big?npInt(big.n):'—'} SKUs</b> and a ${big?npPg(big.med):'—'}/g median, cookies are the deepest, busiest aisle — and the rare category with <b>rising</b> search. Premium sub-ranges (choco-filled, protein, imported) pull its average up.</p>
+         <p><span class="np-kapital">Wafers, the priciest gram.</span> ${dear?esc(dear.cat):'—'} top the ladder at <b>${dear?npPg(dear.med):'—'}/g</b> — air, cream and chocolate coatings make them a per-gram indulgence rather than a staple.</p>
+       </div></div>
+       <div class="np-col"><div class="np-body">
+         <p><span class="np-kapital">Glucose &amp; value, the floor.</span> The “${cheap?esc(cheap.cat):'value'}” shelf is the cheapest at <b>${cheap?npPg(cheap.med):'—'}/g</b>, anchored by Parle-G-style mass packs that defend the entry price-point.</p>
+         <p>Category search terms read low for cream, digestive and crackers — Indians search <em>brands</em> (Oreo, Bourbon), not aisles. Treat the demand column as a relative signal, not a sales figure.</p>
+       </div></div>
+     </div></div>
+   </div>
+   <div class="np-pull">“Cookies are the only category with rising search interest — and the deepest, most premium shelf in the store.”<span class="np-cite">Munshot Category Desk</span></div>` };
+}
+
+/* ---- PAGE 4 — COMPETITION ---- */
+function npCompetition(D){
+  const stackItems = D.shareAll.map(c=>({ label:c.company, pct:c.marketSharePct, color:COL[c.company]|| (/Others/.test(c.company)?'#B8B2A6':'#9b9a96') }));
+  const tagEst = e => e ? '<span class="np-tag" style="background:#F4E2C3;color:#6E4300">Est.</span>' : '<span class="np-tag" style="background:#CDEBDF;color:#0A4A3A">Audited</span>';
+  const tbl = `<table class="np-tbl"><thead><tr><th>#</th><th>Company</th><th class="r">Share</th><th class="r">Biscuit rev.</th><th class="r">YoY</th><th>Class</th><th class="c">Basis</th></tr></thead><tbody>`+
+    D.shareRanked.map((c,i)=>`<tr><td><span class="np-rk">${i+1}</span></td><td class="np-ent">${npDotCo(c.company)}${esc(c.company)}</td><td class="r" style="font-weight:700">~${c.marketSharePct}%</td><td class="r">${npCr(c.biscuitRevenueCr)}</td><td class="r ${c.yoyGrowthPct>=0?'np-pos':'np-neg'}">${npPct(c.yoyGrowthPct)}</td><td><span class="np-tag" style="background:${c.cl.color||'#16161D'};color:#FAF6EE">${esc(c.cl.label)}</span></td><td class="c">${tagEst(c.isEstimated)}</td></tr>`).join('')+`</tbody></table>`;
+  const cards = D.archs.slice().reverse().map(a=>{
+    const k = a.it.archetype;
+    return `<div class="np-card"><div class="np-card-co">${npDotCo(a.company)}${esc(a.company)}</div><div class="np-card-a" style="color:${NP_ARCH_COL[k.key]||'#16161D'}">${esc(k.label)}</div><div class="np-card-n">${npPg(a.med)}<span class="np-kick-font" style="font-size:9px;color:#6E6A60;font-weight:600">/g median</span></div><div class="np-card-x">${esc(k.descriptor)}.</div></div>`;
+  }).join('');
+  return { section:'The Boardroom', html:
+  npBand('The Boardroom · Competition', '#1D4E9C', 'Market share · revenue · growth')+
+  `<div class="np-headline np-h-l">A ₹50,000-Crore Contest, Top-Heavy and Stirring</div>
+   <div class="np-deck">${esc((D.context||'').replace(/\s*\(industry estimates.*\)\.?$/,'').slice(0,150))}…</div>
+   <div class="np-rule"></div>
+   <div class="np-box" style="margin-bottom:12px"><div class="np-box-t">Estimated market share · adds to ~100%</div><div style="text-align:center">${npStack(stackItems)}</div>
+     <div class="np-cap">${D.shareAll.map(c=>`<span style="margin-right:11px"><span class="np-dot" style="background:${COL[c.company]||'#B8B2A6'}"></span>${esc(c.company)} ~${c.marketSharePct}%</span>`).join('')}</div>
+   </div>
+   <div style="margin-bottom:12px">${tbl}</div>
+   <div class="np-fill">
+     <div class="np-box-t" style="border:0;color:#1D4E9C">Archetypes · how each group plays ₹/g</div>
+     <div class="np-cards" style="margin-bottom:10px">${cards}</div>
+     <div class="np-box np-shade" style="margin-top:auto"><div class="np-box-t">A note on the numbers</div><div class="np-body" style="font-size:10px">${esc((D.disclaimer||'').slice(0,420))}…</div></div>
+   </div>` };
+}
+
+/* ---- PAGE 5 — CHANNELS ---- */
+function npChannels(D){
+  const chans = ['amazon','blinkit','zepto'].filter(c=>D.chMed[c] && D.chMed[c].n>0);
+  const chanBars = chans.map(c=>({ label:CH_LABEL[c], value:D.chMed[c].med, color:CH_COL[c], vlabel:npPg(D.chMed[c].med)+' · '+D.chMed[c].n }));
+  const typeBars = [
+    { label:'E-commerce', value:D.eMed, color:'#E8730C', vlabel:npPg(D.eMed) },
+    { label:'Quick-commerce', value:D.qMed, color:'#C99700', vlabel:npPg(D.qMed) },
+  ].filter(b=>b.value!=null);
+  const rows = D.cmp.slice(0,12);
+  const tbl = `<table class="np-tbl np-tbl-roomy"><thead><tr><th>Brand</th><th class="r">Amazon ₹/g</th><th class="r">Blinkit ₹/g</th><th class="c">Cheaper on</th></tr></thead><tbody>`+
+    rows.map(r=>`<tr><td class="np-ent">${npDotCo(r.company)}${esc(r.name)}</td><td class="r">${r.ppg.amazon!=null?npPg(r.ppg.amazon):'—'}</td><td class="r">${r.ppg.blinkit!=null?npPg(r.ppg.blinkit):'—'}</td><td class="c"><span class="np-tag" style="background:${CH_COL[r.cheapest]||'#16161D'};color:#FAF6EE">${esc(CH_LABEL[r.cheapest]||'—')}</span></td></tr>`).join('')+`</tbody></table>`;
+  const gaps = D.cmp.filter(r=>r.ppg.amazon!=null && r.ppg.blinkit!=null).map(r=>({ name:r.name, company:r.company, g:Math.round((r.ppg.amazon-r.ppg.blinkit)/r.ppg.amazon*100) })).sort((a,b)=>Math.abs(b.g)-Math.abs(a.g)).slice(0,7);
+  const gapList = gaps.map(x=>`<div class="np-li"><span class="np-li-n" style="color:${x.g>=0?'#0A6B4F':'#B11226'}">${x.g>=0?'−':'+'}${Math.abs(x.g)}%</span><span>${npDotCo(x.company)}<b>${esc(x.name)}</b> ${x.g>=0?'cheaper on Blinkit':'dearer on Blinkit'}</span></div>`).join('');
+  const zNote = (D.chMed.zepto && D.chMed.zepto.n===0) ? ' Zepto returned no in-stock matches this edition, so the wire runs Amazon vs Blinkit.' : '';
+  const gapHead = D.gapPct!=null ? `Quick-commerce is <b>${Math.abs(D.gapPct)}% ${D.gapPct>=0?'cheaper':'dearer'}</b> per gram than e-commerce` : 'Channel gap';
+  return { section:'The Channel Wire', html:
+  npBand('The Channel Wire · Compare', '#E8730C', 'Amazon · Blinkit · Zepto')+
+  `<div class="np-headline np-h-l">${gapHead}</div>
+   <div class="np-deck">Like-for-like, most everyday brands ring up cheaper on quick-commerce — but the mix differs, so read it as a city-level guide.</div>
+   <div class="np-rule"></div>
+   <div class="np-flex" style="gap:16px;margin-bottom:12px">
+     <div class="np-grow np-box"><div class="np-box-t">Median ₹/g by channel <span class="np-kick-font" style="font-weight:600;color:#6E6A60">₹/g · n</span></div>${npBars(chanBars,{style:'gap:12px'})}</div>
+     <div class="np-grow np-box"><div class="np-box-t">Median ₹/g by channel type</div>${typeBars.length?npBars(typeBars,{style:'gap:16px'}):'<div class="np-cap">No paired type data this edition.</div>'}
+       <div class="np-cap">E-commerce skews imported, combo &amp; indulgent packs; quick-commerce skews everyday metro staples.</div>
+     </div>
+   </div>
+   <div class="np-rowfill" style="gap:16px;align-items:stretch">
+     <div class="np-grow np-box" style="display:flex;flex-direction:column"><div class="np-box-t">Same brand, two apps · median ₹/g (cheapest flagged)</div><div class="np-vcenter">${tbl}</div></div>
+     <div style="width:250px;flex-shrink:0;display:flex;flex-direction:column" class="np-box np-shade"><div class="np-box-t" style="color:#E8730C;border-color:#E8730C">Biggest per-brand gaps</div><div class="np-list">${gapList}</div>
+       <div class="np-cap">Typical (median) ₹/g per app — <b>not the same pack matched across apps</b>. Quick-commerce reads from a typical metro location.${zNote}</div>
+     </div>
+   </div>` };
+}
+
+/* ---- PAGE 6 — HEALTH ---- */
+function npHealth(D){
+  const order = ['isProtein','noMaida','sugarFree','nonRefinedSugar','noPalmOil'];
+  const byKey = Object.fromEntries(D.health.map(h=>[h.key,h]));
+  const hl = order.map(k=>byKey[k]).filter(Boolean);
+  const colOf = h => { const a=(HEALTH_ATTRS||[]).find(x=>x.key===h.key); return a?a.color:'#138A6E'; };
+  const pts = hl.map(h=>({ x:h.supplyPct, y:h.demand, r:Math.max(5,Math.min(13,4+Math.sqrt(h.n))), color:colOf(h), label:h.label }));
+  const readTag = r => { const m={Whitespace:'#0A6B4F',Contested:'#B6772E','Over-supplied':'#9b9a96','Values claim':'#7B2D8E',Niche:'#6E6A60'}; return `<span class="np-tag" style="background:${m[r]||'#16161D'};color:#FAF6EE">${esc(r)}</span>`; };
+  const tbl = `<table class="np-tbl"><thead><tr><th>Claim</th><th class="r">Shelf</th><th class="c">Demand</th><th>Verdict</th><th class="r">₹/g prem.</th></tr></thead><tbody>`+
+    hl.map(h=>`<tr><td class="np-ent">${esc(h.label)}</td><td class="r">${h.n} <span style="color:#6E6A60">(${h.supplyPct}%)</span></td><td class="c">${h.demand} ${npDirArrow(h.dir)}</td><td>${readTag(h.read)}</td><td class="r ${h.premium>0?'np-neg':''}">${h.premium!=null?npPct(h.premium,0):'—'}</td></tr>`).join('')+`</tbody></table>`;
+  const premBars = hl.filter(h=>h.premium!=null).map(h=>({ label:h.label, value:h.premium, color:colOf(h), vlabel:npPct(h.premium,0) }));
+  const white = hl.find(h=>h.read==='Whitespace');
+  const coList = D.cleanCo.slice(0,6).map(r=>`<div class="np-li"><span class="np-li-n">${r.pct}%</span><span>${npDotCo(r.name)}<b>${esc(r.name)}</b> · ${r.clean}/${r.total} SKUs clean</span></div>`).join('');
+  const brList = D.cleanBr.slice(0,5).map(r=>`<div class="np-li"><span class="np-li-n">${r.pct}%</span><span><b>${esc(r.name)}</b> <span style="color:#6E6A60">${esc(r.company)}</span> · ${r.clean}/${r.total}</span></div>`).join('');
+  const over = hl.filter(h=>h.read==='Over-supplied').map(h=>h.label);
+  return { section:'The Health Beat', html:
+  npBand('The Health Beat · Clean-Label', '#138A6E', 'Demand × supply · claimed attributes')+
+  `<div class="np-headline np-h-l">Protein: Loud Demand, a Near-Empty Shelf</div>
+   <div class="np-deck">Five clean-label claims, mapped by what shoppers search versus what the aisle actually stocks — and the premium each commands.</div>
+   <div class="np-rule"></div>
+   <div class="np-flex" style="gap:16px;margin-bottom:11px">
+     <div style="width:344px;flex-shrink:0" class="np-box"><div class="np-box-t">Whitespace map · demand vs shelf share</div><div style="text-align:center">${npScatter(pts)}</div></div>
+     <div class="np-grow">
+       ${tbl}
+       <div class="np-box np-shade" style="margin-top:10px"><div class="np-box-t" style="color:#0A6B4F;border-color:#0A6B4F">★ The whitespace</div><div class="np-body" style="font-size:10.5px">${white?`<b>${esc(white.label)}</b> draws <b>${white.demand}/100</b> in search yet fills only <b>${white.supplyPct}%</b> of the shelf (${white.n} SKUs) — the clearest unmet demand, and it carries a <b>${npPct(white.premium,0)}</b> ₹/g premium.`:'No single whitespace this edition.'}</div></div>
+     </div>
+   </div>
+   <div class="np-rowfill" style="gap:16px;align-items:stretch">
+     <div class="np-grow np-box" style="display:flex;flex-direction:column"><div class="np-box-t">The clean-label surcharge · ₹/g premium vs plain</div>${npBars(premBars,{style:'gap:10px;width:100%;flex:1;justify-content:space-between;padding:8px 0'})}<div class="np-cap">${over.length?'Over-supplied (high shelf, low search): '+over.join(' &amp; ')+'.':''}</div></div>
+     <div style="width:300px;flex-shrink:0;display:flex;flex-direction:column"><div class="np-box-t" style="color:#138A6E;border-color:#138A6E">Clean-label leaders · by group</div><div class="np-list">${coList}</div><div class="np-box-t" style="color:#138A6E;border-color:#138A6E;margin-top:9px">Top brands</div><div class="np-list">${brList}</div></div>
+   </div>` };
+}
+
+/* ---- PAGE 7 — TRENDS ---- */
+function npTrends(D){
+  const oreo = D.brandTrends.find(b=>b.name==='Oreo');
+  const top = D.brandTrends.filter(b=>b.latest>0).slice(0,12);
+  const maxI = Math.max(...top.map(b=>b.latest),1);
+  const barList = top.map(b=>{ const co=(BRANDS.find(x=>x.brand===b.name)||{}).company; const c=b.dir==='rising'?'#0A6B4F':b.dir==='falling'?'#C8102E':'#B6772E'; return `<div class="np-bar"><div class="np-bar-l">${npDotCo(co)}${esc(b.name)}</div><div class="np-bar-track" style="height:14px"><div class="np-bar-fill" style="width:${Math.round(b.latest/maxI*100)}%;background:${c}"></div></div><div class="np-bar-v">${b.latest} ${npDirArrow(b.dir)}</div></div>`; }).join('');
+  const cats = D.catTrends.filter(c=>c.latest>0).slice(0,5).map(c=>`<div class="np-li"><span class="np-li-n">${c.latest}</span><span><span class="np-dot" style="background:${CAT_COL[c.name]||'#9b9a96'}"></span><b>${esc(c.name)}</b> ${npDir(c.dir)}</span></div>`).join('');
+  const brk = D.breakouts.slice(0,8).map(b=>`<div class="np-li"><span class="np-li-n">${esc(b.value)}</span><span><b>${esc(b.query)}</b> <span style="color:#6E6A60">· ${esc(b.seed)}</span></span></div>`).join('');
+  const falling = D.brandTrends.filter(b=>b.dir==='falling' && b.latest>0).map(b=>b.name);
+  return { section:'The Trend Page', html:
+  npBand('The Trend Page · Demand', '#C8102E', 'Google Trends · India · 12 months')+
+  `<div class="np-headline np-h-l">Oreo Hits 100 as the Old Guard Fades</div>
+   <div class="np-deck">Relative search interest (0–100) — a demand signal, not sales. One icon is peaking while the classics drift down.</div>
+   <div class="np-rule"></div>
+   <div class="np-flex" style="gap:16px;margin-bottom:11px">
+     <div class="np-grow np-box np-shade"><div class="np-box-t" style="color:#C8102E;border-color:#C8102E">Cover star · ${esc(oreo?oreo.name:'Oreo')} ${oreo?oreo.latest:''}/100 ${oreo?npDir(oreo.dir):''}</div>
+       <div style="display:flex;align-items:center;gap:14px"><div style="flex:1">${npSpark(oreo?oreo.series:[],{w:300,h:54,color:'#C8102E'})}</div></div>
+       <div class="np-cap">Mondelez’s Oreo has climbed to a category-leading peak — “bts oreo biscuit” is a breakout query.</div>
+     </div>
+     <div style="width:250px;flex-shrink:0;display:flex;flex-direction:column" class="np-box"><div class="np-box-t">By category</div><div class="np-list">${cats}</div></div>
+   </div>
+   <div class="np-rowfill" style="gap:16px;align-items:stretch">
+     <div class="np-grow np-box" style="display:flex;flex-direction:column"><div class="np-box-t">Brand search interest · ranked (0–100)</div><div class="np-bars" style="flex:1;justify-content:space-between;padding:8px 0">${barList}</div></div>
+     <div style="width:286px;flex-shrink:0;display:flex;flex-direction:column" class="np-box"><div class="np-box-t" style="color:#C8102E;border-color:#C8102E">Breakouts · rising queries</div><div class="np-list">${brk}</div>
+       <div class="np-cap">Consumer curiosity is running to mascarpone “creme”, 50-50 &amp; a BTS×Oreo tie-in. Fading: ${esc(falling.slice(0,4).join(', '))}.</div>
+     </div>
+   </div>` };
+}
+
+/* ---- PAGE 8 — LAST WORD ---- */
+function npLastWord(D){
+  const val = D.archs[0], prem = D.archs[D.archs.length-1];
+  const fast = D.shareRanked.slice().sort((a,b)=>b.yoyGrowthPct-a.yoyGrowthPct)[0];
+  const white = D.health.find(h=>h.read==='Whitespace');
+  const histMed = D.hist.map(h=>h.overall.medianPpg).filter(v=>v!=null);
+  const first = D.hist[0], last = D.hist[D.hist.length-1];
+  const watch = [
+    white?`<b>${esc(white.label)} whitespace.</b> ${white.demand}/100 demand on a ${white.supplyPct}% shelf — first mover wins a ${npPct(white.premium,0)} premium.`:'',
+    falling(D),
+    `<b>Discount-led volume.</b> The widest cuts (up to ${D.deepDisc[0]?Math.round(D.deepDisc[0].discount):'—'}% off) cluster in indulgent SKUs — watch margin, not just price.`,
+    overSupplied(D),
+    `<b>Quick-commerce pricing.</b> ${D.gapPct!=null?`q-commerce ran ${Math.abs(D.gapPct)}% ${D.gapPct>=0?'cheaper':'dearer'} per gram`:'channel gaps are opening'} — a structural shift in everyday biscuit economics.`,
+  ].filter(Boolean);
+  function falling(D){ const f=D.brandTrends.filter(b=>b.dir==='falling'&&b.latest>0).map(b=>b.name).slice(0,4); return f.length?`<b>Legacy demand erosion.</b> ${esc(f.join(', '))} are all softening in search — heritage equity is not the same as momentum.`:''; }
+  function overSupplied(D){ const o=D.health.filter(h=>h.read==='Over-supplied').map(h=>h.label); return o.length?`<b>Over-supplied claims.</b> ${esc(o.join(' & '))} crowd the shelf with little matching search — priced high, demanded little.`:''; }
+  return { section:'The Last Word', html:
+  npBand('The Last Word · Outlook & Method', '#16161D', `Edition of ${esc(D.asOf)}`)+
+  `<div class="np-headline np-h-l">The Market Read: A Barbell Aisle</div>
+   <div class="np-deck">Cheap glucose volume at one end, premium &amp; clean-label indulgence at the other — and a thinning middle.</div>
+   <div class="np-rule"></div>
+   <div class="np-flex" style="gap:16px;margin-bottom:11px">
+     <div class="np-grow np-cols np-cols-2">
+       <div class="np-col"><div class="np-body">
+         <p><span class="np-dropcap">T</span>he Indian biscuit aisle is splitting into a barbell. At one end, <b>${esc(val?val.company:'value')}</b> defends the floor at ${npPg(val?val.med:null)}/g, where volume and the magic ₹5 price-point still rule. At the other, <b>${esc(prem?prem.company:'premium')}</b> and the D2C newcomers push ${npPg(prem?prem.med:null)}/g on protein, no-maida and imported indulgence.</p>
+         <p>The growth signal sits with the insurgents: <b>${esc(fast?fast.company:'—')}</b> posted the fastest revenue jump (${fast?npPct(fast.yoyGrowthPct):'—'}), and Oreo’s search is at a category peak.</p>
+       </div></div>
+       <div class="np-col"><div class="np-body">
+         <p>For incumbents the playbook is twofold: defend the value core on price-per-gram, and answer the clean-label surcharge before the challengers compound. Parle and Mondelez carry <b>no</b> clean-label SKUs in our scan — a visible gap.</p>
+         <p>For challengers, the opening is the whitespace: high-search, thin-shelf claims that already command double-digit ₹/g premiums. The aisle is rewarding the brands that move first.</p>
+       </div></div>
+     </div>
+     <div style="width:230px;flex-shrink:0;display:flex;flex-direction:column" class="np-box np-shade"><div class="np-box-t">Movers · median ₹/g</div>
+       <div class="np-list">
+         <div style="text-align:center">${npSpark(histMed,{w:200,h:46,color:'#16161D'})}</div>
+         <div class="np-stat"><span class="np-stat-l">${first?esc(first.ts.slice(0,10)):''}</span><span class="np-stat-v">${first?npPg(first.overall.medianPpg):'—'}</span></div>
+         <div class="np-stat"><span class="np-stat-l">${last?esc(last.ts.slice(0,10)):''}</span><span class="np-stat-v">${last?npPg(last.overall.medianPpg):'—'}</span></div>
+       </div>
+       <div class="np-cap">Across ${D.hist.length} tracked snapshots. Shifts partly reflect changing SKU coverage.</div>
+     </div>
+   </div>
+   <div class="np-box" style="margin-bottom:11px"><div class="np-box-t" style="color:#C8102E;border-color:#C8102E">Watch list</div>
+     ${watch.map(w=>`<div class="np-li"><span class="np-li-n">▸</span><span>${w}</span></div>`).join('')}
+   </div>
+   <div class="np-fill np-box" style="background:#16161D;color:#FAF6EE;display:flex;flex-direction:column;justify-content:space-between;padding:15px 18px">
+     <div>
+       <div class="np-box-t" style="color:#FAF6EE;border-color:rgba(250,246,238,.4)">Colophon &amp; Method <span class="np-kick-font" style="font-weight:600;color:#C9C3B5;letter-spacing:.04em">Edition of ${esc(D.asOf)}</span></div>
+       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:6px">
+         <div class="np-body" style="color:#E9E4D8;font-size:10.5px;text-align:left">
+           <p style="margin-bottom:4px"><b style="color:#fff" class="np-kapital">Where the data comes from</b></p>
+           <p>• <b style="color:#fff">Amazon India</b> listings (live-scraped) — price, MRP, discount, net weight, ratings &amp; reviews.</p>
+           <p>• <b style="color:#fff">Blinkit &amp; Zepto</b> — representative-metro quick-commerce pricing for the channel wire.</p>
+           <p>• <b style="color:#fff">Google Trends</b> (via SerpApi) — relative search interest &amp; breakout queries.</p>
+           <p>• <b style="color:#fff">Company filings &amp; industry reports</b> — biscuit revenue, growth &amp; market share.</p>
+         </div>
+         <div class="np-body" style="color:#E9E4D8;font-size:10.5px;text-align:left">
+           <p style="margin-bottom:4px"><b style="color:#fff" class="np-kapital">How to read it</b></p>
+           <p>• Hero metric is <b style="color:#fff">price-per-gram (₹/g)</b> — price ÷ net weight, shown as the median across in-stock packs.</p>
+           <p>• Britannia &amp; ITC revenue is <b style="color:#fff">AUDITED</b>; Parle, Mondelez, Unibic &amp; The Whole Truth are <b style="color:#fff">ESTIMATED</b>, as are all share %s.</p>
+           <p>• Clean-label flags are <b style="color:#fff">CLAIMED</b> from pack titles, not lab-verified; search interest is relative (0–100), not sales.</p>
+           <p><b style="color:#fff">Nothing is fabricated</b> — every estimate &amp; claim is labelled.</p>
+         </div>
+       </div>
+     </div>
+     <div>
+       <div style="border-top:1px solid rgba(250,246,238,.3);padding-top:10px;display:flex;justify-content:space-between;align-items:flex-end">
+         <div><div class="np-title" style="font-size:33px;color:#FAF6EE;line-height:.85">MUNSHOT</div><div class="np-kick-font" style="font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#C9C3B5;margin-top:3px">The Price-per-Gram Chronicle</div></div>
+         <div style="text-align:right">
+           <div class="np-mono" style="font-size:13px;font-weight:700;color:#fff">${npInt(D.kpi.skus)} SKUs · ${D.kpi.brands} brands · ${D.kpi.companies} groups</div>
+           <div class="np-kick-font" style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#C9C3B5;margin-top:3px">Generated by Biscuit Market Intelligence · ${esc(D.asOf)}</div>
+         </div>
+       </div>
+     </div>
+   </div>` };
+}
+
+/* ---- assemble pages (dynamic count — only sections with data) ---- */
+function npPages(D){
+  const defs = [ npFront(D) ];
+  if (D.cheapBrands.length && D.packRows.length) defs.push(npPricing(D));
+  if (D.catRows.length) defs.push(npCategory(D));
+  if (D.shareRanked.length) defs.push(npCompetition(D));
+  if (D.cmp.length || (D.eMed&&D.qMed)) defs.push(npChannels(D));
+  if (D.health.length) defs.push(npHealth(D));
+  if (D.brandTrends.length) defs.push(npTrends(D));
+  defs.push(npLastWord(D));
+  const total = defs.length;
+  return defs.map((d,i)=>({ section:d.section, html:`<div class="np-page">${d.html}${npFolio(D.asOf,i+1,total,d.section)}</div>` }));
+}
+
+/* ---- lazy CDN + font loading (only when the user clicks) ---- */
+let _npDeps = null;
+function npLoadCss(href){ return new Promise(res=>{ if ([...document.querySelectorAll('link[rel=stylesheet]')].some(l=>l.href===href)) return res(); const l=document.createElement('link'); l.rel='stylesheet'; l.href=href; l.onload=()=>res(); l.onerror=()=>res(); document.head.appendChild(l); }); }
+function npLoadScript(src, glob){ return new Promise((res,rej)=>{ if (glob && window[glob]) return res(); const s=document.createElement('script'); s.src=src; s.onload=()=>res(); s.onerror=()=>rej(new Error('Failed to load '+src)); document.head.appendChild(s); }); }
+function loadNewspaperDeps(){
+  if (_npDeps) return _npDeps;
+  _npDeps = Promise.all([
+    npLoadCss('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@800;900&family=Fraunces:opsz,wght@9..144,600;700;900&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@500;600;700&display=swap'),
+    npLoadScript('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js', 'html2canvas'),
+    npLoadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js', 'jspdf'),
+  ]);
+  return _npDeps;
+}
+async function npFontsReady(){
+  try{
+    if (document.fonts && document.fonts.load){
+      await Promise.all([
+        document.fonts.load('900 64px "Playfair Display"'), document.fonts.load('900 32px "Fraunces"'),
+        document.fonts.load('700 16px "Fraunces"'), document.fonts.load('400 12px "Newsreader"'),
+        document.fonts.load('italic 400 14px "Newsreader"'), document.fonts.load('700 12px "IBM Plex Mono"'),
+        document.fonts.load('600 11px "IBM Plex Mono"'), document.fonts.load('800 11px "Inter"'),
+      ]);
+      await document.fonts.ready;
+    }
+  }catch(e){ /* fall back to whatever fonts are available */ }
+}
+function buildNewspaperStage(D){
+  const stage = document.createElement('div');
+  stage.className = 'np-stage';
+  stage.innerHTML = npPages(D).map(p=>p.html).join('');
+  return stage;
+}
+async function npExport(stage, asOf){
+  const jsPDFctor = window.jspdf && window.jspdf.jsPDF;
+  if (!jsPDFctor || !window.html2canvas) throw new Error('PDF libraries unavailable');
+  const pdf = new jsPDFctor({ unit:'px', format:[794,1123], orientation:'portrait', compress:true });
+  const pages = stage.querySelectorAll('.np-page');
+  for (let i=0;i<pages.length;i++){
+    const canvas = await window.html2canvas(pages[i], { scale:2, backgroundColor:'#FAF6EE', useCORS:true, logging:false, width:794, height:1123, windowWidth:794, windowHeight:1123 });
+    const img = canvas.toDataURL('image/jpeg', 0.94);
+    if (i>0) pdf.addPage([794,1123],'portrait');
+    pdf.addImage(img, 'JPEG', 0, 0, 794, 1123, undefined, 'FAST');
+  }
+  pdf.save(`Munshot-Newspaper-${asOf||new Date().toISOString().slice(0,10)}.pdf`);
+}
+let _npBusy = false;
+async function getInsight(){
+  if (_npBusy) return;
+  if (!(STATE.skus && STATE.skus.length)){ alert('No data to report yet — once the dashboard has loaded its data, try again.'); return; }
+  const btn = document.getElementById('npBtn'); const label = btn ? btn.innerHTML : '';
+  _npBusy = true; if (btn){ btn.disabled = true; btn.innerHTML = '📰 Composing your edition…'; }
+  let stage = null;
+  try{
+    await loadNewspaperDeps();
+    const D = npData();
+    stage = buildNewspaperStage(D);
+    document.body.appendChild(stage);
+    await npFontsReady();
+    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));   // let layout settle
+    await npExport(stage, D.asOf);
+  }catch(e){
+    console.error('Newspaper export failed', e);
+    alert('Sorry — the newspaper could not be generated. ' + (e && e.message ? e.message : ''));
+  }finally{
+    if (stage && stage.parentNode) stage.parentNode.removeChild(stage);
+    if (btn){ btn.disabled = false; btn.innerHTML = label; }
+    _npBusy = false;
+  }
 }
 
 /* ------------------------------------------------------------
