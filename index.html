@@ -14,6 +14,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" async></script>
 <!-- Excel export (defer) — used by the export feature in a later build step. -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js" defer></script>
+<!-- PDF export — capture the whole dashboard view to a paginated PDF. -->
+<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js" defer></script>
 
 <style>
 /* ============================================================
@@ -246,13 +248,10 @@ td a:hover{color:#B6772E;text-decoration:underline}
 .pr-callout{background:#FBF3E3;border:0.5px solid rgba(182,119,46,.3);border-radius:8px;padding:11px 13px;font-size:12.5px;line-height:1.55;margin-bottom:12px}
 .pr-note{font-size:10.5px;color:#9b9a96;margin-top:10px;line-height:1.5}
 .pr-foot{font-size:10px;color:#9b9a96;border-top:0.5px solid #e6e2da;padding-top:10px;line-height:1.5}
-@media print{
-  @page{size:A4;margin:12mm}
-  html,body{background:#fff!important}
-  body>*{display:none!important}
-  #print-report{display:block!important}
-  #print-report *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-}
+/* PDF export (html2pdf) — hide interactive chrome while capturing the dashboard */
+.pdf-export .ov-actions,.pdf-export .chips,.pdf-export .chips-ch,.pdf-export .subnav,.pdf-export .seg,.pdf-export .back-bar>button{display:none!important}
+.pdf-export .tbl-scroll{overflow:visible!important}
+.pdf-export .card,.pdf-export .kpi,.pdf-export .exec-card,.pdf-export .hw-card,.pdf-export .sig-card,.pdf-export .mr-para,.pdf-export .rev-row,.pdf-export tr{break-inside:avoid;page-break-inside:avoid}
 /* Executive intelligence (Step 13) */
 .kpi-signal{font-size:10.5px;color:#6b6a66;margin:6px 0 2px;line-height:1.35}
 .arch-badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap}
@@ -2510,9 +2509,9 @@ function downloadExcel(){
 }
 
 /* ===========================================================
-   PDF EXPORT — a designed one-page executive report (print → Save as PDF).
-   Static stat blocks + tables (no canvas) so it paginates cleanly: nothing
-   breaks across pages, colours print, fits tight.
+   PDF EXPORT.  The live ⤓ PDF button uses exportPDF() (further below) to
+   capture the WHOLE dashboard view via html2pdf. buildReportHTML() is an
+   optional one-page "executive summary" generator kept for a future summary export.
    =========================================================== */
 function buildReportHTML(){
   const skus = STATE.skus || [];
@@ -2566,12 +2565,23 @@ function buildReportHTML(){
     <div class="pr-foot">Sources: Amazon India (Firecrawl) · Blinkit / Zepto (representative metro) · Google Trends via SerpApi · company filings. Hero metric: price per gram (₹/g). Nothing fabricated — estimates &amp; claims are labelled.</div>
   </div>`;
 }
+// Capture the ENTIRE current dashboard view → one paginated PDF (fits width,
+// colours preserved, cards never split across a page).
 function exportPDF(){
+  if (!window.html2pdf){ alert('PDF library is still loading — please try again in a moment.'); return; }
   if (!(STATE.skus && STATE.skus.length)){ alert('No data to export yet — load or scrape first.'); return; }
-  let el = document.getElementById('print-report');
-  if (!el){ el = document.createElement('div'); el.id = 'print-report'; document.body.appendChild(el); }
-  el.innerHTML = buildReportHTML();
-  window.print();
+  const app = $app();
+  const view = (STATE.view && (typeof STATE.view==='string' ? STATE.view : STATE.view.type)) || 'overview';
+  document.body.classList.add('pdf-export');           // hide nav / chips / toggles while capturing
+  const done = ()=> document.body.classList.remove('pdf-export');
+  html2pdf().set({
+    margin:[8,8,10,8],
+    filename:`biscuit-dashboard-${view}-${new Date().toISOString().slice(0,10)}.pdf`,
+    image:{ type:'jpeg', quality:0.95 },
+    html2canvas:{ scale:2, useCORS:true, backgroundColor:'#ffffff', scrollX:0, scrollY:0, windowWidth: app.scrollWidth },
+    jsPDF:{ unit:'mm', format:'a4', orientation:'portrait' },
+    pagebreak:{ mode:['css','legacy'], avoid:['.card','.kpi','.exec-card','.hw-card','.sig-card','.mr-para','.rev-row','tr'] },
+  }).from(app).save().then(done).catch(e=>{ console.warn('PDF export failed', e); done(); });
 }
 
 /* ------------------------------------------------------------
