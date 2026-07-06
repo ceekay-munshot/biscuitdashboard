@@ -1,230 +1,230 @@
 {
   "source": "google-trends-live",
   "geo": "IN",
-  "updated": "2026-06-29",
+  "updated": "2026-07-06",
   "timeframe": "last 12 months",
-  "fetchedAt": "2026-06-29T08:13:18.545Z",
+  "fetchedAt": "2026-07-06T07:13:47.311Z",
   "note": "Relative search interest (0–100), NOT sales. Fetched live from Google Trends via SerpApi in CI; any value that could not refresh keeps its last-good and is flagged stale.",
   "brands": {
     "Parle-G": {
       "interest": [
-        63,
-        54,
-        58,
-        47,
+        56,
         52,
-        59,
-        55,
-        66,
-        45,
-        45,
+        56,
+        42,
         50,
-        50
+        54,
+        64,
+        52,
+        42,
+        41,
+        49,
+        46
       ],
-      "latest": 50,
+      "latest": 46,
       "direction": "falling",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     },
     "Good Day": {
       "interest": [
         41,
-        38,
-        36,
-        31,
-        40,
-        36,
-        36,
-        36,
+        37,
+        33,
         32,
+        37,
+        35,
+        35,
         31,
-        31,
+        33,
+        27,
+        32,
         33
       ],
       "latest": 33,
       "direction": "falling",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     },
     "Bourbon": {
       "interest": [
-        61,
-        48,
-        51,
-        37,
+        52,
+        45,
+        46,
+        36,
         40,
-        48,
-        43,
-        37,
-        35,
-        32,
-        35,
-        37
+        45,
+        41,
+        33,
+        33,
+        33,
+        33,
+        33
       ],
-      "latest": 37,
+      "latest": 33,
       "direction": "falling",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     },
     "Marie Gold": {
       "interest": [
-        23,
         21,
-        20,
+        19,
         17,
-        18,
+        17,
+        19,
         18,
         22,
-        21,
-        26,
         20,
-        22,
-        21
+        25,
+        20,
+        21,
+        20
       ],
-      "latest": 21,
+      "latest": 20,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     },
     "NutriChoice": {
       "interest": [
+        6,
+        6,
+        6,
+        6,
         7,
         9,
-        8,
-        5,
-        8,
-        8,
-        5,
-        10,
+        11,
         7,
-        10,
+        9,
         12,
+        10,
         9
       ],
       "latest": 9,
-      "direction": "flat",
+      "direction": "rising",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     },
     "Monaco": {
       "interest": [
         16,
         16,
-        17,
-        12,
         16,
+        10,
+        15,
+        15,
         14,
-        16,
-        16,
-        16,
+        13,
         14,
+        13,
         13,
         15
       ],
       "latest": 15,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     },
     "Hide & Seek": {
       "interest": [
-        25,
         24,
-        26,
+        22,
+        24,
+        17,
         20,
-        22,
+        23,
         24,
-        25,
-        22,
+        20,
+        18,
         19,
-        20,
-        20,
-        21
+        18,
+        18
       ],
-      "latest": 21,
+      "latest": 18,
       "direction": "falling",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     },
     "KrackJack": {
       "interest": [
-        8,
-        5,
-        4,
-        5,
         6,
+        9,
+        5,
+        5,
         7,
+        6,
+        3,
+        3,
         4,
-        1,
         5,
-        5,
-        8,
-        6
+        7,
+        7
       ],
-      "latest": 6,
+      "latest": 7,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     },
     "Dark Fantasy": {
       "interest": [
-        25,
         24,
-        24,
-        23,
+        22,
         21,
-        24,
+        22,
         21,
-        20,
+        21,
+        19,
+        18,
+        16,
         16,
         17,
-        16,
-        19
+        17
       ],
-      "latest": 19,
+      "latest": 17,
       "direction": "falling",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     },
     "Mom's Magic": {
       "interest": [
         0,
-        1,
         0,
         0,
         1,
-        3,
-        5,
+        1,
+        1,
+        0,
         0,
         0,
         0,
         1,
-        5
+        1
       ],
-      "latest": 5,
+      "latest": 1,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     },
     "Sunfeast Marie Light": {
       "interest": [
         0,
+        0,
+        0,
+        0,
+        0,
+        0,
         1,
-        0,
-        0,
-        0,
-        0,
-        0,
         0,
         0,
         0,
@@ -234,49 +234,49 @@
       "latest": 0,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     },
     "Oreo": {
       "interest": [
-        59,
-        59,
+        57,
+        57,
+        52,
+        61,
         57,
         62,
-        59,
-        65,
-        62,
-        66,
-        65,
+        54,
+        68,
         58,
-        77,
+        54,
+        80,
         100
       ],
       "latest": 100,
       "direction": "rising",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     },
     "Unibic": {
       "interest": [
         20,
-        21,
         17,
+        15,
         21,
-        20,
+        18,
         15,
-        15,
+        14,
+        11,
         13,
         12,
-        13,
         12,
-        13
+        12
       ],
-      "latest": 13,
+      "latest": 12,
       "direction": "falling",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     },
     "The Whole Truth": {
@@ -297,51 +297,51 @@
       "latest": 0,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     }
   },
   "categories": {
     "Cookies": {
       "interest": [
-        64,
         61,
+        59,
+        63,
         61,
-        61,
-        66,
+        69,
         75,
-        66,
+        69,
         100,
-        64,
-        67,
         66,
-        75
+        64,
+        64,
+        73
       ],
-      "latest": 75,
+      "latest": 73,
       "direction": "rising",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     },
     "Digestive": {
       "interest": [
-        0,
         2,
         2,
-        0,
-        0,
-        2,
-        0,
         2,
         0,
         0,
+        2,
+        2,
+        2,
+        0,
+        2,
         2,
         2
       ],
       "latest": 2,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     },
     "Cream": {
@@ -350,11 +350,11 @@
         3,
         3,
         5,
+        3,
+        3,
+        3,
+        3,
         5,
-        3,
-        3,
-        3,
-        3,
         5,
         5,
         5
@@ -362,7 +362,7 @@
       "latest": 5,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     },
     "Crackers": {
@@ -383,7 +383,7 @@
       "latest": 0,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     },
     "Rusk": {
@@ -391,20 +391,20 @@
         9,
         9,
         9,
-        7,
         9,
         9,
+        10,
         10,
         9,
         9,
         7,
-        7,
-        10
+        9,
+        11
       ],
-      "latest": 10,
+      "latest": 11,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     },
     "Wafer": {
@@ -425,7 +425,7 @@
       "latest": 0,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     }
   },
@@ -433,46 +433,88 @@
     "protein": {
       "interest": [
         100,
-        84,
-        64,
-        35,
+        86,
+        66,
+        45,
         52,
         61,
-        41,
-        53,
-        51,
-        57,
-        49,
-        63
+        46,
+        48,
+        61,
+        58,
+        56,
+        60
       ],
-      "latest": 63,
+      "latest": 60,
       "direction": "falling",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     },
     "no maida": {
       "interest": [
-        29,
-        33,
+        45,
+        24,
         40,
-        28,
-        36,
-        37,
         35,
-        37,
-        37,
-        47,
-        55,
+        24,
+        41,
+        39,
+        34,
+        45,
+        52,
+        56,
         51
       ],
       "latest": 51,
       "direction": "rising",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     },
     "non-refined sugar": {
+      "interest": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        9,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2
+      ],
+      "latest": 2,
+      "direction": "flat",
+      "source": "google-trends-live",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
+      "stale": false
+    },
+    "sugar-free": {
+      "interest": [
+        73,
+        69,
+        58,
+        50,
+        49,
+        58,
+        57,
+        63,
+        68,
+        69,
+        69,
+        72
+      ],
+      "latest": 72,
+      "direction": "flat",
+      "source": "google-trends-live",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
+      "stale": false
+    },
+    "no palm oil": {
       "interest": [
         0,
         0,
@@ -485,54 +527,12 @@
         0,
         0,
         0,
-        3
+        1
       ],
-      "latest": 3,
+      "latest": 1,
       "direction": "flat",
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
-      "stale": false
-    },
-    "sugar-free": {
-      "interest": [
-        65,
-        72,
-        57,
-        52,
-        51,
-        57,
-        55,
-        53,
-        67,
-        67,
-        72,
-        71
-      ],
-      "latest": 71,
-      "direction": "rising",
-      "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
-      "stale": false
-    },
-    "no palm oil": {
-      "interest": [
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        3
-      ],
-      "latest": 3,
-      "direction": "flat",
-      "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     }
   },
@@ -541,8 +541,8 @@
       "top": [
         {
           "query": "biscuit price",
-          "value": "76",
-          "extracted": 76
+          "value": "78",
+          "extracted": 78
         },
         {
           "query": "parle biscuit",
@@ -555,74 +555,64 @@
           "extracted": 39
         },
         {
-          "query": "oreo",
+          "query": "oreo biscuit",
           "value": "31",
           "extracted": 31
         },
         {
-          "query": "oreo biscuit",
+          "query": "oreo",
           "value": "30",
           "extracted": 30
         },
         {
           "query": "cream biscuit",
-          "value": "27",
-          "extracted": 27
+          "value": "29",
+          "extracted": 29
         },
         {
-          "query": "parle g",
+          "query": "parle g biscuit",
+          "value": "26",
+          "extracted": 26
+        },
+        {
+          "query": "biscuits",
           "value": "25",
           "extracted": 25
         },
         {
-          "query": "biscuits",
-          "value": "24",
-          "extracted": 24
+          "query": "chocolate biscuit",
+          "value": "25",
+          "extracted": 25
         },
         {
           "query": "chocolate",
           "value": "24",
           "extracted": 24
-        },
-        {
-          "query": "parle g biscuit",
-          "value": "23",
-          "extracted": 23
         }
       ],
       "rising": [
         {
           "query": "bts oreo biscuit",
           "value": "Breakout",
-          "extracted": 13800
+          "extracted": 8200
         },
         {
           "query": "50 50 cheese biscuit",
-          "value": "+700%",
-          "extracted": 700
-        },
-        {
-          "query": "taakat biscuit",
-          "value": "+350%",
-          "extracted": 350
+          "value": "+950%",
+          "extracted": 950
         },
         {
           "query": "britannia cheese biscuit",
+          "value": "+400%",
+          "extracted": 400
+        },
+        {
+          "query": "taakat biscuit",
           "value": "+300%",
           "extracted": 300
         },
         {
-          "query": "lotus biscoff biscuits",
-          "value": "+160%",
-          "extracted": 160
-        },
-        {
           "query": "biscoff biscuit",
-          "value": "+150%",
-          "extracted": 150
-        },
-        {
-          "query": "independence biscuit",
           "value": "+150%",
           "extracted": 150
         },
@@ -633,13 +623,23 @@
         },
         {
           "query": "biscoff biscuits",
+          "value": "+140%",
+          "extracted": 140
+        },
+        {
+          "query": "independence biscuit",
           "value": "+110%",
           "extracted": 110
         },
         {
-          "query": "mari gold biscuit",
-          "value": "+80%",
-          "extracted": 80
+          "query": "heart shape biscuit",
+          "value": "+90%",
+          "extracted": 90
+        },
+        {
+          "query": "google biscuit",
+          "value": "+90%",
+          "extracted": 90
         },
         {
           "query": "lotus biscoff biscuit",
@@ -647,36 +647,31 @@
           "extracted": 80
         },
         {
-          "query": "tiramisu biscuit",
+          "query": "mari gold biscuit",
           "value": "+80%",
           "extracted": 80
         }
       ],
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     },
     "cream biscuit": {
       "top": [
-        {
-          "query": "ice cream",
-          "value": "100",
-          "extracted": 100
-        },
         {
           "query": "ice cream biscuit",
           "value": "100",
           "extracted": 100
         },
         {
-          "query": "chocolate cream biscuit",
-          "value": "59",
-          "extracted": 59
+          "query": "ice cream",
+          "value": "99",
+          "extracted": 99
         },
         {
           "query": "chocolate biscuit",
-          "value": "58",
-          "extracted": 58
+          "value": "59",
+          "extracted": 59
         },
         {
           "query": "chocolate",
@@ -684,12 +679,17 @@
           "extracted": 58
         },
         {
-          "query": "milk biscuit",
-          "value": "55",
-          "extracted": 55
+          "query": "chocolate cream biscuit",
+          "value": "58",
+          "extracted": 58
         },
         {
-          "query": "milk cream",
+          "query": "oreo cream biscuit",
+          "value": "54",
+          "extracted": 54
+        },
+        {
+          "query": "milk biscuit",
           "value": "54",
           "extracted": 54
         },
@@ -705,74 +705,74 @@
         },
         {
           "query": "cream biscuits",
-          "value": "44",
-          "extracted": 44
+          "value": "43",
+          "extracted": 43
         }
       ],
       "rising": [
         {
-          "query": "50-50 biscuit",
-          "value": "Breakout",
-          "extracted": 40200
-        },
-        {
           "query": "creme meaning",
           "value": "Breakout",
-          "extracted": 35950
+          "extracted": 30450
         },
         {
           "query": "mascarpone cream",
           "value": "Breakout",
-          "extracted": 28350
-        },
-        {
-          "query": "heavy cream",
-          "value": "Breakout",
-          "extracted": 22450
+          "extracted": 28450
         },
         {
           "query": "mascarpone cheese",
           "value": "Breakout",
-          "extracted": 17150
+          "extracted": 14600
+        },
+        {
+          "query": "oreo bts biscuit",
+          "value": "Breakout",
+          "extracted": 6400
         },
         {
           "query": "creme vs cream",
+          "value": "+900%",
+          "extracted": 900
+        },
+        {
+          "query": "50-50 biscuit",
           "value": "+700%",
           "extracted": 700
         },
         {
-          "query": "creme biscuits",
+          "query": "oreo biscuit price",
           "value": "+350%",
           "extracted": 350
         },
         {
           "query": "creme",
-          "value": "+250%",
-          "extracted": 250
+          "value": "+300%",
+          "extracted": 300
         },
         {
-          "query": "surf excel",
-          "value": "+200%",
-          "extracted": 200
+          "query": "creme biscuits",
+          "value": "+300%",
+          "extracted": 300
         },
         {
-          "query": "mascarpone",
-          "value": "+190%",
-          "extracted": 190
-        },
-        {
-          "query": "oreo biscuit price",
-          "value": "+160%",
-          "extracted": 160
+          "query": "oreo cream biscuit",
+          "value": "+40%",
+          "extracted": 40
         },
         {
           "query": "oreo",
-          "value": "+50%",
-          "extracted": 50
+          "value": "+40%",
+          "extracted": 40
+        },
+        {
+          "query": "oreo biscuit",
+          "value": "+40%",
+          "extracted": 40
         }
       ],
       "source": "google-trends-live",
-      "fetchedAt": "2026-06-29T08:13:18.545Z",
+      "fetchedAt": "2026-07-06T07:13:47.311Z",
       "stale": false
     }
   }
